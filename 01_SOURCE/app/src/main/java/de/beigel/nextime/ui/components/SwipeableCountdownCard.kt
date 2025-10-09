@@ -3,6 +3,7 @@ package de.beigel.nextime.ui.components
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
@@ -17,7 +18,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import de.beigel.nextime.data.model.Countdown
 import de.beigel.nextime.utils.HapticFeedback
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,11 +25,11 @@ fun SwipeableCountdownCard(
     countdown: Countdown,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
-    showPercentage: Boolean = true
+    showPercentage: Boolean = true,
+    onClick: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
     val haptic = remember { HapticFeedback(context) }
-    val scope = rememberCoroutineScope()
 
     // Track ob wir bereits vibriert haben für diesen Swipe
     var hasVibrated by remember { mutableStateOf(false) }
@@ -41,14 +41,13 @@ fun SwipeableCountdownCard(
         confirmValueChange = { dismissValue ->
             when (dismissValue) {
                 DismissValue.DismissedToStart -> {
-                    haptic.heavy() // Starkes Feedback beim Löschen
+                    haptic.heavy()
                     onDelete()
                     true
                 }
                 DismissValue.DismissedToEnd -> {
-                    haptic.click() // Mittleres Feedback beim Bearbeiten
+                    haptic.click()
                     onEdit()
-                    // Card zurücksetzen durch Key-Änderung
                     dismissKey++
                     false
                 }
@@ -62,17 +61,14 @@ fun SwipeableCountdownCard(
     LaunchedEffect(dismissState.progress) {
         val progress = dismissState.progress
 
-        // Wenn der Benutzer über 25% geswiped hat und wir noch nicht vibriert haben
         if (progress > 0.25f && !hasVibrated) {
-            haptic.tick() // Leichtes Feedback als Hinweis
+            haptic.tick()
             hasVibrated = true
         } else if (progress < 0.1f && hasVibrated) {
-            // Reset wenn der Swipe zurückgeht
             hasVibrated = false
         }
     }
 
-    // Key hinzufügen um Component neu zu erstellen
     key(dismissKey) {
         SwipeToDismiss(
             state = dismissState,
@@ -122,7 +118,6 @@ fun SwipeableCountdownCard(
                             }
                         )
 
-                        // Text unter dem Icon
                         if (dismissState.progress > 0.25f) {
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
@@ -141,12 +136,24 @@ fun SwipeableCountdownCard(
                 }
             },
             dismissContent = {
-                CountdownCard(
-                    countdown = countdown,
-                    onEdit = onEdit,
-                    onDelete = onDelete,
-                    showPercentage = showPercentage
-                )
+                // Wrap CountdownCard with clickable modifier if onClick is provided
+                Box(
+                    modifier = if (onClick != null) {
+                        Modifier.clickable {
+                            haptic.tick()
+                            onClick()
+                        }
+                    } else {
+                        Modifier
+                    }
+                ) {
+                    CountdownCard(
+                        countdown = countdown,
+                        onEdit = onEdit,
+                        onDelete = onDelete,
+                        showPercentage = showPercentage
+                    )
+                }
             },
             directions = setOf(DismissDirection.StartToEnd, DismissDirection.EndToStart)
         )
