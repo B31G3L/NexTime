@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">NexTime</string>
+
+    <!-- Main Screen -->
+    <string name="add_countdown">Countdown hinzufügen</string>
+    <string name="no_countdowns">Noch keine Countdowns</string>
+    <string name="no_countdowns_hint">Tippe auf +, um deinen ersten Countdown zu erstellen</string>
+
+    <!-- Dialog -->
+    <string name="create_countdown">Countdown erstellen</string>
+    <string name="edit_countdown">Countdown bearbeiten</string>
+    <string name="title">Titel</string>
+    <string name="title_hint">z.B. Urlaub, Geburtstag...</string>
+    <string name="date">Datum</string>
+    <string name="time">Uhrzeit</string>
+    <string name="include_time">Uhrzeit einbeziehen</string>
+    <string name="show_nights">Nächte anzeigen</string>
+    <string name="save">Speichern</string>
+    <string name="cancel">Abbrechen</string>
+    <string name="delete">Löschen</string>
+    <string name="edit">Bearbeiten</string>
+
+    <!-- Countdown Display -->
+    <string name="day">Tag</string>
+    <string name="days">Tage</string>
+    <string name="night">Nacht</string>
+    <string name="nights">Nächte</string>
+    <string name="today">Heute</string>
+    <string name="ago">vor</string>
+
+    <!-- Widget -->
+    <string name="widget_description">Zeigt deine Countdowns auf dem Homescreen</string>
+</resources>
