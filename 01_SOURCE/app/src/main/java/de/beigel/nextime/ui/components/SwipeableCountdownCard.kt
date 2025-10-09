@@ -17,6 +17,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import de.beigel.nextime.data.model.Countdown
 import de.beigel.nextime.utils.HapticFeedback
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,9 +29,13 @@ fun SwipeableCountdownCard(
 ) {
     val context = LocalContext.current
     val haptic = remember { HapticFeedback(context) }
+    val scope = rememberCoroutineScope()
 
     // Track ob wir bereits vibriert haben für diesen Swipe
     var hasVibrated by remember { mutableStateOf(false) }
+
+    // Key für das Zurücksetzen der Card
+    var dismissKey by remember { mutableStateOf(0) }
 
     val dismissState = rememberDismissState(
         confirmValueChange = { dismissValue ->
@@ -43,7 +48,9 @@ fun SwipeableCountdownCard(
                 DismissValue.DismissedToEnd -> {
                     haptic.click() // Mittleres Feedback beim Bearbeiten
                     onEdit()
-                    true
+                    // Card zurücksetzen durch Key-Änderung
+                    dismissKey++
+                    false
                 }
                 else -> false
             }
@@ -65,80 +72,83 @@ fun SwipeableCountdownCard(
         }
     }
 
-    SwipeToDismiss(
-        state = dismissState,
-        background = {
-            val direction = dismissState.dismissDirection ?: return@SwipeToDismiss
-            val color by animateColorAsState(
-                when (dismissState.targetValue) {
-                    DismissValue.Default -> Color.Transparent
-                    DismissValue.DismissedToEnd -> MaterialTheme.colorScheme.primaryContainer
-                    DismissValue.DismissedToStart -> MaterialTheme.colorScheme.errorContainer
-                },
-                label = "color"
-            )
+    // Key hinzufügen um Component neu zu erstellen
+    key(dismissKey) {
+        SwipeToDismiss(
+            state = dismissState,
+            background = {
+                val direction = dismissState.dismissDirection ?: return@SwipeToDismiss
+                val color by animateColorAsState(
+                    when (dismissState.targetValue) {
+                        DismissValue.Default -> Color.Transparent
+                        DismissValue.DismissedToEnd -> MaterialTheme.colorScheme.primaryContainer
+                        DismissValue.DismissedToStart -> MaterialTheme.colorScheme.errorContainer
+                    },
+                    label = "color"
+                )
 
-            val alignment = when (direction) {
-                DismissDirection.StartToEnd -> Alignment.CenterStart
-                DismissDirection.EndToStart -> Alignment.CenterEnd
-            }
+                val alignment = when (direction) {
+                    DismissDirection.StartToEnd -> Alignment.CenterStart
+                    DismissDirection.EndToStart -> Alignment.CenterEnd
+                }
 
-            val icon = when (direction) {
-                DismissDirection.StartToEnd -> Icons.Default.Edit
-                DismissDirection.EndToStart -> Icons.Default.Delete
-            }
+                val icon = when (direction) {
+                    DismissDirection.StartToEnd -> Icons.Default.Edit
+                    DismissDirection.EndToStart -> Icons.Default.Delete
+                }
 
-            val scale by animateFloatAsState(
-                if (dismissState.targetValue == DismissValue.Default) 0.75f else 1f,
-                label = "scale"
-            )
+                val scale by animateFloatAsState(
+                    if (dismissState.targetValue == DismissValue.Default) 0.75f else 1f,
+                    label = "scale"
+                )
 
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .background(color)
-                    .padding(horizontal = 20.dp),
-                contentAlignment = alignment
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .background(color)
+                        .padding(horizontal = 20.dp),
+                    contentAlignment = alignment
                 ) {
-                    Icon(
-                        icon,
-                        contentDescription = null,
-                        modifier = Modifier.scale(scale),
-                        tint = when (direction) {
-                            DismissDirection.StartToEnd -> MaterialTheme.colorScheme.primary
-                            DismissDirection.EndToStart -> MaterialTheme.colorScheme.error
-                        }
-                    )
-
-                    // Text unter dem Icon
-                    if (dismissState.progress > 0.25f) {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = when (direction) {
-                                DismissDirection.StartToEnd -> "Bearbeiten"
-                                DismissDirection.EndToStart -> "Löschen"
-                            },
-                            style = MaterialTheme.typography.labelSmall,
-                            color = when (direction) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            icon,
+                            contentDescription = null,
+                            modifier = Modifier.scale(scale),
+                            tint = when (direction) {
                                 DismissDirection.StartToEnd -> MaterialTheme.colorScheme.primary
                                 DismissDirection.EndToStart -> MaterialTheme.colorScheme.error
                             }
                         )
+
+                        // Text unter dem Icon
+                        if (dismissState.progress > 0.25f) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = when (direction) {
+                                    DismissDirection.StartToEnd -> "Bearbeiten"
+                                    DismissDirection.EndToStart -> "Löschen"
+                                },
+                                style = MaterialTheme.typography.labelSmall,
+                                color = when (direction) {
+                                    DismissDirection.StartToEnd -> MaterialTheme.colorScheme.primary
+                                    DismissDirection.EndToStart -> MaterialTheme.colorScheme.error
+                                }
+                            )
+                        }
                     }
                 }
-            }
-        },
-        dismissContent = {
-            CountdownCard(
-                countdown = countdown,
-                onEdit = onEdit,
-                onDelete = onDelete,
-                showPercentage = showPercentage
-            )
-        },
-        directions = setOf(DismissDirection.StartToEnd, DismissDirection.EndToStart)
-    )
+            },
+            dismissContent = {
+                CountdownCard(
+                    countdown = countdown,
+                    onEdit = onEdit,
+                    onDelete = onDelete,
+                    showPercentage = showPercentage
+                )
+            },
+            directions = setOf(DismissDirection.StartToEnd, DismissDirection.EndToStart)
+        )
+    }
 }
