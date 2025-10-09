@@ -14,9 +14,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import de.beigel.nextime.data.model.Countdown
+import de.beigel.nextime.utils.HapticFeedback
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -28,8 +30,11 @@ fun AddEditCountdownDialog(
     onDismiss: () -> Unit,
     onSave: (Countdown) -> Unit
 ) {
+    val context = LocalContext.current
+    val haptic = remember { HapticFeedback(context) }
+
     var title by remember { mutableStateOf(countdown?.title ?: "") }
-    var selectedDate by remember { mutableStateOf(countdown?.targetDateTime?.toLocalDate() ?: LocalDate.now()) }
+    var selectedDate by remember { mutableStateOf(countdown?.targetDateTime?.toLocalDate() ?: LocalDate.now().plusDays(1)) }
     var selectedTime by remember { mutableStateOf(countdown?.targetDateTime?.toLocalTime() ?: LocalTime.of(12, 0)) }
     var includeTime by remember { mutableStateOf(countdown?.includeTime ?: false) }
     var showNights by remember { mutableStateOf(countdown?.showNights ?: false) }
@@ -53,7 +58,10 @@ fun AddEditCountdownDialog(
     )
 
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = {
+            haptic.tick()
+            onDismiss()
+        },
         title = {
             Text(if (countdown == null) "Countdown erstellen" else "Countdown bearbeiten")
         },
@@ -76,7 +84,10 @@ fun AddEditCountdownDialog(
 
                 // Datum
                 OutlinedButton(
-                    onClick = { showDatePicker = true },
+                    onClick = {
+                        haptic.tick()
+                        showDatePicker = true
+                    },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Datum: ${selectedDate.format(java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy"))}")
@@ -90,14 +101,20 @@ fun AddEditCountdownDialog(
                     Text("Uhrzeit einbeziehen", modifier = Modifier.weight(1f))
                     Switch(
                         checked = includeTime,
-                        onCheckedChange = { includeTime = it }
+                        onCheckedChange = {
+                            haptic.tick()
+                            includeTime = it
+                        }
                     )
                 }
 
                 // Uhrzeit (nur wenn aktiviert)
                 if (includeTime) {
                     OutlinedButton(
-                        onClick = { showTimePicker = true },
+                        onClick = {
+                            haptic.tick()
+                            showTimePicker = true
+                        },
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text("Uhrzeit: ${selectedTime.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))}")
@@ -112,7 +129,10 @@ fun AddEditCountdownDialog(
                     Text("Nächte anzeigen", modifier = Modifier.weight(1f))
                     Switch(
                         checked = showNights,
-                        onCheckedChange = { showNights = it }
+                        onCheckedChange = {
+                            haptic.tick()
+                            showNights = it
+                        }
                     )
                 }
 
@@ -121,11 +141,11 @@ fun AddEditCountdownDialog(
                     Text(
                         "Farbe wählen",
                         style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
+                        fontWeight = FontWeight.Medium
                     )
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    // Farb-Grid
+                    // Farb-Grid - Erste Reihe
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -134,12 +154,18 @@ fun AddEditCountdownDialog(
                             ColorCircle(
                                 color = androidx.compose.ui.graphics.Color(android.graphics.Color.parseColor(colorHex)),
                                 isSelected = selectedColor == colorHex,
-                                onClick = { selectedColor = colorHex },
+                                onClick = {
+                                    haptic.tick()
+                                    selectedColor = colorHex
+                                },
                                 modifier = Modifier.weight(1f)
                             )
                         }
                     }
+
                     Spacer(modifier = Modifier.height(8.dp))
+
+                    // Farb-Grid - Zweite Reihe
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -148,7 +174,10 @@ fun AddEditCountdownDialog(
                             ColorCircle(
                                 color = androidx.compose.ui.graphics.Color(android.graphics.Color.parseColor(colorHex)),
                                 isSelected = selectedColor == colorHex,
-                                onClick = { selectedColor = colorHex },
+                                onClick = {
+                                    haptic.tick()
+                                    selectedColor = colorHex
+                                },
                                 modifier = Modifier.weight(1f)
                             )
                         }
@@ -160,6 +189,8 @@ fun AddEditCountdownDialog(
             TextButton(
                 onClick = {
                     if (title.isNotBlank()) {
+                        haptic.success() // Erfolgs-Feedback beim Speichern
+
                         val targetDateTime = if (includeTime) {
                             LocalDateTime.of(selectedDate, selectedTime)
                         } else {
@@ -181,6 +212,8 @@ fun AddEditCountdownDialog(
                         )
 
                         onSave(newCountdown)
+                    } else {
+                        haptic.error() // Fehler-Feedback bei leerem Titel
                     }
                 },
                 enabled = title.isNotBlank()
@@ -189,7 +222,10 @@ fun AddEditCountdownDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(onClick = {
+                haptic.tick()
+                onDismiss()
+            }) {
                 Text("Abbrechen")
             }
         }
@@ -202,9 +238,13 @@ fun AddEditCountdownDialog(
         )
 
         DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
+            onDismissRequest = {
+                haptic.tick()
+                showDatePicker = false
+            },
             confirmButton = {
                 TextButton(onClick = {
+                    haptic.click()
                     datePickerState.selectedDateMillis?.let { millis ->
                         selectedDate = LocalDate.ofEpochDay(millis / 86400000)
                     }
@@ -214,7 +254,10 @@ fun AddEditCountdownDialog(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) {
+                TextButton(onClick = {
+                    haptic.tick()
+                    showDatePicker = false
+                }) {
                     Text("Abbrechen")
                 }
             }
@@ -232,9 +275,13 @@ fun AddEditCountdownDialog(
         )
 
         AlertDialog(
-            onDismissRequest = { showTimePicker = false },
+            onDismissRequest = {
+                haptic.tick()
+                showTimePicker = false
+            },
             confirmButton = {
                 TextButton(onClick = {
+                    haptic.click()
                     selectedTime = LocalTime.of(timePickerState.hour, timePickerState.minute)
                     showTimePicker = false
                 }) {
@@ -242,7 +289,10 @@ fun AddEditCountdownDialog(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showTimePicker = false }) {
+                TextButton(onClick = {
+                    haptic.tick()
+                    showTimePicker = false
+                }) {
                     Text("Abbrechen")
                 }
             },
@@ -263,20 +313,20 @@ private fun ColorCircle(
     Box(
         modifier = modifier
             .aspectRatio(1f)
-            .clip(androidx.compose.foundation.shape.CircleShape)
+            .clip(CircleShape)
             .background(color)
             .then(
                 if (isSelected) {
                     Modifier.border(
                         width = 3.dp,
                         color = MaterialTheme.colorScheme.primary,
-                        shape = androidx.compose.foundation.shape.CircleShape
+                        shape = CircleShape
                     )
                 } else {
                     Modifier.border(
                         width = 2.dp,
                         color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
-                        shape = androidx.compose.foundation.shape.CircleShape
+                        shape = CircleShape
                     )
                 }
             )
@@ -285,7 +335,7 @@ private fun ColorCircle(
     ) {
         if (isSelected) {
             Icon(
-                imageVector = androidx.compose.material.icons.Icons.Default.Check,
+                imageVector = Icons.Default.Check,
                 contentDescription = null,
                 tint = androidx.compose.ui.graphics.Color.White,
                 modifier = Modifier.size(20.dp)

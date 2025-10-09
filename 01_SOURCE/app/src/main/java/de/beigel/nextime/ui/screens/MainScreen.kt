@@ -6,32 +6,45 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Sort
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import de.beigel.nextime.ui.components.SwipeableCountdownCard
 import de.beigel.nextime.ui.components.AddEditCountdownDialog
 import de.beigel.nextime.ui.viewmodel.CountdownViewModel
+import de.beigel.nextime.utils.HapticFeedback
+import kotlinx.coroutines.launch
 
 enum class SortOption {
     DATE_ASC, DATE_DESC, NAME_ASC, NAME_DESC
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
     viewModel: CountdownViewModel = viewModel(),
     isDarkTheme: Boolean,
     onThemeToggle: () -> Unit
 ) {
+    val context = LocalContext.current
+    val haptic = remember { HapticFeedback(context) }
+    val scope = rememberCoroutineScope()
+
     val countdowns by viewModel.countdowns.collectAsState()
     var showAddDialog by remember { mutableStateOf(false) }
     var editingCountdown by remember { mutableStateOf<de.beigel.nextime.data.model.Countdown?>(null) }
     var sortOption by remember { mutableStateOf(SortOption.DATE_ASC) }
     var showSortMenu by remember { mutableStateOf(false) }
+    var showSettingsDialog by remember { mutableStateOf(false) }
+
+    // Einstellungen
+    var showPercentage by remember { mutableStateOf(true) }
 
     // Sortierte Liste
     val sortedCountdowns = remember(countdowns, sortOption) {
@@ -44,9 +57,32 @@ fun MainScreen(
     }
 
     Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("NexTime") },
+                actions = {
+                    // Settings Button
+                    IconButton(onClick = {
+                        haptic.tick()
+                        showSettingsDialog = true
+                    }) {
+                        Icon(
+                            Icons.Default.Settings,
+                            contentDescription = "Einstellungen"
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            )
+        },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { showAddDialog = true },
+                onClick = {
+                    haptic.click()
+                    showAddDialog = true
+                },
                 containerColor = MaterialTheme.colorScheme.primary
             ) {
                 Icon(
@@ -102,7 +138,10 @@ fun MainScreen(
                         )
 
                         Box {
-                            IconButton(onClick = { showSortMenu = true }) {
+                            IconButton(onClick = {
+                                haptic.tick()
+                                showSortMenu = true
+                            }) {
                                 Icon(
                                     Icons.Default.Sort,
                                     contentDescription = "Sortieren"
@@ -116,6 +155,7 @@ fun MainScreen(
                                 DropdownMenuItem(
                                     text = { Text("Datum ↑") },
                                     onClick = {
+                                        haptic.tick()
                                         sortOption = SortOption.DATE_ASC
                                         showSortMenu = false
                                     }
@@ -123,6 +163,7 @@ fun MainScreen(
                                 DropdownMenuItem(
                                     text = { Text("Datum ↓") },
                                     onClick = {
+                                        haptic.tick()
                                         sortOption = SortOption.DATE_DESC
                                         showSortMenu = false
                                     }
@@ -130,6 +171,7 @@ fun MainScreen(
                                 DropdownMenuItem(
                                     text = { Text("Name A-Z") },
                                     onClick = {
+                                        haptic.tick()
                                         sortOption = SortOption.NAME_ASC
                                         showSortMenu = false
                                     }
@@ -137,6 +179,7 @@ fun MainScreen(
                                 DropdownMenuItem(
                                     text = { Text("Name Z-A") },
                                     onClick = {
+                                        haptic.tick()
                                         sortOption = SortOption.NAME_DESC
                                         showSortMenu = false
                                     }
@@ -167,7 +210,8 @@ fun MainScreen(
                                 },
                                 onDelete = {
                                     viewModel.deleteCountdown(countdown)
-                                }
+                                },
+                                showPercentage = showPercentage
                             )
                         }
                     }
@@ -196,6 +240,71 @@ fun MainScreen(
             onSave = { updatedCountdown ->
                 viewModel.updateCountdown(updatedCountdown)
                 editingCountdown = null
+            }
+        )
+    }
+
+    // Einstellungen Dialog
+    if (showSettingsDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                haptic.tick()
+                showSettingsDialog = false
+            },
+            title = { Text("Einstellungen") },
+            text = {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Dark Mode Toggle
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Dark Mode")
+                        Switch(
+                            checked = isDarkTheme,
+                            onCheckedChange = {
+                                haptic.tick()
+                                onThemeToggle()
+                            }
+                        )
+                    }
+
+                    Divider()
+
+                    // Prozentanzeige Toggle
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Fortschritt anzeigen")
+                            Text(
+                                "Zeigt Prozent unter dem Fortschrittsbalken",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = showPercentage,
+                            onCheckedChange = {
+                                haptic.tick()
+                                showPercentage = it
+                            }
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    haptic.click()
+                    showSettingsDialog = false
+                }) {
+                    Text("OK")
+                }
             }
         )
     }

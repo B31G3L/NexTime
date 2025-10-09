@@ -13,24 +13,35 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import de.beigel.nextime.data.model.Countdown
+import de.beigel.nextime.utils.HapticFeedback
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SwipeableCountdownCard(
     countdown: Countdown,
     onEdit: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    showPercentage: Boolean = true
 ) {
+    val context = LocalContext.current
+    val haptic = remember { HapticFeedback(context) }
+
+    // Track ob wir bereits vibriert haben für diesen Swipe
+    var hasVibrated by remember { mutableStateOf(false) }
+
     val dismissState = rememberDismissState(
         confirmValueChange = { dismissValue ->
             when (dismissValue) {
                 DismissValue.DismissedToStart -> {
+                    haptic.heavy() // Starkes Feedback beim Löschen
                     onDelete()
                     true
                 }
                 DismissValue.DismissedToEnd -> {
+                    haptic.click() // Mittleres Feedback beim Bearbeiten
                     onEdit()
                     true
                 }
@@ -39,6 +50,20 @@ fun SwipeableCountdownCard(
         },
         positionalThreshold = { it * 0.25f }
     )
+
+    // Haptic feedback während des Swipens
+    LaunchedEffect(dismissState.progress) {
+        val progress = dismissState.progress
+
+        // Wenn der Benutzer über 25% geswiped hat und wir noch nicht vibriert haben
+        if (progress > 0.25f && !hasVibrated) {
+            haptic.tick() // Leichtes Feedback als Hinweis
+            hasVibrated = true
+        } else if (progress < 0.1f && hasVibrated) {
+            // Reset wenn der Swipe zurückgeht
+            hasVibrated = false
+        }
+    }
 
     SwipeToDismiss(
         state = dismissState,
@@ -75,22 +100,43 @@ fun SwipeableCountdownCard(
                     .padding(horizontal = 20.dp),
                 contentAlignment = alignment
             ) {
-                Icon(
-                    icon,
-                    contentDescription = null,
-                    modifier = Modifier.scale(scale),
-                    tint = when (direction) {
-                        DismissDirection.StartToEnd -> MaterialTheme.colorScheme.primary
-                        DismissDirection.EndToStart -> MaterialTheme.colorScheme.error
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        icon,
+                        contentDescription = null,
+                        modifier = Modifier.scale(scale),
+                        tint = when (direction) {
+                            DismissDirection.StartToEnd -> MaterialTheme.colorScheme.primary
+                            DismissDirection.EndToStart -> MaterialTheme.colorScheme.error
+                        }
+                    )
+
+                    // Text unter dem Icon
+                    if (dismissState.progress > 0.25f) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = when (direction) {
+                                DismissDirection.StartToEnd -> "Bearbeiten"
+                                DismissDirection.EndToStart -> "Löschen"
+                            },
+                            style = MaterialTheme.typography.labelSmall,
+                            color = when (direction) {
+                                DismissDirection.StartToEnd -> MaterialTheme.colorScheme.primary
+                                DismissDirection.EndToStart -> MaterialTheme.colorScheme.error
+                            }
+                        )
                     }
-                )
+                }
             }
         },
         dismissContent = {
             CountdownCard(
                 countdown = countdown,
                 onEdit = onEdit,
-                onDelete = onDelete
+                onDelete = onDelete,
+                showPercentage = showPercentage
             )
         },
         directions = setOf(DismissDirection.StartToEnd, DismissDirection.EndToStart)
