@@ -12,8 +12,8 @@ android {
         applicationId = "de.beigel.nextime"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -84,6 +84,9 @@ dependencies {
 
     // DataStore for preferences
     implementation("androidx.datastore:datastore-preferences:1.0.0")
+
+    // WorkManager for Widget Updates
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
 
     // Testing
     testImplementation("junit:junit:4.13.2")

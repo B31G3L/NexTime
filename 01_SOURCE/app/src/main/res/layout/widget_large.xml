@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/widget_background"
+    android:padding="16dp">
+
+    <!-- Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="12dp">
+
+        <View
+            android:id="@+id/widget_accent_bar"
+            android:layout_width="4dp"
+            android:layout_height="40dp"
+            android:layout_marginEnd="12dp"
+            android:background="#FF7043" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/widget_status"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Bevorstehend"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:textColor="?android:textColorSecondary"
+                android:textAllCaps="true"
+                android:layout_marginBottom="4dp" />
+
+            <TextView
+                android:id="@+id/widget_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Countdown Titel"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="?android:textColorPrimary"
+                android:maxLines="2"
+                android:ellipsize="end" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Main Countdown Display -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="16dp">
+
+        <!-- Days -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="8dp">
+
+            <TextView
+                android:id="@+id/widget_days_value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="42"
+                android:textSize="42sp"
+                android:textStyle="bold"
+                android:textColor="?android:textColorPrimary" />
+
+            <TextView
+                android:id="@+id/widget_days_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Tage"
+                android:textSize="12sp"
+                android:textColor="?android:textColorSecondary"
+                android:layout_marginTop="4dp" />
+        </LinearLayout>
+
+        <!-- Separator -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=":"
+            android:textSize="32sp"
+            android:textStyle="bold"
+            android:textColor="?android:textColorSecondary"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Hours -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.7"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="8dp">
+
+            <TextView
+                android:id="@+id/widget_hours_value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="12"
+                android:textSize="28sp"
+                android:textStyle="bold"
+                android:textColor="?android:textColorPrimary" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Std"
+                android:textSize="11sp"
+                android:textColor="?android:textColorSecondary"
+                android:layout_marginTop="4dp" />
+        </LinearLayout>
+
+        <!-- Separator -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=":"
+            android:textSize="32sp"
+            android:textStyle="bold"
+            android:textColor="?android:textColorSecondary"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Minutes -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.7"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="8dp">
+
+            <TextView
+                android:id="@+id/widget_minutes_value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="34"
+                android:textSize="28sp"
+                android:textStyle="bold"
+                android:textColor="?android:textColorPrimary" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Min"
+                android:textSize="11sp"
+                android:textColor="?android:textColorSecondary"
+                android:layout_marginTop="4dp" />
+        </LinearLayout>
+
+        <!-- Separator -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=":"
+            android:textSize="32sp"
+            android:textStyle="bold"
+            android:textColor="?android:textColorSecondary"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Seconds -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.7"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="8dp">
+
+            <TextView
+                android:id="@+id/widget_seconds_value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="56"
+                android:textSize="28sp"
+                android:textStyle="bold"
+                android:textColor="?android:textColorPrimary" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Sek"
+                android:textSize="11sp"
+                android:textColor="?android:textColorSecondary"
+                android:layout_marginTop="4dp" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- Divider -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="?android:attr/dividerHorizontal"
+        android:alpha="0.3"
+        android:layout_marginBottom="12dp" />
+
+    <!-- Details -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="start">
+
+        <TextView
+            android:id="@+id/widget_date"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="📅 31. Dezember 2025"
+            android:textSize="13sp"
+            android:textColor="?android:textColorSecondary"
+            android:layout_marginBottom="6dp" />
+
+        <TextView
+            android:id="@+id/widget_time"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🕐 18:00 Uhr"
+            android:textSize="13sp"
+            android:textColor="?android:textColorSecondary"
+            android:layout_marginBottom="6dp" />
+
+        <TextView
+            android:id="@+id/widget_nights"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🌙 42 Nächte"
+            android:textSize="13sp"
+            android:textColor="?android:textColorSecondary" />
+    </LinearLayout>
+
+</LinearLayout>
