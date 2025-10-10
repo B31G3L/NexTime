@@ -151,7 +151,7 @@ fun SwipeableCountdownCard(
                         countdown = countdown,
                         onEdit = onEdit,
                         onDelete = onDelete,
-                        showPercentage = showPercentage
+
                     )
                 }
             },

@@ -46,7 +46,6 @@ fun MainScreen(
     var showSortMenu by remember { mutableStateOf(false) }
     var showSettingsDialog by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
-    var showPercentage by remember { mutableStateOf(true) }
 
     val sortedCountdowns = remember(countdowns, sortOption) {
         when (sortOption) {
@@ -184,7 +183,6 @@ fun MainScreen(
                                 countdown = countdown,
                                 onEdit = { editingCountdown = countdown },
                                 onDelete = { viewModel.deleteCountdown(countdown) },
-                                showPercentage = showPercentage,
                                 onClick = { viewModel.selectCountdown(countdown) }
                             )
                         }
@@ -245,32 +243,6 @@ fun MainScreen(
                             onCheckedChange = {
                                 haptic.tick()
                                 onThemeToggle()
-                            }
-                        )
-                    }
-
-                    Divider()
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text("Fortschritt anzeigen")
-                            Spacer(modifier = Modifier.height(DesignSystem.Spacing.xxSmall))
-                            Text(
-                                "Zeigt Prozent unter dem Fortschrittsbalken",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(DesignSystem.Spacing.medium))
-                        Switch(
-                            checked = showPercentage,
-                            onCheckedChange = {
-                                haptic.tick()
-                                showPercentage = it
                             }
                         )
                     }

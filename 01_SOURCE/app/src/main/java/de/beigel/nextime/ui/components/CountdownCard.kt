@@ -5,15 +5,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material.icons.outlined.AccessTime
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -21,28 +18,26 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import de.beigel.nextime.data.model.Countdown
+import de.beigel.nextime.data.model.CountdownDisplayFormat
 import de.beigel.nextime.data.model.calculateTimeRemaining
+import de.beigel.nextime.data.model.getFormattedTime
+import de.beigel.nextime.data.model.getFormattedTimeLabel
 import de.beigel.nextime.ui.theme.DesignSystem
 import de.beigel.nextime.utils.HapticFeedback
 import kotlinx.coroutines.delay
-import java.time.Duration
-import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import kotlin.math.min
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CountdownCard(
     countdown: Countdown,
     onEdit: () -> Unit,
-    onDelete: () -> Unit,
-    showPercentage: Boolean = true
+    onDelete: () -> Unit
 ) {
     val context = LocalContext.current
     val haptic = remember { HapticFeedback(context) }
 
     var timeInfo by remember { mutableStateOf(countdown.calculateTimeRemaining()) }
-    val progress = remember(countdown, timeInfo) { calculateProgress(countdown) }
 
     LaunchedEffect(countdown.id) {
         if (countdown.includeTime) {
@@ -61,10 +56,24 @@ fun CountdownCard(
         MaterialTheme.colorScheme.primary
     }
 
+    // Dynamische Card-Höhe basierend auf Format
+    val format = try {
+        CountdownDisplayFormat.valueOf(countdown.displayFormat)
+    } catch (e: Exception) {
+        CountdownDisplayFormat.DAYS_ONLY
+    }
+
+    val cardHeight = when (format) {
+        CountdownDisplayFormat.FULL_TIME -> 200.dp
+        CountdownDisplayFormat.DAYS_HOURS,
+        CountdownDisplayFormat.HOURS_MINUTES -> 190.dp
+        else -> 180.dp
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(if (countdown.includeTime) DesignSystem.Card.minHeightWithTime else DesignSystem.Card.minHeight),
+            .height(cardHeight),
         shape = RoundedCornerShape(DesignSystem.Card.cornerRadius),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
@@ -109,7 +118,7 @@ fun CountdownCard(
 
                             Spacer(modifier = Modifier.height(DesignSystem.Spacing.xxSmall))
 
-                            // Status Chip
+                            // Status Badge - Countdown oder Count-up
                             Surface(
                                 shape = RoundedCornerShape(DesignSystem.CornerRadius.medium),
                                 color = if (timeInfo.isPast)
@@ -118,7 +127,7 @@ fun CountdownCard(
                                     cardColor.copy(alpha = DesignSystem.Alpha.surface)
                             ) {
                                 Text(
-                                    text = if (timeInfo.isPast) "Vergangen" else "Bevorstehend",
+                                    text = if (timeInfo.isPast) "✨ Count-up" else "✨ Countdown",
                                     modifier = Modifier.padding(
                                         horizontal = DesignSystem.Spacing.small,
                                         vertical = DesignSystem.Spacing.xxSmall
@@ -126,73 +135,76 @@ fun CountdownCard(
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Medium,
                                     color = if (timeInfo.isPast)
-                                        MaterialTheme.colorScheme.error
+                                        MaterialTheme.colorScheme.onErrorContainer
                                     else
                                         cardColor
                                 )
                             }
                         }
-
-                        Row(horizontalArrangement = Arrangement.spacedBy(DesignSystem.Spacing.xxSmall)) {
-                            IconButton(onClick = {
-                                haptic.tick()
-                                onEdit()
-                            }) {
-                                Icon(
-                                    Icons.Default.Edit,
-                                    contentDescription = "Bearbeiten",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(DesignSystem.Icon.large)
-                                )
-                            }
-                            IconButton(onClick = {
-                                haptic.tick()
-                                onDelete()
-                            }) {
-                                Icon(
-                                    Icons.Default.Delete,
-                                    contentDescription = "Löschen",
-                                    tint = MaterialTheme.colorScheme.error,
-                                    modifier = Modifier.size(DesignSystem.Icon.large)
-                                )
-                            }
-                        }
                     }
 
-                    // Countdown-Anzeige (zentriert)
+                    // Countdown-Anzeige (zentriert) - Angepasst an Format
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.Bottom,
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Text(
-                                text = if (timeInfo.days > 0 || !countdown.includeTime) {
-                                    "${timeInfo.days}"
-                                } else {
-                                    String.format("%02d:%02d:%02d", timeInfo.hours, timeInfo.minutes, timeInfo.seconds)
-                                },
-                                fontSize = DesignSystem.Typography.countdownLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = cardColor,
-                                letterSpacing = (-1).sp
-                            )
+                        val format = try {
+                            de.beigel.nextime.data.model.CountdownDisplayFormat.valueOf(countdown.displayFormat)
+                        } catch (e: Exception) {
+                            de.beigel.nextime.data.model.CountdownDisplayFormat.DAYS_ONLY
+                        }
 
-                            Spacer(modifier = Modifier.width(DesignSystem.Spacing.xSmall))
+                        when (format) {
+                            de.beigel.nextime.data.model.CountdownDisplayFormat.DAYS_ONLY,
+                            de.beigel.nextime.data.model.CountdownDisplayFormat.WEEKS_DAYS,
+                            de.beigel.nextime.data.model.CountdownDisplayFormat.MONTHS_DAYS -> {
+                                // Große Anzeige für simple Formate
+                                Row(
+                                    verticalAlignment = Alignment.Bottom,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    Text(
+                                        text = countdown.getFormattedTime(timeInfo),
+                                        fontSize = DesignSystem.Typography.countdownLarge,
+                                        fontWeight = FontWeight.Bold,
+                                        color = cardColor,
+                                        letterSpacing = (-1).sp
+                                    )
 
-                            Text(
-                                text = if (timeInfo.days > 0 || !countdown.includeTime) {
-                                    if (timeInfo.days == 1L) "Tag" else "Tage"
-                                } else {
-                                    ""
-                                },
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(bottom = DesignSystem.Spacing.xxSmall)
-                            )
+                                    val label = countdown.getFormattedTimeLabel(timeInfo)
+                                    if (label.isNotEmpty()) {
+                                        Spacer(modifier = Modifier.width(DesignSystem.Spacing.xSmall))
+                                        Text(
+                                            text = label,
+                                            fontSize = 20.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.padding(bottom = DesignSystem.Spacing.xxSmall)
+                                        )
+                                    }
+                                }
+                            }
+                            de.beigel.nextime.data.model.CountdownDisplayFormat.DAYS_HOURS,
+                            de.beigel.nextime.data.model.CountdownDisplayFormat.HOURS_MINUTES -> {
+                                // Kompakte Anzeige für Stunden-Formate
+                                Text(
+                                    text = countdown.getFormattedTime(timeInfo),
+                                    fontSize = 32.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = cardColor,
+                                    letterSpacing = (-0.5).sp
+                                )
+                            }
+                            de.beigel.nextime.data.model.CountdownDisplayFormat.FULL_TIME -> {
+                                // Extra kompakt für vollständige Zeit
+                                Text(
+                                    text = countdown.getFormattedTime(timeInfo),
+                                    fontSize = 24.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = cardColor,
+                                    letterSpacing = (-0.5).sp
+                                )
+                            }
                         }
 
                         // Zusätzliche Zeit-Info
@@ -266,81 +278,7 @@ fun CountdownCard(
                         }
                     }
                 }
-
-                // Fortschrittsbalken
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(DesignSystem.Spacing.xSmall)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(color = MaterialTheme.colorScheme.surfaceVariant)
-                    )
-
-                    val animatedProgress by animateFloatAsState(
-                        targetValue = progress,
-                        animationSpec = tween(
-                            durationMillis = 1000,
-                            easing = FastOutSlowInEasing
-                        ),
-                        label = "progress"
-                    )
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(animatedProgress)
-                            .fillMaxHeight()
-                            .background(
-                                brush = Brush.horizontalGradient(
-                                    colors = listOf(
-                                        cardColor.copy(alpha = DesignSystem.Alpha.subtle),
-                                        cardColor
-                                    )
-                                )
-                            )
-                    )
-                }
-
-                // Prozentanzeige
-                if (showPercentage && progress > 0) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(
-                                horizontal = DesignSystem.Spacing.large,
-                                vertical = DesignSystem.Spacing.xSmall
-                            )
-                    ) {
-                        Text(
-                            text = "${(progress * 100).toInt()}% vergangen",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.align(Alignment.CenterEnd)
-                        )
-                    }
-                }
             }
-        }
-    }
-}
-
-private fun calculateProgress(countdown: Countdown): Float {
-    val now = LocalDateTime.now()
-    val created = countdown.createdAt
-    val target = countdown.targetDateTime
-
-    return if (target.isBefore(now)) {
-        1f
-    } else {
-        val totalDuration = Duration.between(created, target).toMillis()
-        val elapsedDuration = Duration.between(created, now).toMillis()
-
-        if (totalDuration > 0) {
-            min(1f, elapsedDuration.toFloat() / totalDuration.toFloat())
-        } else {
-            0f
         }
     }
 }

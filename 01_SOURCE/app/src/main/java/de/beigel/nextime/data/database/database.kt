@@ -29,7 +29,7 @@ interface CountdownDao {
 
 @Database(
     entities = [Countdown::class],
-    version = 1,
+    version = 2,  // Version erhöht - alte Daten werden gelöscht
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -46,7 +46,9 @@ abstract class CountdownDatabase : RoomDatabase() {
                     context.applicationContext,
                     CountdownDatabase::class.java,
                     "nextime_database"
-                ).build()
+                )
+                    .fallbackToDestructiveMigration()  // Alte Daten werden gelöscht
+                    .build()
                 INSTANCE = instance
                 instance
             }
