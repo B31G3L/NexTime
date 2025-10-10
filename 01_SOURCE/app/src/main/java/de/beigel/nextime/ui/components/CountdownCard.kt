@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import de.beigel.nextime.data.model.Countdown
 import de.beigel.nextime.data.model.calculateTimeRemaining
+import de.beigel.nextime.ui.theme.DesignSystem
 import de.beigel.nextime.utils.HapticFeedback
 import kotlinx.coroutines.delay
 import java.time.Duration
@@ -40,13 +41,8 @@ fun CountdownCard(
     val context = LocalContext.current
     val haptic = remember { HapticFeedback(context) }
 
-    // Live-Update für Countdowns mit Uhrzeit
     var timeInfo by remember { mutableStateOf(countdown.calculateTimeRemaining()) }
-
-    // Fortschritts-Berechnung
-    val progress = remember(countdown, timeInfo) {
-        calculateProgress(countdown)
-    }
+    val progress = remember(countdown, timeInfo) { calculateProgress(countdown) }
 
     LaunchedEffect(countdown.id) {
         if (countdown.includeTime) {
@@ -68,12 +64,12 @@ fun CountdownCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(if (countdown.includeTime) 220.dp else 200.dp),
-        shape = RoundedCornerShape(24.dp),
+            .height(if (countdown.includeTime) DesignSystem.Card.minHeightWithTime else DesignSystem.Card.minHeight),
+        shape = RoundedCornerShape(DesignSystem.Card.cornerRadius),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = DesignSystem.Card.elevation)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             // Gradient Hintergrund
@@ -83,20 +79,18 @@ fun CountdownCard(
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                cardColor.copy(alpha = 0.15f),
-                                cardColor.copy(alpha = 0.05f)
+                                cardColor.copy(alpha = DesignSystem.Alpha.cardBackground),
+                                cardColor.copy(alpha = DesignSystem.Alpha.verySubtle)
                             )
                         )
                     )
             )
 
-            Column(
-                modifier = Modifier.fillMaxSize()
-            ) {
+            Column(modifier = Modifier.fillMaxSize()) {
                 Column(
                     modifier = Modifier
                         .weight(1f)
-                        .padding(20.dp),
+                        .padding(DesignSystem.Spacing.large),
                     verticalArrangement = Arrangement.SpaceBetween
                 ) {
                     // Kopfzeile mit Titel
@@ -113,19 +107,22 @@ fun CountdownCard(
                                 color = MaterialTheme.colorScheme.onSurface
                             )
 
-                            Spacer(modifier = Modifier.height(4.dp))
+                            Spacer(modifier = Modifier.height(DesignSystem.Spacing.xxSmall))
 
                             // Status Chip
                             Surface(
-                                shape = RoundedCornerShape(12.dp),
+                                shape = RoundedCornerShape(DesignSystem.CornerRadius.medium),
                                 color = if (timeInfo.isPast)
                                     MaterialTheme.colorScheme.errorContainer
                                 else
-                                    cardColor.copy(alpha = 0.2f)
+                                    cardColor.copy(alpha = DesignSystem.Alpha.surface)
                             ) {
                                 Text(
                                     text = if (timeInfo.isPast) "Vergangen" else "Bevorstehend",
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                                    modifier = Modifier.padding(
+                                        horizontal = DesignSystem.Spacing.small,
+                                        vertical = DesignSystem.Spacing.xxSmall
+                                    ),
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Medium,
                                     color = if (timeInfo.isPast)
@@ -136,7 +133,7 @@ fun CountdownCard(
                             }
                         }
 
-                        Row {
+                        Row(horizontalArrangement = Arrangement.spacedBy(DesignSystem.Spacing.xxSmall)) {
                             IconButton(onClick = {
                                 haptic.tick()
                                 onEdit()
@@ -144,7 +141,8 @@ fun CountdownCard(
                                 Icon(
                                     Icons.Default.Edit,
                                     contentDescription = "Bearbeiten",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(DesignSystem.Icon.large)
                                 )
                             }
                             IconButton(onClick = {
@@ -154,7 +152,8 @@ fun CountdownCard(
                                 Icon(
                                     Icons.Default.Delete,
                                     contentDescription = "Löschen",
-                                    tint = MaterialTheme.colorScheme.error
+                                    tint = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.size(DesignSystem.Icon.large)
                                 )
                             }
                         }
@@ -165,7 +164,6 @@ fun CountdownCard(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        // Hauptzähler - großer Fokus
                         Row(
                             verticalAlignment = Alignment.Bottom,
                             horizontalArrangement = Arrangement.Center
@@ -176,13 +174,13 @@ fun CountdownCard(
                                 } else {
                                     String.format("%02d:%02d:%02d", timeInfo.hours, timeInfo.minutes, timeInfo.seconds)
                                 },
-                                fontSize = 48.sp,
+                                fontSize = DesignSystem.Typography.countdownLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = cardColor,
                                 letterSpacing = (-1).sp
                             )
 
-                            Spacer(modifier = Modifier.width(8.dp))
+                            Spacer(modifier = Modifier.width(DesignSystem.Spacing.xSmall))
 
                             Text(
                                 text = if (timeInfo.days > 0 || !countdown.includeTime) {
@@ -193,13 +191,13 @@ fun CountdownCard(
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Medium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(bottom = 4.dp)
+                                modifier = Modifier.padding(bottom = DesignSystem.Spacing.xxSmall)
                             )
                         }
 
                         // Zusätzliche Zeit-Info
                         if (countdown.includeTime && timeInfo.days > 0) {
-                            Spacer(modifier = Modifier.height(4.dp))
+                            Spacer(modifier = Modifier.height(DesignSystem.Spacing.xxSmall))
                             Text(
                                 text = String.format("%02d:%02d Uhr", timeInfo.hours, timeInfo.minutes),
                                 style = MaterialTheme.typography.bodyLarge,
@@ -209,16 +207,13 @@ fun CountdownCard(
 
                         // Nächte-Anzeige
                         if (countdown.showNights && timeInfo.nights > 0) {
-                            Spacer(modifier = Modifier.height(4.dp))
+                            Spacer(modifier = Modifier.height(DesignSystem.Spacing.xxSmall))
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.Center
                             ) {
-                                Text(
-                                    text = "🌙",
-                                    fontSize = 14.sp
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(text = "🌙", fontSize = 14.sp)
+                                Spacer(modifier = Modifier.width(DesignSystem.Spacing.xxSmall))
                                 Text(
                                     text = "${timeInfo.nights} ${if (timeInfo.nights == 1L) "Nacht" else "Nächte"}",
                                     style = MaterialTheme.typography.bodyMedium,
@@ -239,9 +234,9 @@ fun CountdownCard(
                                 imageVector = Icons.Outlined.CalendarToday,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(16.dp)
+                                modifier = Modifier.size(DesignSystem.Icon.small)
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
+                            Spacer(modifier = Modifier.width(DesignSystem.Spacing.xxSmall + DesignSystem.Spacing.xxSmall))
                             Text(
                                 text = countdown.targetDateTime.format(
                                     DateTimeFormatter.ofPattern("dd.MM.yyyy")
@@ -257,9 +252,9 @@ fun CountdownCard(
                                     imageVector = Icons.Outlined.AccessTime,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(16.dp)
+                                    modifier = Modifier.size(DesignSystem.Icon.small)
                                 )
-                                Spacer(modifier = Modifier.width(6.dp))
+                                Spacer(modifier = Modifier.width(DesignSystem.Spacing.xxSmall + DesignSystem.Spacing.xxSmall))
                                 Text(
                                     text = countdown.targetDateTime.format(
                                         DateTimeFormatter.ofPattern("HH:mm")
@@ -276,18 +271,14 @@ fun CountdownCard(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(8.dp)
+                        .height(DesignSystem.Spacing.xSmall)
                 ) {
-                    // Hintergrund
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(
-                                color = MaterialTheme.colorScheme.surfaceVariant
-                            )
+                            .background(color = MaterialTheme.colorScheme.surfaceVariant)
                     )
 
-                    // Animierter Fortschrittsbalken
                     val animatedProgress by animateFloatAsState(
                         targetValue = progress,
                         animationSpec = tween(
@@ -304,7 +295,7 @@ fun CountdownCard(
                             .background(
                                 brush = Brush.horizontalGradient(
                                     colors = listOf(
-                                        cardColor.copy(alpha = 0.7f),
+                                        cardColor.copy(alpha = DesignSystem.Alpha.subtle),
                                         cardColor
                                     )
                                 )
@@ -312,12 +303,15 @@ fun CountdownCard(
                     )
                 }
 
-                // Prozentanzeige (optional)
+                // Prozentanzeige
                 if (showPercentage && progress > 0) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 20.dp, vertical = 8.dp)
+                            .padding(
+                                horizontal = DesignSystem.Spacing.large,
+                                vertical = DesignSystem.Spacing.xSmall
+                            )
                     ) {
                         Text(
                             text = "${(progress * 100).toInt()}% vergangen",
@@ -332,14 +326,13 @@ fun CountdownCard(
     }
 }
 
-// Hilfsfunktion zur Berechnung des Fortschritts
 private fun calculateProgress(countdown: Countdown): Float {
     val now = LocalDateTime.now()
     val created = countdown.createdAt
     val target = countdown.targetDateTime
 
     return if (target.isBefore(now)) {
-        1f // 100% wenn vergangen
+        1f
     } else {
         val totalDuration = Duration.between(created, target).toMillis()
         val elapsedDuration = Duration.between(created, now).toMillis()

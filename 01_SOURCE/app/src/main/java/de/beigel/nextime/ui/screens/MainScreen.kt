@@ -7,16 +7,19 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import de.beigel.nextime.data.model.Countdown
 import de.beigel.nextime.data.model.calculateTimeRemaining
 import de.beigel.nextime.ui.components.*
+import de.beigel.nextime.ui.theme.DesignSystem
 import de.beigel.nextime.ui.viewmodel.CountdownViewModel
 import de.beigel.nextime.utils.HapticFeedback
 
@@ -42,11 +45,9 @@ fun MainScreen(
     var sortOption by remember { mutableStateOf(SortOption.DATE_ASC) }
     var showSortMenu by remember { mutableStateOf(false) }
     var showSettingsDialog by remember { mutableStateOf(false) }
-
-    // Einstellungen
+    var showAboutDialog by remember { mutableStateOf(false) }
     var showPercentage by remember { mutableStateOf(true) }
 
-    // Sortierte Liste
     val sortedCountdowns = remember(countdowns, sortOption) {
         when (sortOption) {
             SortOption.DATE_ASC -> countdowns.sortedBy { it.targetDateTime }
@@ -56,13 +57,10 @@ fun MainScreen(
         }
     }
 
-    // Detail-Screen anzeigen wenn ein Countdown ausgewählt ist
     if (selectedCountdown != null) {
         CountdownDetailScreen(
             countdown = selectedCountdown!!,
-            onBack = {
-                viewModel.selectCountdown(null)
-            },
+            onBack = { viewModel.selectCountdown(null) },
             onEdit = {
                 editingCountdown = selectedCountdown
                 viewModel.selectCountdown(null)
@@ -71,9 +69,7 @@ fun MainScreen(
                 viewModel.deleteCountdown(selectedCountdown!!)
                 viewModel.selectCountdown(null)
             },
-            onShare = {
-                shareCountdown(context, selectedCountdown!!)
-            }
+            onShare = { shareCountdown(context, selectedCountdown!!) }
         )
         return
     }
@@ -83,18 +79,79 @@ fun MainScreen(
             TopAppBar(
                 title = { Text("NexTime") },
                 actions = {
+                    // Sort Button
+                    Box {
+                        IconButton(onClick = {
+                            haptic.tick()
+                            showSortMenu = true
+                        }) {
+                            Icon(
+                                Icons.Default.Sort,
+                                contentDescription = "Sortieren"
+                            )
+                        }
+
+                        DropdownMenu(
+                            expanded = showSortMenu,
+                            onDismissRequest = { showSortMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Datum ↑") },
+                                onClick = {
+                                    haptic.tick()
+                                    sortOption = SortOption.DATE_ASC
+                                    showSortMenu = false
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Datum ↓") },
+                                onClick = {
+                                    haptic.tick()
+                                    sortOption = SortOption.DATE_DESC
+                                    showSortMenu = false
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Name A-Z") },
+                                onClick = {
+                                    haptic.tick()
+                                    sortOption = SortOption.NAME_ASC
+                                    showSortMenu = false
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Name Z-A") },
+                                onClick = {
+                                    haptic.tick()
+                                    sortOption = SortOption.NAME_DESC
+                                    showSortMenu = false
+                                }
+                            )
+                        }
+                    }
+                    // Info Button
+                    IconButton(onClick = {
+                        haptic.tick()
+                        showAboutDialog = true
+                    }) {
+                        Icon(
+                            imageVector = Icons.Outlined.Info,
+                            contentDescription = "Info & Support"
+                        )
+                    }
+                    // Settings Button
                     IconButton(onClick = {
                         haptic.tick()
                         showSettingsDialog = true
                     }) {
                         Icon(
-                            Icons.Default.Settings,
+                            imageVector = Icons.Default.Settings,
                             contentDescription = "Einstellungen"
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    containerColor = Color.Transparent
                 )
             )
         }
@@ -105,89 +162,19 @@ fun MainScreen(
                 .padding(paddingValues)
         ) {
             if (countdowns.isEmpty()) {
-                // Neuer verbesserter Empty State
-                EmptyStateView(
-                    onAddCountdown = {
-                        haptic.click()
-                        showAddDialog = true
-                    }
-                )
+                EmptyStateView()
             } else {
                 Column(modifier = Modifier.fillMaxSize()) {
-                    // Sortier-Button
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Meine Countdowns",
-                            style = MaterialTheme.typography.headlineMedium
-                        )
-
-                        Box {
-                            IconButton(onClick = {
-                                haptic.tick()
-                                showSortMenu = true
-                            }) {
-                                Icon(
-                                    Icons.Default.Sort,
-                                    contentDescription = "Sortieren"
-                                )
-                            }
-
-                            DropdownMenu(
-                                expanded = showSortMenu,
-                                onDismissRequest = { showSortMenu = false }
-                            ) {
-                                DropdownMenuItem(
-                                    text = { Text("Datum ↑") },
-                                    onClick = {
-                                        haptic.tick()
-                                        sortOption = SortOption.DATE_ASC
-                                        showSortMenu = false
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text("Datum ↓") },
-                                    onClick = {
-                                        haptic.tick()
-                                        sortOption = SortOption.DATE_DESC
-                                        showSortMenu = false
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text("Name A-Z") },
-                                    onClick = {
-                                        haptic.tick()
-                                        sortOption = SortOption.NAME_ASC
-                                        showSortMenu = false
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text("Name Z-A") },
-                                    onClick = {
-                                        haptic.tick()
-                                        sortOption = SortOption.NAME_DESC
-                                        showSortMenu = false
-                                    }
-                                )
-                            }
-                        }
-                    }
-
                     // Liste der Countdowns
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(
-                            start = 16.dp,
-                            end = 16.dp,
-                            top = 8.dp,
+                            start = DesignSystem.Spacing.medium,
+                            end = DesignSystem.Spacing.medium,
+                            top = DesignSystem.Spacing.xSmall,
                             bottom = 88.dp
                         ),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        verticalArrangement = Arrangement.spacedBy(DesignSystem.Spacing.small)
                     ) {
                         items(
                             items = sortedCountdowns,
@@ -195,36 +182,25 @@ fun MainScreen(
                         ) { countdown ->
                             SwipeableCountdownCard(
                                 countdown = countdown,
-                                onEdit = {
-                                    editingCountdown = countdown
-                                },
-                                onDelete = {
-                                    viewModel.deleteCountdown(countdown)
-                                },
+                                onEdit = { editingCountdown = countdown },
+                                onDelete = { viewModel.deleteCountdown(countdown) },
                                 showPercentage = showPercentage,
-                                onClick = {
-                                    viewModel.selectCountdown(countdown)
-                                }
+                                onClick = { viewModel.selectCountdown(countdown) }
                             )
                         }
                     }
                 }
             }
 
-            // Neuer Expandable FAB mit Vorlagen
-            ExpandableFab(
-                onTemplateSelected = { template ->
-                    val countdown = template.toCountdown()
-                    viewModel.addCountdown(countdown)
-                },
-                onCustom = {
+            // Einfacher FAB
+            SimpleFab(
+                onAddCountdown = {
                     showAddDialog = true
                 }
             )
         }
     }
 
-    // Dialog zum Hinzufügen
     if (showAddDialog) {
         AddEditCountdownDialog(
             countdown = null,
@@ -236,7 +212,6 @@ fun MainScreen(
         )
     }
 
-    // Dialog zum Bearbeiten
     editingCountdown?.let { countdown ->
         AddEditCountdownDialog(
             countdown = countdown,
@@ -248,7 +223,6 @@ fun MainScreen(
         )
     }
 
-    // Einstellungen Dialog
     if (showSettingsDialog) {
         AlertDialog(
             onDismissRequest = {
@@ -258,9 +232,8 @@ fun MainScreen(
             title = { Text("Einstellungen") },
             text = {
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(DesignSystem.Spacing.medium)
                 ) {
-                    // Dark Mode Toggle
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -278,7 +251,6 @@ fun MainScreen(
 
                     Divider()
 
-                    // Prozentanzeige Toggle
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -286,12 +258,14 @@ fun MainScreen(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text("Fortschritt anzeigen")
+                            Spacer(modifier = Modifier.height(DesignSystem.Spacing.xxSmall))
                             Text(
                                 "Zeigt Prozent unter dem Fortschrittsbalken",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
+                        Spacer(modifier = Modifier.width(DesignSystem.Spacing.medium))
                         Switch(
                             checked = showPercentage,
                             onCheckedChange = {
@@ -312,9 +286,15 @@ fun MainScreen(
             }
         )
     }
+
+    // About Dialog
+    if (showAboutDialog) {
+        AboutDialog(
+            onDismiss = { showAboutDialog = false }
+        )
+    }
 }
 
-// Hilfsfunktion zum Teilen von Countdowns
 private fun shareCountdown(context: android.content.Context, countdown: Countdown) {
     val timeInfo = countdown.calculateTimeRemaining()
     val shareText = buildString {

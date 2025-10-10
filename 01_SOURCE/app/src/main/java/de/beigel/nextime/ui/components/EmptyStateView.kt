@@ -16,11 +16,12 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import de.beigel.nextime.ui.theme.DesignSystem
 import kotlinx.coroutines.delay
 
 @Composable
 fun EmptyStateView(
-    onAddCountdown: () -> Unit
+    onAddCountdown: (() -> Unit)? = null  // Optional, wird nicht mehr verwendet
 ) {
     var isVisible by remember { mutableStateOf(false) }
 
@@ -47,7 +48,7 @@ fun EmptyStateView(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(32.dp)
+            .padding(DesignSystem.Spacing.xxLarge)
             .alpha(alpha)
             .scale(scale),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -61,7 +62,7 @@ fun EmptyStateView(
             FloatingIcons()
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(DesignSystem.Spacing.xxLarge))
 
         // Haupttext
         Text(
@@ -71,40 +72,16 @@ fun EmptyStateView(
             textAlign = TextAlign.Center
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(DesignSystem.Spacing.xSmall))
 
         Text(
-            text = "Erstelle deinen ersten Countdown und behalte wichtige Ereignisse im Blick!",
+            text = "Tippe auf + um deinen ersten Countdown zu erstellen",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
 
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // Get Started Button
-        Button(
-            onClick = onAddCountdown,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary
-            )
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.Timer,
-                contentDescription = null,
-                modifier = Modifier.size(24.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = "Ersten Countdown erstellen",
-                style = MaterialTheme.typography.titleMedium
-            )
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(DesignSystem.Spacing.xxLarge))
 
         // Hilfreiche Tipps
         Card(
@@ -114,8 +91,8 @@ fun EmptyStateView(
             )
         ) {
             Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                modifier = Modifier.padding(DesignSystem.Spacing.medium),
+                verticalArrangement = Arrangement.spacedBy(DesignSystem.Spacing.small)
             ) {
                 Text(
                     text = "💡 Tipps für den Start",
@@ -146,7 +123,6 @@ fun EmptyStateView(
 private fun FloatingIcons() {
     val infiniteTransition = rememberInfiniteTransition(label = "floating")
 
-    // Verschiedene Icons mit unterschiedlichen Animationen
     val icons = listOf(
         Icons.Outlined.CalendarMonth,
         Icons.Outlined.Event,
@@ -230,7 +206,7 @@ private fun FloatingIcon(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                modifier = Modifier.size(32.dp),
+                modifier = Modifier.size(DesignSystem.Icon.xLarge),
                 tint = colors[index].copy(alpha = 0.6f)
             )
         }
@@ -244,12 +220,12 @@ private fun TipItem(
 ) {
     Row(
         verticalAlignment = Alignment.Top,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(DesignSystem.Spacing.small)
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
-            modifier = Modifier.size(20.dp),
+            modifier = Modifier.size(DesignSystem.Icon.medium),
             tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(

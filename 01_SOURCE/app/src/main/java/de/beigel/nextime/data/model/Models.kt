@@ -31,16 +31,33 @@ fun Countdown.calculateTimeRemaining(): CountdownInfo {
     val now = LocalDateTime.now()
     val isPast = targetDateTime.isBefore(now)
 
-    val start = if (isPast) targetDateTime else now
-    val end = if (isPast) now else targetDateTime
+    // WICHTIG: Für vergangene Daten ohne Uhrzeit, verwende nur das Datum
+    val start = if (isPast) {
+        if (!includeTime) targetDateTime.toLocalDate().atStartOfDay()
+        else targetDateTime
+    } else {
+        now
+    }
 
+    val end = if (isPast) {
+        now
+    } else {
+        if (!includeTime) targetDateTime.toLocalDate().atStartOfDay()
+        else targetDateTime
+    }
+
+    // Tagesberechnung: Verwende ChronoUnit.DAYS für präzise Berechnung
+    val days = ChronoUnit.DAYS.between(start.toLocalDate(), end.toLocalDate())
+
+    // Für die Zeit-Berechnung (Stunden, Minuten, Sekunden)
     val totalSeconds = ChronoUnit.SECONDS.between(start, end)
-    val days = totalSeconds / 86400
-    val hours = (totalSeconds % 86400) / 3600
-    val minutes = (totalSeconds % 3600) / 60
-    val seconds = totalSeconds % 60
+    val remainingSecondsAfterDays = totalSeconds - (days * 86400)
 
-    // Nächte berechnen (Mitternächte zwischen den Daten)
+    val hours = remainingSecondsAfterDays / 3600
+    val minutes = (remainingSecondsAfterDays % 3600) / 60
+    val seconds = remainingSecondsAfterDays % 60
+
+    // Nächte berechnen
     val nights = if (showNights) {
         ChronoUnit.DAYS.between(start.toLocalDate(), end.toLocalDate())
     } else {
