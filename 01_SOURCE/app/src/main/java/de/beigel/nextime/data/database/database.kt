@@ -29,7 +29,7 @@ interface CountdownDao {
 
 @Database(
     entities = [Countdown::class],
-    version = 2,  // Version erhöht - alte Daten werden gelöscht
+    version = 3,  // Version erhöht für Notifikationen
     exportSchema = false
 )
 @TypeConverters(Converters::class)

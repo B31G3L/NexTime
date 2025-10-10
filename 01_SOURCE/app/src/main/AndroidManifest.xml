@@ -4,6 +4,8 @@
 
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
 
     <application
         android:allowBackup="true"
@@ -36,7 +38,13 @@
             </intent-filter>
         </activity>
 
-        <!-- Widget Receiver (handles all widget sizes) -->
+        <!-- Notification Receiver -->
+        <receiver
+            android:name=".notifications.NotificationReceiver"
+            android:enabled="true"
+            android:exported="false" />
+
+        <!-- Widget Receivers -->
         <receiver
             android:name=".widget.CountdownWidgetReceiver"
             android:exported="true"
@@ -59,7 +67,7 @@
                 <action android:name="de.beigel.nextime.ACTION_UPDATE_WIDGET" />
             </intent-filter>
             <meta-data
-                android:name="android.appwidget.provider"
+                android:name="android:appwidget.provider"
                 android:resource="@xml/countdown_widget_medium_info" />
         </receiver>
 

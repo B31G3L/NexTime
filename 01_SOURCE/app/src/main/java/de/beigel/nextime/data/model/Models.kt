@@ -15,6 +15,25 @@ enum class CountdownDisplayFormat {
     MONTHS_DAYS          // "1 Monat, 12 Tage"
 }
 
+// Erinnerungsoptionen
+enum class ReminderOption(val displayName: String, val minutes: Long) {
+    NONE("Keine", 0),
+    AT_TIME("Zum Zeitpunkt", 0),
+    MINUTES_5("5 Minuten vorher", 5),
+    MINUTES_15("15 Minuten vorher", 15),
+    MINUTES_30("30 Minuten vorher", 30),
+    HOUR_1("1 Stunde vorher", 60),
+    HOURS_3("3 Stunden vorher", 180),
+    HOURS_6("6 Stunden vorher", 360),
+    HOURS_12("12 Stunden vorher", 720),
+    DAY_1("1 Tag vorher", 1440),
+    DAYS_2("2 Tage vorher", 2880),
+    DAYS_3("3 Tage vorher", 4320),
+    WEEK_1("1 Woche vorher", 10080),
+    WEEKS_2("2 Wochen vorher", 20160),
+    MONTH_1("1 Monat vorher", 43200)
+}
+
 @Entity(tableName = "countdowns")
 data class Countdown(
     @PrimaryKey(autoGenerate = true)
@@ -23,9 +42,14 @@ data class Countdown(
     val targetDateTime: LocalDateTime,
     val includeTime: Boolean = false,
     val showNights: Boolean = false,
-    val displayFormat: String = CountdownDisplayFormat.DAYS_ONLY.name,  // NEU
+    val displayFormat: String = CountdownDisplayFormat.DAYS_ONLY.name,
     val createdAt: LocalDateTime = LocalDateTime.now(),
-    val color: String = "#FF7043" // Orange als Standard
+    val color: String = "#FF7043", // Orange als Standard
+
+    // Notifikationen
+    val notificationEnabled: Boolean = false,
+    val reminderOptions: String = "", // Komma-separierte Liste von ReminderOption Namen
+    val lastNotificationSent: String? = null // LocalDateTime als String
 )
 
 // Hilfsfunktionen für Countdown-Berechnungen
@@ -44,7 +68,6 @@ fun Countdown.calculateTimeRemaining(): CountdownInfo {
     val now = LocalDateTime.now()
     val isPast = targetDateTime.isBefore(now)
 
-    // WICHTIG: Für vergangene Daten ohne Uhrzeit, verwende nur das Datum
     val start = if (isPast) {
         if (!includeTime) targetDateTime.toLocalDate().atStartOfDay()
         else targetDateTime
@@ -59,15 +82,10 @@ fun Countdown.calculateTimeRemaining(): CountdownInfo {
         else targetDateTime
     }
 
-    // Tagesberechnung: Verwende ChronoUnit.DAYS für präzise Berechnung
     val days = ChronoUnit.DAYS.between(start.toLocalDate(), end.toLocalDate())
-
-    // Wochen und Monate berechnen
     val weeks = days / 7
     val months = ChronoUnit.MONTHS.between(start.toLocalDate(), end.toLocalDate())
-    val remainingDaysAfterMonths = days - (months * 30) // Approximation
 
-    // Für die Zeit-Berechnung (Stunden, Minuten, Sekunden)
     val totalSeconds = ChronoUnit.SECONDS.between(start, end)
     val remainingSecondsAfterDays = totalSeconds - (days * 86400)
 
@@ -75,10 +93,8 @@ fun Countdown.calculateTimeRemaining(): CountdownInfo {
     val minutes = (remainingSecondsAfterDays % 3600) / 60
     val seconds = remainingSecondsAfterDays % 60
 
-    // Gesamtstunden berechnen (für HOURS_MINUTES Format)
     val totalHours = totalSeconds / 3600
 
-    // Nächte berechnen
     val nights = if (showNights) {
         ChronoUnit.DAYS.between(start.toLocalDate(), end.toLocalDate())
     } else {
@@ -97,7 +113,6 @@ fun Countdown.calculateTimeRemaining(): CountdownInfo {
     )
 }
 
-// Formatierung basierend auf dem gewählten Format
 fun Countdown.getFormattedTime(timeInfo: CountdownInfo): String {
     val format = try {
         CountdownDisplayFormat.valueOf(displayFormat)
@@ -170,4 +185,25 @@ fun CountdownInfo.toDisplayString(includeTime: Boolean, showNights: Boolean): St
             append(")")
         }
     }
+}
+
+// Hilfsfunktionen für Erinnerungen
+fun Countdown.getReminderOptionsList(): List<ReminderOption> {
+    if (reminderOptions.isEmpty()) return emptyList()
+
+    return reminderOptions.split(",").mapNotNull { name ->
+        try {
+            ReminderOption.valueOf(name.trim())
+        } catch (e: Exception) {
+            null
+        }
+    }
+}
+
+fun Countdown.hasReminderOption(option: ReminderOption): Boolean {
+    return getReminderOptionsList().contains(option)
+}
+
+fun List<ReminderOption>.toOptionsString(): String {
+    return joinToString(",") { it.name }
 }

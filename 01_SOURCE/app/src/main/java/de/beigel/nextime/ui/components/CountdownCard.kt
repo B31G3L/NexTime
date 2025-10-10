@@ -20,8 +20,6 @@ import androidx.compose.ui.unit.sp
 import de.beigel.nextime.data.model.Countdown
 import de.beigel.nextime.data.model.CountdownDisplayFormat
 import de.beigel.nextime.data.model.calculateTimeRemaining
-import de.beigel.nextime.data.model.getFormattedTime
-import de.beigel.nextime.data.model.getFormattedTimeLabel
 import de.beigel.nextime.ui.theme.DesignSystem
 import de.beigel.nextime.utils.HapticFeedback
 import kotlinx.coroutines.delay
@@ -64,9 +62,10 @@ fun CountdownCard(
     }
 
     val cardHeight = when (format) {
-        CountdownDisplayFormat.FULL_TIME -> 200.dp
+        CountdownDisplayFormat.FULL_TIME -> 220.dp
         CountdownDisplayFormat.DAYS_HOURS,
-        CountdownDisplayFormat.HOURS_MINUTES -> 190.dp
+        CountdownDisplayFormat.WEEKS_DAYS,
+        CountdownDisplayFormat.MONTHS_DAYS -> 200.dp
         else -> 180.dp
     }
 
@@ -143,94 +142,211 @@ fun CountdownCard(
                         }
                     }
 
-                    // Countdown-Anzeige (zentriert) - Angepasst an Format
+                    // Countdown-Anzeige (zentriert)
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        val format = try {
-                            de.beigel.nextime.data.model.CountdownDisplayFormat.valueOf(countdown.displayFormat)
-                        } catch (e: Exception) {
-                            de.beigel.nextime.data.model.CountdownDisplayFormat.DAYS_ONLY
-                        }
-
                         when (format) {
-                            de.beigel.nextime.data.model.CountdownDisplayFormat.DAYS_ONLY,
-                            de.beigel.nextime.data.model.CountdownDisplayFormat.WEEKS_DAYS,
-                            de.beigel.nextime.data.model.CountdownDisplayFormat.MONTHS_DAYS -> {
-                                // Große Anzeige für simple Formate
+                            CountdownDisplayFormat.DAYS_ONLY -> {
+                                // Nur Tage - große Anzeige
                                 Row(
                                     verticalAlignment = Alignment.Bottom,
                                     horizontalArrangement = Arrangement.Center
                                 ) {
                                     Text(
-                                        text = countdown.getFormattedTime(timeInfo),
+                                        text = "${timeInfo.days}",
                                         fontSize = DesignSystem.Typography.countdownLarge,
                                         fontWeight = FontWeight.Bold,
                                         color = cardColor,
                                         letterSpacing = (-1).sp
                                     )
-
-                                    val label = countdown.getFormattedTimeLabel(timeInfo)
-                                    if (label.isNotEmpty()) {
-                                        Spacer(modifier = Modifier.width(DesignSystem.Spacing.xSmall))
+                                    Spacer(modifier = Modifier.width(DesignSystem.Spacing.xSmall))
+                                    Text(
+                                        text = if (timeInfo.days == 1L) "Tag" else "Tage",
+                                        fontSize = 20.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(bottom = DesignSystem.Spacing.xxSmall)
+                                    )
+                                }
+                            }
+                            CountdownDisplayFormat.WEEKS_DAYS -> {
+                                // Wochen + Tage
+                                val remainingDays = timeInfo.days % 7
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Row(
+                                        verticalAlignment = Alignment.Bottom,
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
                                         Text(
-                                            text = label,
-                                            fontSize = 20.sp,
+                                            text = "${timeInfo.weeks}",
+                                            fontSize = 36.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = cardColor,
+                                            letterSpacing = (-0.5).sp
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = if (timeInfo.weeks == 1L) "Woche" else "Wochen",
+                                            fontSize = 16.sp,
                                             fontWeight = FontWeight.Medium,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.padding(bottom = DesignSystem.Spacing.xxSmall)
+                                            modifier = Modifier.padding(bottom = 4.dp)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Row(
+                                        verticalAlignment = Alignment.Bottom,
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
+                                        Text(
+                                            text = "$remainingDays",
+                                            fontSize = 24.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = cardColor.copy(alpha = 0.7f)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            text = if (remainingDays == 1L) "Tag" else "Tage",
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.padding(bottom = 2.dp)
                                         )
                                     }
                                 }
                             }
-                            de.beigel.nextime.data.model.CountdownDisplayFormat.DAYS_HOURS,
-                            de.beigel.nextime.data.model.CountdownDisplayFormat.HOURS_MINUTES -> {
-                                // Kompakte Anzeige für Stunden-Formate
-                                Text(
-                                    text = countdown.getFormattedTime(timeInfo),
-                                    fontSize = 32.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = cardColor,
-                                    letterSpacing = (-0.5).sp
-                                )
+                            CountdownDisplayFormat.MONTHS_DAYS -> {
+                                // Monate + Tage
+                                val remainingDays = timeInfo.days - (timeInfo.months * 30)
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Row(
+                                        verticalAlignment = Alignment.Bottom,
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
+                                        Text(
+                                            text = "${timeInfo.months}",
+                                            fontSize = 36.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = cardColor,
+                                            letterSpacing = (-0.5).sp
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = if (timeInfo.months == 1L) "Monat" else "Monate",
+                                            fontSize = 16.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.padding(bottom = 4.dp)
+                                        )
+                                    }
+                                    if (remainingDays > 0) {
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Row(
+                                            verticalAlignment = Alignment.Bottom,
+                                            horizontalArrangement = Arrangement.Center
+                                        ) {
+                                            Text(
+                                                text = "$remainingDays",
+                                                fontSize = 24.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = cardColor.copy(alpha = 0.7f)
+                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(
+                                                text = if (remainingDays == 1L) "Tag" else "Tage",
+                                                fontSize = 14.sp,
+                                                fontWeight = FontWeight.Medium,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                modifier = Modifier.padding(bottom = 2.dp)
+                                            )
+                                        }
+                                    }
+                                }
                             }
-                            de.beigel.nextime.data.model.CountdownDisplayFormat.FULL_TIME -> {
-                                // Extra kompakt für vollständige Zeit
-                                Text(
-                                    text = countdown.getFormattedTime(timeInfo),
-                                    fontSize = 24.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = cardColor,
-                                    letterSpacing = (-0.5).sp
-                                )
+                            CountdownDisplayFormat.DAYS_HOURS -> {
+                                // Tage + Stunden
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Row(
+                                        verticalAlignment = Alignment.Bottom,
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
+                                        Text(
+                                            text = "${timeInfo.days}",
+                                            fontSize = 36.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = cardColor,
+                                            letterSpacing = (-0.5).sp
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = if (timeInfo.days == 1L) "Tag" else "Tage",
+                                            fontSize = 16.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.padding(bottom = 4.dp)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = String.format("%02d:%02d", timeInfo.hours, timeInfo.minutes),
+                                        fontSize = 20.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             }
-                        }
-
-                        // Zusätzliche Zeit-Info
-                        if (countdown.includeTime && timeInfo.days > 0) {
-                            Spacer(modifier = Modifier.height(DesignSystem.Spacing.xxSmall))
-                            Text(
-                                text = String.format("%02d:%02d Uhr", timeInfo.hours, timeInfo.minutes),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-
-                        // Nächte-Anzeige
-                        if (countdown.showNights && timeInfo.nights > 0) {
-                            Spacer(modifier = Modifier.height(DesignSystem.Spacing.xxSmall))
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center
-                            ) {
-                                Text(text = "🌙", fontSize = 14.sp)
-                                Spacer(modifier = Modifier.width(DesignSystem.Spacing.xxSmall))
-                                Text(
-                                    text = "${timeInfo.nights} ${if (timeInfo.nights == 1L) "Nacht" else "Nächte"}",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                            CountdownDisplayFormat.HOURS_MINUTES -> {
+                                // Nur Stunden
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(
+                                        text = String.format("%d:%02d", timeInfo.hours, timeInfo.minutes),
+                                        fontSize = 36.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = cardColor,
+                                        letterSpacing = (-0.5).sp
+                                    )
+                                    Text(
+                                        text = "Stunden",
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                            CountdownDisplayFormat.FULL_TIME -> {
+                                // Vollständig
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Row(
+                                        verticalAlignment = Alignment.Bottom,
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
+                                        Text(
+                                            text = "${timeInfo.days}",
+                                            fontSize = 32.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = cardColor,
+                                            letterSpacing = (-0.5).sp
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            text = "d",
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.padding(bottom = 4.dp)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = String.format("%02d:%02d:%02d", timeInfo.hours, timeInfo.minutes, timeInfo.seconds),
+                                        fontSize = 24.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = cardColor.copy(alpha = 0.8f),
+                                        letterSpacing = (-0.5).sp
+                                    )
+                                }
                             }
                         }
                     }

@@ -1,10 +1,14 @@
 package de.beigel.nextime.ui.screens
 
 import android.content.Intent
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Info
@@ -27,7 +31,7 @@ enum class SortOption {
     DATE_ASC, DATE_DESC, NAME_ASC, NAME_DESC
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
 @Composable
 fun MainScreen(
     viewModel: CountdownViewModel = viewModel(),
@@ -42,6 +46,7 @@ fun MainScreen(
 
     var showAddDialog by remember { mutableStateOf(false) }
     var editingCountdown by remember { mutableStateOf<Countdown?>(null) }
+    var countdownToDelete by remember { mutableStateOf<Countdown?>(null) }
     var sortOption by remember { mutableStateOf(SortOption.DATE_ASC) }
     var showSortMenu by remember { mutableStateOf(false) }
     var showSettingsDialog by remember { mutableStateOf(false) }
@@ -56,171 +61,312 @@ fun MainScreen(
         }
     }
 
-    if (selectedCountdown != null) {
-        CountdownDetailScreen(
-            countdown = selectedCountdown!!,
-            onBack = { viewModel.selectCountdown(null) },
-            onEdit = {
-                editingCountdown = selectedCountdown
+    // Animierte Detailansicht
+    AnimatedContent(
+        targetState = selectedCountdown != null,
+        transitionSpec = {
+            if (targetState) {
+                // Öffnen: Slide von rechts + Fade
+                slideInHorizontally(
+                    initialOffsetX = { it },
+                    animationSpec = tween(400, easing = FastOutSlowInEasing)
+                ) + fadeIn(
+                    animationSpec = tween(400)
+                ) togetherWith slideOutHorizontally(
+                    targetOffsetX = { -it / 3 },
+                    animationSpec = tween(400, easing = FastOutSlowInEasing)
+                ) + fadeOut(
+                    animationSpec = tween(300)
+                )
+            } else {
+                // Schließen: Slide nach rechts + Fade
+                slideInHorizontally(
+                    initialOffsetX = { -it / 3 },
+                    animationSpec = tween(400, easing = FastOutSlowInEasing)
+                ) + fadeIn(
+                    animationSpec = tween(400)
+                ) togetherWith slideOutHorizontally(
+                    targetOffsetX = { it },
+                    animationSpec = tween(400, easing = FastOutSlowInEasing)
+                ) + fadeOut(
+                    animationSpec = tween(300)
+                )
+            }
+        },
+        label = "detail_animation"
+    ) { showDetail ->
+        if (showDetail && selectedCountdown != null) {
+            // Back-Handler für Hardware-Zurück-Taste
+            BackHandler {
                 viewModel.selectCountdown(null)
-            },
-            onDelete = {
-                viewModel.deleteCountdown(selectedCountdown!!)
-                viewModel.selectCountdown(null)
-            },
-            onShare = { shareCountdown(context, selectedCountdown!!) }
-        )
-        return
+            }
+
+            CountdownDetailScreen(
+                countdown = selectedCountdown!!,
+                onBack = {
+                    viewModel.selectCountdown(null)
+                },
+                onEdit = {
+                    editingCountdown = selectedCountdown
+                    viewModel.selectCountdown(null)
+                },
+                onDelete = {
+                    countdownToDelete = selectedCountdown
+                    viewModel.selectCountdown(null)
+                },
+                onShare = { shareCountdown(context, selectedCountdown!!) }
+            )
+        } else {
+            // Hauptansicht
+            Scaffold(
+                topBar = {
+                    TopAppBar(
+                        title = { Text("NexTime") },
+                        actions = {
+                            // Sort Button
+                            Box {
+                                IconButton(onClick = {
+                                    haptic.tick()
+                                    showSortMenu = true
+                                }) {
+                                    Icon(
+                                        Icons.Default.Sort,
+                                        contentDescription = "Sortieren"
+                                    )
+                                }
+
+                                DropdownMenu(
+                                    expanded = showSortMenu,
+                                    onDismissRequest = { showSortMenu = false }
+                                ) {
+                                    DropdownMenuItem(
+                                        text = { Text("Datum ↑") },
+                                        onClick = {
+                                            haptic.tick()
+                                            sortOption = SortOption.DATE_ASC
+                                            showSortMenu = false
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Datum ↓") },
+                                        onClick = {
+                                            haptic.tick()
+                                            sortOption = SortOption.DATE_DESC
+                                            showSortMenu = false
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Name A-Z") },
+                                        onClick = {
+                                            haptic.tick()
+                                            sortOption = SortOption.NAME_ASC
+                                            showSortMenu = false
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Name Z-A") },
+                                        onClick = {
+                                            haptic.tick()
+                                            sortOption = SortOption.NAME_DESC
+                                            showSortMenu = false
+                                        }
+                                    )
+                                }
+                            }
+                            // Info Button
+                            IconButton(onClick = {
+                                haptic.tick()
+                                showAboutDialog = true
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Info,
+                                    contentDescription = "Info & Support"
+                                )
+                            }
+                            // Settings Button
+                            IconButton(onClick = {
+                                haptic.tick()
+                                showSettingsDialog = true
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Default.Settings,
+                                    contentDescription = "Einstellungen"
+                                )
+                            }
+                        },
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = Color.Transparent
+                        )
+                    )
+                }
+            ) { paddingValues ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                ) {
+                    if (countdowns.isEmpty()) {
+                        EmptyStateView()
+                    } else {
+                        Column(modifier = Modifier.fillMaxSize()) {
+                            // Liste der Countdowns mit Animation
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(
+                                    start = DesignSystem.Spacing.medium,
+                                    end = DesignSystem.Spacing.medium,
+                                    top = DesignSystem.Spacing.xSmall,
+                                    bottom = 88.dp
+                                ),
+                                verticalArrangement = Arrangement.spacedBy(DesignSystem.Spacing.small)
+                            ) {
+                                items(
+                                    items = sortedCountdowns,
+                                    key = { it.id }
+                                ) { countdown ->
+                                    // Jede Card erscheint mit Animation
+                                    var visible by remember { mutableStateOf(false) }
+
+                                    LaunchedEffect(countdown.id) {
+                                        visible = true
+                                    }
+
+                                    AnimatedVisibility(
+                                        visible = visible,
+                                        enter = fadeIn(
+                                            animationSpec = tween(300)
+                                        ) + expandVertically(
+                                            animationSpec = tween(300, easing = FastOutSlowInEasing)
+                                        ),
+                                        exit = fadeOut(
+                                            animationSpec = tween(200)
+                                        ) + shrinkVertically(
+                                            animationSpec = tween(200)
+                                        )
+                                    ) {
+                                        SwipeableCountdownCard(
+                                            countdown = countdown,
+                                            onEdit = { editingCountdown = countdown },
+                                            onDelete = { countdownToDelete = countdown },
+                                            onClick = {
+                                                haptic.tick()
+                                                viewModel.selectCountdown(countdown)
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Einfacher FAB
+                    SimpleFab(
+                        onAddCountdown = {
+                            showAddDialog = true
+                        }
+                    )
+                }
+            }
+        }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("NexTime") },
-                actions = {
-                    // Sort Button
-                    Box {
-                        IconButton(onClick = {
-                            haptic.tick()
-                            showSortMenu = true
-                        }) {
-                            Icon(
-                                Icons.Default.Sort,
-                                contentDescription = "Sortieren"
-                            )
-                        }
-
-                        DropdownMenu(
-                            expanded = showSortMenu,
-                            onDismissRequest = { showSortMenu = false }
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text("Datum ↑") },
-                                onClick = {
-                                    haptic.tick()
-                                    sortOption = SortOption.DATE_ASC
-                                    showSortMenu = false
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Datum ↓") },
-                                onClick = {
-                                    haptic.tick()
-                                    sortOption = SortOption.DATE_DESC
-                                    showSortMenu = false
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Name A-Z") },
-                                onClick = {
-                                    haptic.tick()
-                                    sortOption = SortOption.NAME_ASC
-                                    showSortMenu = false
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Name Z-A") },
-                                onClick = {
-                                    haptic.tick()
-                                    sortOption = SortOption.NAME_DESC
-                                    showSortMenu = false
-                                }
-                            )
-                        }
-                    }
-                    // Info Button
-                    IconButton(onClick = {
-                        haptic.tick()
-                        showAboutDialog = true
-                    }) {
-                        Icon(
-                            imageVector = Icons.Outlined.Info,
-                            contentDescription = "Info & Support"
+    // Lösch-Bestätigungsdialog mit Animation
+    AnimatedVisibility(
+        visible = countdownToDelete != null,
+        enter = scaleIn(
+            initialScale = 0.8f,
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessMedium
+            )
+        ) + fadeIn(),
+        exit = scaleOut(
+            targetScale = 0.8f,
+            animationSpec = tween(200)
+        ) + fadeOut(animationSpec = tween(200))
+    ) {
+        countdownToDelete?.let { countdown ->
+            AlertDialog(
+                onDismissRequest = {
+                    haptic.tick()
+                    countdownToDelete = null
+                },
+                icon = {
+                    Icon(
+                        imageVector = androidx.compose.material.icons.Icons.Default.Delete,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                },
+                title = {
+                    Text("Countdown löschen?")
+                },
+                text = {
+                    Text(
+                        "Möchtest du \"${countdown.title}\" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            haptic.heavy()
+                            viewModel.deleteCountdown(countdown)
+                            countdownToDelete = null
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error
                         )
-                    }
-                    // Settings Button
-                    IconButton(onClick = {
-                        haptic.tick()
-                        showSettingsDialog = true
-                    }) {
-                        Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = "Einstellungen"
-                        )
+                    ) {
+                        Text("Löschen")
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent
-                )
-            )
-        }
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            if (countdowns.isEmpty()) {
-                EmptyStateView()
-            } else {
-                Column(modifier = Modifier.fillMaxSize()) {
-                    // Liste der Countdowns
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(
-                            start = DesignSystem.Spacing.medium,
-                            end = DesignSystem.Spacing.medium,
-                            top = DesignSystem.Spacing.xSmall,
-                            bottom = 88.dp
-                        ),
-                        verticalArrangement = Arrangement.spacedBy(DesignSystem.Spacing.small)
-                    ) {
-                        items(
-                            items = sortedCountdowns,
-                            key = { it.id }
-                        ) { countdown ->
-                            SwipeableCountdownCard(
-                                countdown = countdown,
-                                onEdit = { editingCountdown = countdown },
-                                onDelete = { viewModel.deleteCountdown(countdown) },
-                                onClick = { viewModel.selectCountdown(countdown) }
-                            )
-                        }
+                dismissButton = {
+                    TextButton(onClick = {
+                        haptic.tick()
+                        countdownToDelete = null
+                    }) {
+                        Text("Abbrechen")
                     }
                 }
-            }
-
-            // Einfacher FAB
-            SimpleFab(
-                onAddCountdown = {
-                    showAddDialog = true
-                }
             )
         }
     }
 
-    if (showAddDialog) {
+    // Add/Edit Dialog mit Animation
+    AnimatedVisibility(
+        visible = showAddDialog || editingCountdown != null,
+        enter = scaleIn(
+            initialScale = 0.9f,
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessMedium
+            )
+        ) + fadeIn(),
+        exit = scaleOut(
+            targetScale = 0.9f,
+            animationSpec = tween(200)
+        ) + fadeOut(animationSpec = tween(200))
+    ) {
         AddEditCountdownDialog(
-            countdown = null,
-            onDismiss = { showAddDialog = false },
-            onSave = { countdown ->
-                viewModel.addCountdown(countdown)
+            countdown = editingCountdown,
+            onDismiss = {
                 showAddDialog = false
-            }
-        )
-    }
-
-    editingCountdown?.let { countdown ->
-        AddEditCountdownDialog(
-            countdown = countdown,
-            onDismiss = { editingCountdown = null },
-            onSave = { updatedCountdown ->
-                viewModel.updateCountdown(updatedCountdown)
+                editingCountdown = null
+            },
+            onSave = { countdown ->
+                if (editingCountdown != null) {
+                    viewModel.updateCountdown(countdown)
+                } else {
+                    viewModel.addCountdown(countdown)
+                }
+                showAddDialog = false
                 editingCountdown = null
             }
         )
     }
 
+    // Settings Dialog
     if (showSettingsDialog) {
         AlertDialog(
             onDismissRequest = {

@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,6 +23,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import de.beigel.nextime.data.model.Countdown
 import de.beigel.nextime.data.model.CountdownDisplayFormat
+import de.beigel.nextime.data.model.ReminderOption
+import de.beigel.nextime.data.model.hasReminderOption
+import de.beigel.nextime.data.model.toOptionsString
 import de.beigel.nextime.ui.theme.DesignSystem
 import de.beigel.nextime.utils.HapticFeedback
 import java.time.LocalDate
@@ -53,9 +57,30 @@ fun AddEditCountdownDialog(
         )
     }
 
+    // Notifikations-Einstellungen
+    var notificationEnabled by remember { mutableStateOf(countdown?.notificationEnabled ?: false) }
+    val selectedReminders = remember {
+        mutableStateListOf<ReminderOption>().apply {
+            countdown?.let { cd ->
+                val options = cd.reminderOptions
+                if (options.isNotEmpty()) {
+                    options.split(",").forEach { name ->
+                        try {
+                            val option = ReminderOption.valueOf(name.trim())
+                            add(option)
+                        } catch (e: Exception) {
+                            // Ignoriere ungültige Optionen
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
     var showFormatPicker by remember { mutableStateOf(false) }
+    var showReminderPicker by remember { mutableStateOf(false) }
 
     // Vordefinierte Farben
     val colorOptions = listOf(
@@ -63,13 +88,12 @@ fun AddEditCountdownDialog(
         "#42A5F5", "#26A69A", "#66BB6A", "#FFA726", "#8D6E63"
     )
 
-    // Prüfe ob Datum in Vergangenheit oder Zukunft liegt
     val isPast = selectedDate.isBefore(LocalDate.now()) ||
             (selectedDate.isEqual(LocalDate.now()) && includeTime && selectedTime.isBefore(LocalTime.now()))
 
     val countdownType = if (isPast) "Count-up" else "Countdown"
 
-    // Verfügbare Formate basierend auf includeTime
+    // Verfügbare Formate
     val availableFormats = if (includeTime) {
         listOf(
             CountdownDisplayFormat.DAYS_ONLY to "Nur Tage",
@@ -87,11 +111,43 @@ fun AddEditCountdownDialog(
         )
     }
 
-    // Stelle sicher, dass ausgewähltes Format verfügbar ist
+    // Verfügbare Erinnerungen basierend auf includeTime
+    val availableReminders = if (includeTime) {
+        listOf(
+            ReminderOption.AT_TIME,
+            ReminderOption.MINUTES_5,
+            ReminderOption.MINUTES_15,
+            ReminderOption.MINUTES_30,
+            ReminderOption.HOUR_1,
+            ReminderOption.HOURS_3,
+            ReminderOption.HOURS_6,
+            ReminderOption.HOURS_12,
+            ReminderOption.DAY_1,
+            ReminderOption.DAYS_2,
+            ReminderOption.DAYS_3,
+            ReminderOption.WEEK_1,
+            ReminderOption.WEEKS_2,
+            ReminderOption.MONTH_1
+        )
+    } else {
+        listOf(
+            ReminderOption.AT_TIME,
+            ReminderOption.DAY_1,
+            ReminderOption.DAYS_2,
+            ReminderOption.DAYS_3,
+            ReminderOption.WEEK_1,
+            ReminderOption.WEEKS_2,
+            ReminderOption.MONTH_1
+        )
+    }
+
+    // Format prüfen
     LaunchedEffect(includeTime) {
         if (!availableFormats.map { it.first }.contains(selectedFormat)) {
             selectedFormat = CountdownDisplayFormat.DAYS_ONLY
         }
+        // Erinnerungen anpassen
+        selectedReminders.removeAll { !availableReminders.contains(it) }
     }
 
     AlertDialog(
@@ -102,7 +158,6 @@ fun AddEditCountdownDialog(
         title = {
             Column {
                 Text(if (countdown == null) "Countdown erstellen" else "Countdown bearbeiten")
-                // Live-Vorschau des Typs
                 Surface(
                     shape = RoundedCornerShape(DesignSystem.CornerRadius.small),
                     color = if (isPast)
@@ -178,7 +233,7 @@ fun AddEditCountdownDialog(
                     }
                 }
 
-                // 4. Uhrzeit (nur wenn aktiviert)
+                // 4. Uhrzeit
                 if (includeTime) {
                     OutlinedButton(
                         onClick = {
@@ -191,7 +246,7 @@ fun AddEditCountdownDialog(
                     }
                 }
 
-                // 5. Anzeigeformat (ausklappbar)
+                // 5. Anzeigeformat
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Surface(
                         modifier = Modifier
@@ -233,7 +288,6 @@ fun AddEditCountdownDialog(
                         }
                     }
 
-                    // Format-Optionen (ausklappbar)
                     if (showFormatPicker) {
                         Column(
                             modifier = Modifier.padding(top = DesignSystem.Spacing.xSmall),
@@ -255,7 +309,117 @@ fun AddEditCountdownDialog(
                     }
                 }
 
-                // 6. Farbauswahl
+                // 6. Benachrichtigungen
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(DesignSystem.CornerRadius.medium),
+                        color = MaterialTheme.colorScheme.secondaryContainer
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(DesignSystem.Spacing.medium),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(DesignSystem.Spacing.small),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Notifications,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                                Text(
+                                    "Benachrichtigungen",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                            }
+                            Switch(
+                                checked = notificationEnabled,
+                                onCheckedChange = {
+                                    haptic.tick()
+                                    notificationEnabled = it
+                                }
+                            )
+                        }
+                    }
+
+                    // Erinnerungen auswählen
+                    if (notificationEnabled) {
+                        Spacer(modifier = Modifier.height(DesignSystem.Spacing.xSmall))
+
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(DesignSystem.CornerRadius.medium))
+                                .clickable {
+                                    haptic.tick()
+                                    showReminderPicker = !showReminderPicker
+                                },
+                            color = MaterialTheme.colorScheme.surfaceVariant
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(DesignSystem.Spacing.medium),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        "Erinnerungen",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                    Text(
+                                        text = if (selectedReminders.isEmpty()) {
+                                            "Keine ausgewählt"
+                                        } else {
+                                            "${selectedReminders.size} ausgewählt"
+                                        },
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                Icon(
+                                    imageVector = if (showReminderPicker)
+                                        Icons.Default.KeyboardArrowUp
+                                    else
+                                        Icons.Default.KeyboardArrowDown,
+                                    contentDescription = null
+                                )
+                            }
+                        }
+
+                        if (showReminderPicker) {
+                            Column(
+                                modifier = Modifier.padding(top = DesignSystem.Spacing.xSmall),
+                                verticalArrangement = Arrangement.spacedBy(DesignSystem.Spacing.xSmall)
+                            ) {
+                                availableReminders.forEach { option ->
+                                    ReminderOptionItem(
+                                        option = option,
+                                        isSelected = selectedReminders.contains(option),
+                                        onClick = {
+                                            haptic.tick()
+                                            if (selectedReminders.contains(option)) {
+                                                selectedReminders.remove(option)
+                                            } else {
+                                                selectedReminders.add(option)
+                                            }
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 7. Farbauswahl
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Text(
                         "Farbe wählen",
@@ -264,7 +428,6 @@ fun AddEditCountdownDialog(
                     )
                     Spacer(modifier = Modifier.height(DesignSystem.Spacing.xSmall))
 
-                    // Farb-Grid - Erste Reihe
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(DesignSystem.Spacing.xSmall)
@@ -284,7 +447,6 @@ fun AddEditCountdownDialog(
 
                     Spacer(modifier = Modifier.height(DesignSystem.Spacing.xSmall))
 
-                    // Farb-Grid - Zweite Reihe
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(DesignSystem.Spacing.xSmall)
@@ -322,14 +484,18 @@ fun AddEditCountdownDialog(
                             includeTime = includeTime,
                             showNights = false,
                             displayFormat = selectedFormat.name,
-                            color = selectedColor
+                            color = selectedColor,
+                            notificationEnabled = notificationEnabled,
+                            reminderOptions = selectedReminders.toOptionsString()
                         ) ?: Countdown(
                             title = title,
                             targetDateTime = targetDateTime,
                             includeTime = includeTime,
                             showNights = false,
                             displayFormat = selectedFormat.name,
-                            color = selectedColor
+                            color = selectedColor,
+                            notificationEnabled = notificationEnabled,
+                            reminderOptions = selectedReminders.toOptionsString()
                         )
 
                         onSave(newCountdown)
@@ -472,6 +638,46 @@ private fun FormatOptionCompact(
 }
 
 @Composable
+private fun ReminderOptionItem(
+    option: ReminderOption,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(DesignSystem.CornerRadius.small))
+            .clickable(onClick = onClick),
+        color = if (isSelected)
+            MaterialTheme.colorScheme.tertiaryContainer
+        else
+            MaterialTheme.colorScheme.surfaceVariant
+    ) {
+        Row(
+            modifier = Modifier.padding(DesignSystem.Spacing.medium),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = option.displayName,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                modifier = Modifier.weight(1f)
+            )
+
+            if (isSelected) {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = "Ausgewählt",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun ColorCircle(
     color: androidx.compose.ui.graphics.Color,
     isSelected: Boolean,
@@ -512,7 +718,6 @@ private fun ColorCircle(
     }
 }
 
-// Hilfsfunktion für Format-Beispiele
 private fun getFormatExample(format: CountdownDisplayFormat): String {
     return when (format) {
         CountdownDisplayFormat.DAYS_ONLY -> "42 Tage"
