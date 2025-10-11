@@ -168,27 +168,6 @@ fun AddEditCountdownDialog(
         title = {
             Column {
                 Text(if (countdown == null) "Countdown erstellen" else "Countdown bearbeiten")
-                Surface(
-                    shape = RoundedCornerShape(DesignSystem.CornerRadius.small),
-                    color = if (isPast)
-                        MaterialTheme.colorScheme.errorContainer
-                    else
-                        MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.padding(top = DesignSystem.Spacing.xSmall)
-                ) {
-                    Text(
-                        text = "✨ $countdownType",
-                        modifier = Modifier.padding(
-                            horizontal = DesignSystem.Spacing.small,
-                            vertical = DesignSystem.Spacing.xxSmall
-                        ),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = if (isPast)
-                            MaterialTheme.colorScheme.onErrorContainer
-                        else
-                            MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
             }
         },
         text = {

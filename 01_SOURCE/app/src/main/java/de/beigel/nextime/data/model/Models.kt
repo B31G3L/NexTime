@@ -84,36 +84,37 @@ fun Countdown.calculateTimeRemaining(): CountdownInfo {
         else targetDateTime
     }
 
-    val days = ChronoUnit.DAYS.between(start.toLocalDate(), end.toLocalDate())
-    val weeks = days / 7
-    val months = ChronoUnit.MONTHS.between(start.toLocalDate(), end.toLocalDate())
+    // Basis-Berechnungen
+    val totalDays = ChronoUnit.DAYS.between(start.toLocalDate(), end.toLocalDate())
     val years = ChronoUnit.YEARS.between(start.toLocalDate(), end.toLocalDate())
+    val months = ChronoUnit.MONTHS.between(start.toLocalDate(), end.toLocalDate())
+    val weeks = totalDays / 7
 
+    // Zeit-Komponenten (Stunden, Minuten, Sekunden)
     val totalSeconds = ChronoUnit.SECONDS.between(start, end)
-    val remainingSecondsAfterDays = totalSeconds - (days * 86400)
+    val daysInSeconds = totalDays * 86400L
+    val remainingSeconds = totalSeconds - daysInSeconds
 
-    val hours = remainingSecondsAfterDays / 3600
-    val minutes = (remainingSecondsAfterDays % 3600) / 60
-    val seconds = remainingSecondsAfterDays % 60
-
-    val totalHours = totalSeconds / 3600
+    val hours = remainingSeconds / 3600
+    val minutes = (remainingSeconds % 3600) / 60
+    val seconds = remainingSeconds % 60
 
     val nights = if (showNights) {
-        ChronoUnit.DAYS.between(start.toLocalDate(), end.toLocalDate())
+        totalDays
     } else {
         0L
     }
 
     return CountdownInfo(
-        days = days,
-        hours = if (includeTime) hours else totalHours,
-        minutes = if (includeTime) minutes else (totalSeconds % 3600) / 60,
+        days = totalDays,
+        hours = hours,
+        minutes = minutes,
         seconds = seconds,
         weeks = weeks,
         months = months,
         years = years,
         nights = nights,
-        isPast = isPast
+        isPast = isPast,
     )
 }
 

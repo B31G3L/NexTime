@@ -444,25 +444,6 @@ fun CountdownDetailScreen(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // Status Badge
-                    Surface(
-                        shape = MaterialTheme.shapes.medium,
-                        color = if (timeInfo.isPast)
-                            MaterialTheme.colorScheme.errorContainer
-                        else
-                            cardColor.copy(alpha = 0.2f)
-                    ) {
-                        Text(
-                            text = if (timeInfo.isPast) "✨ Count-up" else "✨ Countdown",
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = if (timeInfo.isPast)
-                                MaterialTheme.colorScheme.error
-                            else
-                                cardColor
-                        )
-                    }
                 }
             }
 
@@ -473,7 +454,7 @@ fun CountdownDetailScreen(
             ) {
                 // Datum & Zeit Card
                 InfoCard(
-                    title = "Zieldatum",
+                    title = stats.dateLabel,  // "Startdatum" oder "Zieldatum"
                     icon = Icons.Outlined.CalendarToday
                 ) {
                     Row(
@@ -482,9 +463,7 @@ fun CountdownDetailScreen(
                     ) {
                         Column {
                             Text(
-                                text = countdown.targetDateTime.format(
-                                    DateTimeFormatter.ofPattern("dd. MMMM yyyy")
-                                ),
+                                text = stats.dateValue,
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.SemiBold
                             )
@@ -498,12 +477,6 @@ fun CountdownDetailScreen(
                                 )
                             }
                         }
-                        Icon(
-                            imageVector = Icons.Outlined.Event,
-                            contentDescription = null,
-                            tint = cardColor.copy(alpha = 0.5f),
-                            modifier = Modifier.size(48.dp)
-                        )
                     }
                 }
 
@@ -515,9 +488,16 @@ fun CountdownDetailScreen(
                     Column(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        StatRow("Gesamtdauer", stats.totalDuration)
-                        StatRow("Verbleibend", stats.remaining)
-                        StatRow("Erstellt am", stats.createdDate)
+                        if (timeInfo.isPast) {
+                            // Count-up Statistiken
+                            StatRow("Vergangene Zeit", stats.status)
+                            StatRow("Erstellt am", stats.createdDate)
+                        } else {
+                            // Countdown Statistiken
+                            StatRow("Gesamtdauer", stats.duration)
+                            StatRow("Verbleibend", stats.status)
+                            StatRow("Erstellt am", stats.createdDate)
+                        }
                     }
                 }
             }
@@ -636,25 +616,40 @@ private fun StatRow(
 }
 
 private data class Statistics(
-    val totalDuration: String,
-    val remaining: String,
+    val duration: String,
+    val status: String,
+    val dateLabel: String,
+    val dateValue: String,
     val createdDate: String
 )
 
 private fun calculateStatistics(countdown: Countdown, timeInfo: CountdownInfo): Statistics {
     val now = LocalDateTime.now()
-    val total = Duration.between(countdown.createdAt, countdown.targetDateTime)
-    val remaining = if (timeInfo.isPast) {
-        Duration.ZERO
-    } else {
-        Duration.between(now, countdown.targetDateTime)
-    }
 
-    return Statistics(
-        totalDuration = formatDuration(total),
-        remaining = if (timeInfo.isPast) "Abgelaufen" else formatDuration(remaining),
-        createdDate = countdown.createdAt.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))
-    )
+    return if (timeInfo.isPast) {
+        // Count-up: Seit dem Startdatum
+        val duration = Duration.between(countdown.targetDateTime, now)
+
+        Statistics(
+            duration = formatDuration(duration),
+            status = "Seit ${formatDuration(duration)}",
+            dateLabel = "Startdatum",
+            dateValue = countdown.targetDateTime.format(DateTimeFormatter.ofPattern("dd. MMMM yyyy")),
+            createdDate = countdown.createdAt.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))
+        )
+    } else {
+        // Countdown: Bis zum Zieldatum
+        val totalDuration = Duration.between(countdown.createdAt, countdown.targetDateTime)
+        val remaining = Duration.between(now, countdown.targetDateTime)
+
+        Statistics(
+            duration = formatDuration(totalDuration),
+            status = formatDuration(remaining),
+            dateLabel = "Zieldatum",
+            dateValue = countdown.targetDateTime.format(DateTimeFormatter.ofPattern("dd. MMMM yyyy")),
+            createdDate = countdown.createdAt.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))
+        )
+    }
 }
 
 private fun formatDuration(duration: Duration): String {

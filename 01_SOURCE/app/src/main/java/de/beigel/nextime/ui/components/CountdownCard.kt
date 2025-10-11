@@ -33,7 +33,7 @@ fun CountdownCard(
     var timeInfo by remember { mutableStateOf(countdown.calculateTimeRemaining()) }
 
     LaunchedEffect(countdown.id) {
-        if (countdown.includeTime) {
+        if (countdown.includeTime || timeInfo.isPast) {
             while (true) {
                 delay(1000)
                 timeInfo = countdown.calculateTimeRemaining()
@@ -56,12 +56,14 @@ fun CountdownCard(
         CountdownDisplayFormat.DAYS_ONLY
     }
 
+    // In CountdownCard.kt, Zeile ~49-56
     val cardHeight = when (format) {
-        CountdownDisplayFormat.FULL_TIME -> 220.dp
+        CountdownDisplayFormat.FULL_DETAILED -> 240.dp  // Erhöht von 220dp
+        CountdownDisplayFormat.FULL_TIME -> 240.dp      // Erhöht von 220dp
         CountdownDisplayFormat.DAYS_HOURS,
         CountdownDisplayFormat.WEEKS_DAYS,
-        CountdownDisplayFormat.MONTHS_DAYS -> 200.dp
-        else -> 180.dp
+        CountdownDisplayFormat.MONTHS_DAYS -> 220.dp    // Erhöht von 200dp
+        else -> 200.dp                                   // Erhöht von 180dp
     }
 
     Card(
@@ -112,28 +114,6 @@ fun CountdownCard(
 
                             Spacer(modifier = Modifier.height(DesignSystem.Spacing.xxSmall))
 
-                            // Status Badge - Countdown oder Count-up
-                            Surface(
-                                shape = RoundedCornerShape(DesignSystem.CornerRadius.medium),
-                                color = if (timeInfo.isPast)
-                                    MaterialTheme.colorScheme.errorContainer
-                                else
-                                    cardColor.copy(alpha = DesignSystem.Alpha.surface)
-                            ) {
-                                Text(
-                                    text = if (timeInfo.isPast) "✨ Count-up" else "✨ Countdown",
-                                    modifier = Modifier.padding(
-                                        horizontal = DesignSystem.Spacing.small,
-                                        vertical = DesignSystem.Spacing.xxSmall
-                                    ),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Medium,
-                                    color = if (timeInfo.isPast)
-                                        MaterialTheme.colorScheme.onErrorContainer
-                                    else
-                                        cardColor
-                                )
-                            }
                         }
                     }
 
