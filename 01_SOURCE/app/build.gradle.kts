@@ -9,7 +9,7 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "de.beigel.nextime"
+        applicationId = "todo.beigelwick.de.todolist"
         minSdk = 26
         targetSdk = 35
         versionCode = 2
