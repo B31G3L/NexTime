@@ -25,7 +25,6 @@ fun SwipeableCountdownCard(
     countdown: Countdown,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
-    showPercentage: Boolean = true,
     onClick: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
@@ -148,9 +147,7 @@ fun SwipeableCountdownCard(
                     }
                 ) {
                     CountdownCard(
-                        countdown = countdown,
-                        onEdit = onEdit,
-                        onDelete = onDelete,
+                        countdown = countdown
 
                     )
                 }

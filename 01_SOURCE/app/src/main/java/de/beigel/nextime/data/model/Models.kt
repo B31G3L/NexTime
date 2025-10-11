@@ -7,6 +7,7 @@ import java.time.temporal.ChronoUnit
 
 // Anzeigeformate für Countdowns
 enum class CountdownDisplayFormat {
+    FULL_DETAILED,       // "1 Jahr, 2 Monate, 15 Tage, 5h 30m 45s" (NEU - Standard)
     DAYS_ONLY,           // "42 Tage"
     DAYS_HOURS,          // "42 Tage, 5h 30m"
     HOURS_MINUTES,       // "1020h 30m"
@@ -42,14 +43,14 @@ data class Countdown(
     val targetDateTime: LocalDateTime,
     val includeTime: Boolean = false,
     val showNights: Boolean = false,
-    val displayFormat: String = CountdownDisplayFormat.DAYS_ONLY.name,
+    val displayFormat: String = CountdownDisplayFormat.FULL_DETAILED.name,
     val createdAt: LocalDateTime = LocalDateTime.now(),
-    val color: String = "#FF7043", // Orange als Standard
+    val color: String = "#FF7043",
 
     // Notifikationen
     val notificationEnabled: Boolean = false,
-    val reminderOptions: String = "", // Komma-separierte Liste von ReminderOption Namen
-    val lastNotificationSent: String? = null // LocalDateTime als String
+    val reminderOptions: String = "",
+    val lastNotificationSent: String? = null
 )
 
 // Hilfsfunktionen für Countdown-Berechnungen
@@ -60,6 +61,7 @@ data class CountdownInfo(
     val seconds: Long,
     val weeks: Long,
     val months: Long,
+    val years: Long,
     val nights: Long,
     val isPast: Boolean
 )
@@ -85,6 +87,7 @@ fun Countdown.calculateTimeRemaining(): CountdownInfo {
     val days = ChronoUnit.DAYS.between(start.toLocalDate(), end.toLocalDate())
     val weeks = days / 7
     val months = ChronoUnit.MONTHS.between(start.toLocalDate(), end.toLocalDate())
+    val years = ChronoUnit.YEARS.between(start.toLocalDate(), end.toLocalDate())
 
     val totalSeconds = ChronoUnit.SECONDS.between(start, end)
     val remainingSecondsAfterDays = totalSeconds - (days * 86400)
@@ -108,6 +111,7 @@ fun Countdown.calculateTimeRemaining(): CountdownInfo {
         seconds = seconds,
         weeks = weeks,
         months = months,
+        years = years,
         nights = nights,
         isPast = isPast
     )
@@ -117,10 +121,28 @@ fun Countdown.getFormattedTime(timeInfo: CountdownInfo): String {
     val format = try {
         CountdownDisplayFormat.valueOf(displayFormat)
     } catch (e: Exception) {
-        CountdownDisplayFormat.DAYS_ONLY
+        CountdownDisplayFormat.FULL_DETAILED
     }
 
     return when (format) {
+        CountdownDisplayFormat.FULL_DETAILED -> {
+            buildString {
+                if (timeInfo.years > 0) {
+                    append("${timeInfo.years}J ")
+                }
+                if (timeInfo.months > 0 || timeInfo.years > 0) {
+                    val remainingMonths = timeInfo.months % 12
+                    if (remainingMonths > 0) {
+                        append("${remainingMonths}M ")
+                    }
+                }
+                val remainingDays = timeInfo.days % 30
+                if (remainingDays > 0 || (timeInfo.years == 0L && timeInfo.months == 0L)) {
+                    append("${remainingDays}T ")
+                }
+                append(String.format("%02d:%02d:%02d", timeInfo.hours, timeInfo.minutes, timeInfo.seconds))
+            }.trim()
+        }
         CountdownDisplayFormat.DAYS_ONLY -> {
             "${timeInfo.days}"
         }
@@ -152,16 +174,19 @@ fun Countdown.getFormattedTimeLabel(timeInfo: CountdownInfo): String {
     val format = try {
         CountdownDisplayFormat.valueOf(displayFormat)
     } catch (e: Exception) {
-        CountdownDisplayFormat.DAYS_ONLY
+        CountdownDisplayFormat.FULL_DETAILED
     }
 
     return when (format) {
+        CountdownDisplayFormat.FULL_DETAILED -> ""
         CountdownDisplayFormat.DAYS_ONLY -> {
             if (timeInfo.days == 1L) "Tag" else "Tage"
         }
+        CountdownDisplayFormat.DAYS_HOURS -> ""
+        CountdownDisplayFormat.HOURS_MINUTES -> ""
+        CountdownDisplayFormat.FULL_TIME -> ""
         CountdownDisplayFormat.WEEKS_DAYS -> ""
         CountdownDisplayFormat.MONTHS_DAYS -> ""
-        else -> ""
     }
 }
 
@@ -198,12 +223,4 @@ fun Countdown.getReminderOptionsList(): List<ReminderOption> {
             null
         }
     }
-}
-
-fun Countdown.hasReminderOption(option: ReminderOption): Boolean {
-    return getReminderOptionsList().contains(option)
-}
-
-fun List<ReminderOption>.toOptionsString(): String {
-    return joinToString(",") { it.name }
 }

@@ -21,7 +21,7 @@ object NotificationScheduler {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val reminderOptions = countdown.getReminderOptionsList()
 
-        reminderOptions.forEach { option ->
+        for (option in reminderOptions) {
             scheduleNotification(context, countdown, option, alarmManager)
         }
     }

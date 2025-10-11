@@ -24,8 +24,6 @@ import androidx.compose.ui.unit.dp
 import de.beigel.nextime.data.model.Countdown
 import de.beigel.nextime.data.model.CountdownDisplayFormat
 import de.beigel.nextime.data.model.ReminderOption
-import de.beigel.nextime.data.model.hasReminderOption
-import de.beigel.nextime.data.model.toOptionsString
 import de.beigel.nextime.ui.theme.DesignSystem
 import de.beigel.nextime.utils.HapticFeedback
 import java.time.LocalDate
@@ -42,17 +40,25 @@ fun AddEditCountdownDialog(
     val context = LocalContext.current
     val haptic = remember { HapticFeedback(context) }
 
+    // Standard-Uhrzeit aus Settings laden
+    val defaultTime by de.beigel.nextime.ui.theme.ThemePreferences.getDefaultTime(context)
+        .collectAsState(initial = LocalTime.of(0, 0))
+
     var title by remember { mutableStateOf(countdown?.title ?: "") }
     var selectedDate by remember { mutableStateOf(countdown?.targetDateTime?.toLocalDate() ?: LocalDate.now().plusDays(1)) }
-    var selectedTime by remember { mutableStateOf(countdown?.targetDateTime?.toLocalTime() ?: LocalTime.of(12, 0)) }
+    var selectedTime by remember {
+        mutableStateOf(
+            countdown?.targetDateTime?.toLocalTime() ?: defaultTime
+        )
+    }
     var includeTime by remember { mutableStateOf(countdown?.includeTime ?: false) }
     var selectedColor by remember { mutableStateOf(countdown?.color ?: "#FF7043") }
     var selectedFormat by remember {
         mutableStateOf(
             try {
-                CountdownDisplayFormat.valueOf(countdown?.displayFormat ?: CountdownDisplayFormat.DAYS_ONLY.name)
+                CountdownDisplayFormat.valueOf(countdown?.displayFormat ?: CountdownDisplayFormat.FULL_DETAILED.name)
             } catch (e: Exception) {
-                CountdownDisplayFormat.DAYS_ONLY
+                CountdownDisplayFormat.FULL_DETAILED
             }
         )
     }
@@ -96,6 +102,7 @@ fun AddEditCountdownDialog(
     // Verfügbare Formate
     val availableFormats = if (includeTime) {
         listOf(
+            CountdownDisplayFormat.FULL_DETAILED to "Detailliert (Standard)",
             CountdownDisplayFormat.DAYS_ONLY to "Nur Tage",
             CountdownDisplayFormat.DAYS_HOURS to "Tage + Stunden",
             CountdownDisplayFormat.HOURS_MINUTES to "Nur Stunden",
@@ -105,6 +112,7 @@ fun AddEditCountdownDialog(
         )
     } else {
         listOf(
+            CountdownDisplayFormat.FULL_DETAILED to "Detailliert (Standard)",
             CountdownDisplayFormat.DAYS_ONLY to "Nur Tage",
             CountdownDisplayFormat.WEEKS_DAYS to "Wochen + Tage",
             CountdownDisplayFormat.MONTHS_DAYS to "Monate + Tage"
@@ -112,39 +120,41 @@ fun AddEditCountdownDialog(
     }
 
     // Verfügbare Erinnerungen basierend auf includeTime
-    val availableReminders = if (includeTime) {
-        listOf(
-            ReminderOption.AT_TIME,
-            ReminderOption.MINUTES_5,
-            ReminderOption.MINUTES_15,
-            ReminderOption.MINUTES_30,
-            ReminderOption.HOUR_1,
-            ReminderOption.HOURS_3,
-            ReminderOption.HOURS_6,
-            ReminderOption.HOURS_12,
-            ReminderOption.DAY_1,
-            ReminderOption.DAYS_2,
-            ReminderOption.DAYS_3,
-            ReminderOption.WEEK_1,
-            ReminderOption.WEEKS_2,
-            ReminderOption.MONTH_1
-        )
-    } else {
-        listOf(
-            ReminderOption.AT_TIME,
-            ReminderOption.DAY_1,
-            ReminderOption.DAYS_2,
-            ReminderOption.DAYS_3,
-            ReminderOption.WEEK_1,
-            ReminderOption.WEEKS_2,
-            ReminderOption.MONTH_1
-        )
+    val availableReminders = remember(includeTime) {
+        if (includeTime) {
+            listOf(
+                ReminderOption.AT_TIME,
+                ReminderOption.MINUTES_5,
+                ReminderOption.MINUTES_15,
+                ReminderOption.MINUTES_30,
+                ReminderOption.HOUR_1,
+                ReminderOption.HOURS_3,
+                ReminderOption.HOURS_6,
+                ReminderOption.HOURS_12,
+                ReminderOption.DAY_1,
+                ReminderOption.DAYS_2,
+                ReminderOption.DAYS_3,
+                ReminderOption.WEEK_1,
+                ReminderOption.WEEKS_2,
+                ReminderOption.MONTH_1
+            )
+        } else {
+            listOf(
+                ReminderOption.AT_TIME,
+                ReminderOption.DAY_1,
+                ReminderOption.DAYS_2,
+                ReminderOption.DAYS_3,
+                ReminderOption.WEEK_1,
+                ReminderOption.WEEKS_2,
+                ReminderOption.MONTH_1
+            )
+        }
     }
 
     // Format prüfen
     LaunchedEffect(includeTime) {
         if (!availableFormats.map { it.first }.contains(selectedFormat)) {
-            selectedFormat = CountdownDisplayFormat.DAYS_ONLY
+            selectedFormat = CountdownDisplayFormat.FULL_DETAILED
         }
         // Erinnerungen anpassen
         selectedReminders.removeAll { !availableReminders.contains(it) }
@@ -475,7 +485,7 @@ fun AddEditCountdownDialog(
                         val targetDateTime = if (includeTime) {
                             LocalDateTime.of(selectedDate, selectedTime)
                         } else {
-                            LocalDateTime.of(selectedDate, LocalTime.of(0, 0))
+                            LocalDateTime.of(selectedDate, defaultTime)
                         }
 
                         val newCountdown = countdown?.copy(
@@ -486,7 +496,7 @@ fun AddEditCountdownDialog(
                             displayFormat = selectedFormat.name,
                             color = selectedColor,
                             notificationEnabled = notificationEnabled,
-                            reminderOptions = selectedReminders.toOptionsString()
+                            reminderOptions = selectedReminders.joinToString(",") { it.name }
                         ) ?: Countdown(
                             title = title,
                             targetDateTime = targetDateTime,
@@ -495,7 +505,7 @@ fun AddEditCountdownDialog(
                             displayFormat = selectedFormat.name,
                             color = selectedColor,
                             notificationEnabled = notificationEnabled,
-                            reminderOptions = selectedReminders.toOptionsString()
+                            reminderOptions = selectedReminders.joinToString(",") { it.name }
                         )
 
                         onSave(newCountdown)
@@ -720,6 +730,7 @@ private fun ColorCircle(
 
 private fun getFormatExample(format: CountdownDisplayFormat): String {
     return when (format) {
+        CountdownDisplayFormat.FULL_DETAILED -> "1J 2M 15T 05:30:45"
         CountdownDisplayFormat.DAYS_ONLY -> "42 Tage"
         CountdownDisplayFormat.DAYS_HOURS -> "42 Tage, 5h 30m"
         CountdownDisplayFormat.HOURS_MINUTES -> "1020h 30m"

@@ -18,14 +18,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import de.beigel.nextime.data.model.Countdown
 import de.beigel.nextime.data.model.calculateTimeRemaining
 import de.beigel.nextime.ui.components.*
 import de.beigel.nextime.ui.theme.DesignSystem
+import de.beigel.nextime.ui.theme.ThemePreferences
 import de.beigel.nextime.ui.viewmodel.CountdownViewModel
 import de.beigel.nextime.utils.HapticFeedback
+import kotlinx.coroutines.launch
 
 enum class SortOption {
     DATE_ASC, DATE_DESC, NAME_ASC, NAME_DESC
@@ -368,6 +371,9 @@ fun MainScreen(
 
     // Settings Dialog
     if (showSettingsDialog) {
+        val defaultTime by ThemePreferences.getDefaultTime(context).collectAsState(initial = java.time.LocalTime.of(0, 0))
+        var showTimePickerSettings by remember { mutableStateOf(false) }
+
         AlertDialog(
             onDismissRequest = {
                 haptic.tick()
@@ -378,6 +384,7 @@ fun MainScreen(
                 Column(
                     verticalArrangement = Arrangement.spacedBy(DesignSystem.Spacing.medium)
                 ) {
+                    // Dark Mode
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -392,6 +399,32 @@ fun MainScreen(
                             }
                         )
                     }
+
+                    Divider()
+
+                    // Standard-Uhrzeit
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Text(
+                            "Standard-Uhrzeit",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            "Wird verwendet wenn keine Uhrzeit angegeben ist",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(DesignSystem.Spacing.small))
+                        OutlinedButton(
+                            onClick = {
+                                haptic.tick()
+                                showTimePickerSettings = true
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("🕐 ${defaultTime.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))} Uhr")
+                        }
+                    }
                 }
             },
             confirmButton = {
@@ -403,6 +436,45 @@ fun MainScreen(
                 }
             }
         )
+
+        // TimePicker für Standard-Uhrzeit
+        if (showTimePickerSettings) {
+            val timePickerState = androidx.compose.material3.rememberTimePickerState(
+                initialHour = defaultTime.hour,
+                initialMinute = defaultTime.minute,
+                is24Hour = true
+            )
+
+            AlertDialog(
+                onDismissRequest = {
+                    haptic.tick()
+                    showTimePickerSettings = false
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        haptic.click()
+                        val newTime = java.time.LocalTime.of(timePickerState.hour, timePickerState.minute)
+                        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+                            ThemePreferences.setDefaultTime(context, newTime)
+                        }
+                        showTimePickerSettings = false
+                    }) {
+                        Text("OK")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = {
+                        haptic.tick()
+                        showTimePickerSettings = false
+                    }) {
+                        Text("Abbrechen")
+                    }
+                },
+                text = {
+                    androidx.compose.material3.TimePicker(state = timePickerState)
+                }
+            )
+        }
     }
 
     // About Dialog
