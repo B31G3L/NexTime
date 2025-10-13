@@ -53,9 +53,6 @@ captures/
 .idea/misc.xml
 .idea/vcs.xml
 
-# Keystore files
-*.jks
-*.keystore
 
 # External native build folder generated in Android Studio 2.2 and later
 .externalNativeBuild
