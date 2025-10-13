@@ -11,13 +11,14 @@ import de.beigel.nextime.MainActivity
 import de.beigel.nextime.R
 import de.beigel.nextime.data.database.CountdownDatabase
 import de.beigel.nextime.data.model.Countdown
+import de.beigel.nextime.data.model.CountdownDisplayFormat
 import de.beigel.nextime.data.model.calculateTimeRemaining
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.time.format.DateTimeFormatter
 
-open class CountdownWidgetReceiver : AppWidgetProvider() {
+class CountdownWidgetReceiver : AppWidgetProvider() {
 
     override fun onUpdate(
         context: Context,
@@ -54,7 +55,6 @@ open class CountdownWidgetReceiver : AppWidgetProvider() {
                 val countdownId = prefs.getLong("widget_${appWidgetId}_countdown_id", -1L)
 
                 if (countdownId == -1L) {
-                    // Kein Countdown ausgewählt - zeige Platzhalter
                     updateWidgetWithPlaceholder(context, appWidgetManager, appWidgetId)
                     return@launch
                 }
@@ -67,12 +67,14 @@ open class CountdownWidgetReceiver : AppWidgetProvider() {
                     return@launch
                 }
 
-                val widgetSize = prefs.getString("widget_${appWidgetId}_size", "SMALL") ?: "SMALL"
+                // Widget-Größe aus den Optionen ermitteln
+                val options = appWidgetManager.getAppWidgetOptions(appWidgetId)
+                val minWidth = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH)
+                val minHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT)
 
-                val views = when (widgetSize) {
-                    "SMALL" -> createSmallWidget(context, countdown, appWidgetId)
-                    "MEDIUM" -> createMediumWidget(context, countdown, appWidgetId)
-                    "LARGE" -> createLargeWidget(context, countdown, appWidgetId)
+                val views = when {
+                    minWidth >= 250 && minHeight >= 180 -> createLargeWidget(context, countdown, appWidgetId)
+                    minWidth >= 250 -> createMediumWidget(context, countdown, appWidgetId)
                     else -> createSmallWidget(context, countdown, appWidgetId)
                 }
 
@@ -86,9 +88,10 @@ open class CountdownWidgetReceiver : AppWidgetProvider() {
             appWidgetId: Int
         ) {
             val views = RemoteViews(context.packageName, R.layout.widget_small)
-            views.setTextViewText(R.id.widget_title, "NexTime")
-            views.setTextViewText(R.id.widget_countdown, "Kein Countdown")
-            views.setTextViewText(R.id.widget_subtitle, "Tippen zum Einrichten")
+            views.setTextViewText(R.id.widget_title, "⏰ NexTime")
+            views.setTextViewText(R.id.widget_countdown, "--")
+            views.setTextViewText(R.id.widget_subtitle, "Nicht konfiguriert")
+            views.setTextViewText(R.id.widget_date, "Tippen zum Einrichten")
 
             // Click zum Öffnen der Config
             val configIntent = Intent(context, CountdownWidgetConfigActivity::class.java).apply {
@@ -125,19 +128,39 @@ open class CountdownWidgetReceiver : AppWidgetProvider() {
             // Titel
             views.setTextViewText(R.id.widget_title, countdown.title)
 
-            // Countdown
-            val countdownText = if (timeInfo.days > 0 || !countdown.includeTime) {
-                "${timeInfo.days}"
-            } else {
-                String.format("%02d:%02d:%02d", timeInfo.hours, timeInfo.minutes, timeInfo.seconds)
+            // Countdown - wie in der App formatiert
+            val format = try {
+                CountdownDisplayFormat.valueOf(countdown.displayFormat)
+            } catch (e: Exception) {
+                CountdownDisplayFormat.FULL_DETAILED
+            }
+
+            val countdownText = when (format) {
+                CountdownDisplayFormat.FULL_DETAILED -> {
+                    if (timeInfo.years > 0 || timeInfo.months > 0) {
+                        "${timeInfo.days}"
+                    } else {
+                        String.format("%02d:%02d:%02d", timeInfo.hours, timeInfo.minutes, timeInfo.seconds)
+                    }
+                }
+                CountdownDisplayFormat.DAYS_ONLY -> "${timeInfo.days}"
+                CountdownDisplayFormat.HOURS_MINUTES -> String.format("%d:%02d", timeInfo.hours, timeInfo.minutes)
+                else -> "${timeInfo.days}"
             }
             views.setTextViewText(R.id.widget_countdown, countdownText)
 
             // Subtitle
-            val subtitle = if (timeInfo.days > 0 || !countdown.includeTime) {
-                if (timeInfo.days == 1L) "Tag" else "Tage"
-            } else {
-                "verbleibend"
+            val subtitle = when (format) {
+                CountdownDisplayFormat.FULL_DETAILED -> {
+                    if (timeInfo.years > 0 || timeInfo.months > 0) {
+                        if (timeInfo.days == 1L) "Tag" else "Tage"
+                    } else {
+                        if (countdown.includeTime) "verbleibend" else if (timeInfo.days == 1L) "Tag" else "Tage"
+                    }
+                }
+                CountdownDisplayFormat.DAYS_ONLY -> if (timeInfo.days == 1L) "Tag" else "Tage"
+                CountdownDisplayFormat.HOURS_MINUTES -> "Stunden"
+                else -> if (timeInfo.days == 1L) "Tag" else "Tage"
             }
             views.setTextViewText(R.id.widget_subtitle, subtitle)
 
@@ -186,18 +209,42 @@ open class CountdownWidgetReceiver : AppWidgetProvider() {
             // Titel
             views.setTextViewText(R.id.widget_title, countdown.title)
 
-            // Countdown - aufgeteilt
-            views.setTextViewText(R.id.widget_days, "${timeInfo.days}")
-            views.setTextViewText(R.id.widget_days_label, if (timeInfo.days == 1L) "Tag" else "Tage")
+            // Format ermitteln
+            val format = try {
+                CountdownDisplayFormat.valueOf(countdown.displayFormat)
+            } catch (e: Exception) {
+                CountdownDisplayFormat.FULL_DETAILED
+            }
 
-            if (countdown.includeTime) {
-                views.setTextViewText(R.id.widget_hours, "${timeInfo.hours}")
-                views.setTextViewText(R.id.widget_minutes, "${timeInfo.minutes}")
-                views.setTextViewText(R.id.widget_seconds, "${timeInfo.seconds}")
-            } else {
-                views.setTextViewText(R.id.widget_hours, "")
-                views.setTextViewText(R.id.widget_minutes, "")
-                views.setTextViewText(R.id.widget_seconds, "")
+            // Countdown anzeigen - abhängig vom Format
+            when (format) {
+                CountdownDisplayFormat.FULL_DETAILED -> {
+                    // Zeige Jahre/Monate/Tage und Zeit
+                    views.setTextViewText(R.id.widget_days, "${timeInfo.days % 30}")
+                    views.setTextViewText(R.id.widget_days_label, if (timeInfo.days % 30 == 1L) "Tag" else "Tage")
+
+                    if (countdown.includeTime) {
+                        views.setTextViewText(R.id.widget_hours, "${timeInfo.hours}")
+                        views.setTextViewText(R.id.widget_minutes, String.format("%02d", timeInfo.minutes))
+                        views.setTextViewText(R.id.widget_seconds, String.format("%02d", timeInfo.seconds))
+                    }
+                }
+                CountdownDisplayFormat.DAYS_ONLY -> {
+                    views.setTextViewText(R.id.widget_days, "${timeInfo.days}")
+                    views.setTextViewText(R.id.widget_days_label, if (timeInfo.days == 1L) "Tag" else "Tage")
+                    views.setTextViewText(R.id.widget_hours, "")
+                    views.setTextViewText(R.id.widget_minutes, "")
+                    views.setTextViewText(R.id.widget_seconds, "")
+                }
+                else -> {
+                    views.setTextViewText(R.id.widget_days, "${timeInfo.days}")
+                    views.setTextViewText(R.id.widget_days_label, if (timeInfo.days == 1L) "Tag" else "Tage")
+                    if (countdown.includeTime) {
+                        views.setTextViewText(R.id.widget_hours, "${timeInfo.hours}")
+                        views.setTextViewText(R.id.widget_minutes, String.format("%02d", timeInfo.minutes))
+                        views.setTextViewText(R.id.widget_seconds, String.format("%02d", timeInfo.seconds))
+                    }
+                }
             }
 
             // Datum und Uhrzeit
@@ -211,6 +258,8 @@ open class CountdownWidgetReceiver : AppWidgetProvider() {
                     R.id.widget_time,
                     countdown.targetDateTime.format(DateTimeFormatter.ofPattern("HH:mm 'Uhr'"))
                 )
+            } else {
+                views.setTextViewText(R.id.widget_time, "")
             }
 
             // Click zum Öffnen der App
@@ -245,24 +294,49 @@ open class CountdownWidgetReceiver : AppWidgetProvider() {
             // Status
             views.setTextViewText(
                 R.id.widget_status,
-                if (timeInfo.isPast) "Vergangen" else "Bevorstehend"
+                if (timeInfo.isPast) "⏱️ Count-up" else "⏰ Countdown"
             )
 
             // Titel
             views.setTextViewText(R.id.widget_title, countdown.title)
 
-            // Countdown - detailliert
-            views.setTextViewText(R.id.widget_days_value, "${timeInfo.days}")
-            views.setTextViewText(R.id.widget_days_label, if (timeInfo.days == 1L) "Tag" else "Tage")
+            // Format ermitteln
+            val format = try {
+                CountdownDisplayFormat.valueOf(countdown.displayFormat)
+            } catch (e: Exception) {
+                CountdownDisplayFormat.FULL_DETAILED
+            }
 
-            if (countdown.includeTime) {
-                views.setTextViewText(R.id.widget_hours_value, String.format("%02d", timeInfo.hours))
-                views.setTextViewText(R.id.widget_minutes_value, String.format("%02d", timeInfo.minutes))
-                views.setTextViewText(R.id.widget_seconds_value, String.format("%02d", timeInfo.seconds))
-            } else {
-                views.setTextViewText(R.id.widget_hours_value, "--")
-                views.setTextViewText(R.id.widget_minutes_value, "--")
-                views.setTextViewText(R.id.widget_seconds_value, "--")
+            // Countdown - detailliert wie in der App
+            when (format) {
+                CountdownDisplayFormat.FULL_DETAILED -> {
+                    val remainingDays = timeInfo.days % 30
+                    views.setTextViewText(R.id.widget_days_value, "$remainingDays")
+                    views.setTextViewText(R.id.widget_days_label, if (remainingDays == 1L) "Tag" else "Tage")
+
+                    if (countdown.includeTime) {
+                        views.setTextViewText(R.id.widget_hours_value, String.format("%02d", timeInfo.hours))
+                        views.setTextViewText(R.id.widget_minutes_value, String.format("%02d", timeInfo.minutes))
+                        views.setTextViewText(R.id.widget_seconds_value, String.format("%02d", timeInfo.seconds))
+                    }
+                }
+                CountdownDisplayFormat.DAYS_ONLY -> {
+                    views.setTextViewText(R.id.widget_days_value, "${timeInfo.days}")
+                    views.setTextViewText(R.id.widget_days_label, if (timeInfo.days == 1L) "Tag" else "Tage")
+                    views.setTextViewText(R.id.widget_hours_value, "--")
+                    views.setTextViewText(R.id.widget_minutes_value, "--")
+                    views.setTextViewText(R.id.widget_seconds_value, "--")
+                }
+                else -> {
+                    views.setTextViewText(R.id.widget_days_value, "${timeInfo.days}")
+                    views.setTextViewText(R.id.widget_days_label, if (timeInfo.days == 1L) "Tag" else "Tage")
+
+                    if (countdown.includeTime) {
+                        views.setTextViewText(R.id.widget_hours_value, String.format("%02d", timeInfo.hours))
+                        views.setTextViewText(R.id.widget_minutes_value, String.format("%02d", timeInfo.minutes))
+                        views.setTextViewText(R.id.widget_seconds_value, String.format("%02d", timeInfo.seconds))
+                    }
+                }
             }
 
             // Datum
@@ -277,6 +351,8 @@ open class CountdownWidgetReceiver : AppWidgetProvider() {
                     R.id.widget_time,
                     "🕐 " + countdown.targetDateTime.format(DateTimeFormatter.ofPattern("HH:mm 'Uhr'"))
                 )
+            } else {
+                views.setTextViewText(R.id.widget_time, "")
             }
 
             // Nächte
@@ -285,6 +361,8 @@ open class CountdownWidgetReceiver : AppWidgetProvider() {
                     R.id.widget_nights,
                     "🌙 ${timeInfo.nights} ${if (timeInfo.nights == 1L) "Nacht" else "Nächte"}"
                 )
+            } else {
+                views.setTextViewText(R.id.widget_nights, "")
             }
 
             // Click zum Öffnen der App

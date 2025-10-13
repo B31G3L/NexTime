@@ -44,44 +44,18 @@
             android:enabled="true"
             android:exported="false" />
 
-        <!-- Widget Receivers -->
+        <!-- Widget Receiver - NUR EINE Option -->
         <receiver
             android:name=".widget.CountdownWidgetReceiver"
             android:exported="true"
-            android:label="NexTime Widget Small">
+            android:label="NexTime Countdown">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
                 <action android:name="de.beigel.nextime.ACTION_UPDATE_WIDGET" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/countdown_widget_small_info" />
-        </receiver>
-
-        <receiver
-            android:name=".widget.CountdownWidgetReceiverMedium"
-            android:exported="true"
-            android:label="NexTime Widget Medium">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="de.beigel.nextime.ACTION_UPDATE_WIDGET" />
-            </intent-filter>
-            <meta-data
-                android:name="android:appwidget.provider"
-                android:resource="@xml/countdown_widget_medium_info" />
-        </receiver>
-
-        <receiver
-            android:name=".widget.CountdownWidgetReceiverLarge"
-            android:exported="true"
-            android:label="NexTime Widget Large">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="de.beigel.nextime.ACTION_UPDATE_WIDGET" />
-            </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/countdown_widget_large_info" />
+                android:resource="@xml/countdown_widget_info" />
         </receiver>
 
     </application>
