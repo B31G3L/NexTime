@@ -6,12 +6,12 @@ plugins {
 
 android {
     namespace = "de.beigel.nextime"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "todo.beigelwick.de.todolist"
-        minSdk = 26
-        targetSdk = 35
+        minSdk = 31
+        targetSdk = 36
         versionCode = 3
         versionName = "0.1"
 

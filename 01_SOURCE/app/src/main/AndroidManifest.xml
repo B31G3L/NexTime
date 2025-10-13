@@ -28,15 +28,6 @@
             </intent-filter>
         </activity>
 
-        <!-- Widget Configuration Activity -->
-        <activity
-            android:name=".widget.CountdownWidgetConfigActivity"
-            android:exported="true"
-            android:theme="@style/Theme.NexTime">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
-            </intent-filter>
-        </activity>
 
         <!-- Notification Receiver -->
         <receiver
@@ -44,19 +35,7 @@
             android:enabled="true"
             android:exported="false" />
 
-        <!-- Widget Receiver - NUR EINE Option -->
-        <receiver
-            android:name=".widget.CountdownWidgetReceiver"
-            android:exported="true"
-            android:label="NexTime Countdown">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="de.beigel.nextime.ACTION_UPDATE_WIDGET" />
-            </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/countdown_widget_info" />
-        </receiver>
+
 
     </application>
 
