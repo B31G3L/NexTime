@@ -293,7 +293,7 @@ private fun openKofi(context: android.content.Context) {
 }
 
 private fun reportBug(context: android.content.Context) {
-    val email = "deine.email@example.com" // Ersetze mit deiner echten E-Mail
+    val email = "beigel.dev@gmail.com" // Ersetze mit deiner echten E-Mail
     val subject = "NexTime Bug Report - v${BuildConfig.VERSION_NAME}"
     val body = """
         Hallo,

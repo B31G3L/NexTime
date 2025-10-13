@@ -78,10 +78,10 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-        insertTestData()
+        //insertTestData()
 
         // Widget-Test beim Start
-        testWidget()
+        //testWidget()
     }
 
     private fun testWidget() {
