@@ -4,6 +4,7 @@
     android:minHeight="180dp"
     android:updatePeriodMillis="60000"
     android:initialLayout="@layout/widget_countdown"
+    android:configure="de.beigel.nextime.widget.CountdownWidgetConfigActivity"
     android:description="@string/widget_description"
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen"

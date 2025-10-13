@@ -38,6 +38,14 @@ class CountdownWidget : AppWidgetProvider() {
         Log.d("CountdownWidget", "Widget enabled")
     }
 
+    override fun onDeleted(context: Context, appWidgetIds: IntArray) {
+        super.onDeleted(context, appWidgetIds)
+        // Gespeicherte Einstellungen löschen
+        for (appWidgetId in appWidgetIds) {
+            CountdownWidgetConfigActivity.deleteCountdownPref(context, appWidgetId)
+        }
+    }
+
     override fun onDisabled(context: Context) {
         super.onDisabled(context)
         Log.d("CountdownWidget", "Widget disabled")
@@ -64,7 +72,7 @@ class CountdownWidget : AppWidgetProvider() {
 
                     // Countdown laden
                     val countdown = withContext(Dispatchers.IO) {
-                        loadCountdown(context)
+                        loadCountdown(context, appWidgetId)
                     }
 
                     if (countdown != null) {
@@ -90,12 +98,23 @@ class CountdownWidget : AppWidgetProvider() {
             }
         }
 
-        private suspend fun loadCountdown(context: Context): Countdown? {
+        private suspend fun loadCountdown(context: Context, appWidgetId: Int): Countdown? {
             return try {
                 val database = CountdownDatabase.getDatabase(context)
                 val countdowns = database.countdownDao().getAllCountdowns().first()
 
-                // Hole den ersten aktiven Countdown
+                // Hole gespeicherte Countdown-ID für dieses Widget
+                val savedCountdownId = CountdownWidgetConfigActivity.getCountdownId(context, appWidgetId)
+
+                if (savedCountdownId != -1L) {
+                    // Nutzer hat einen spezifischen Countdown ausgewählt
+                    val selectedCountdown = countdowns.firstOrNull { it.id == savedCountdownId }
+                    if (selectedCountdown != null) {
+                        return selectedCountdown
+                    }
+                }
+
+                // Fallback: Hole den ersten aktiven Countdown
                 countdowns.firstOrNull {
                     !it.calculateTimeRemaining().isPast
                 } ?: countdowns.firstOrNull()
