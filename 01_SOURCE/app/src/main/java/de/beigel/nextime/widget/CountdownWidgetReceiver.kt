@@ -6,25 +6,199 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import android.widget.RemoteViews
+import android.widget.Toast
 import de.beigel.nextime.MainActivity
 import de.beigel.nextime.R
 import de.beigel.nextime.data.database.CountdownDatabase
 import de.beigel.nextime.data.model.Countdown
-import de.beigel.nextime.data.model.CountdownDisplayFormat
 import de.beigel.nextime.data.model.calculateTimeRemaining
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.format.DateTimeFormatter
 
 class CountdownWidgetReceiver : AppWidgetProvider() {
+
+    companion object {
+        private const val TAG = "CountdownWidget"
+        const val ACTION_UPDATE_WIDGET = "de.beigel.nextime.ACTION_UPDATE_WIDGET"
+
+        fun updateWidget(
+            context: Context,
+            appWidgetManager: AppWidgetManager,
+            appWidgetId: Int
+        ) {
+            Log.d(TAG, "=== UPDATE WIDGET START ===")
+            Log.d(TAG, "Widget ID: $appWidgetId")
+
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    // 1. Prüfe SharedPreferences
+                    val prefs = context.getSharedPreferences("widget_prefs", Context.MODE_PRIVATE)
+                    val allPrefs = prefs.all
+                    Log.d(TAG, "All SharedPreferences: $allPrefs")
+
+                    val countdownId = prefs.getLong("widget_${appWidgetId}_countdown_id", -1L)
+                    Log.d(TAG, "Countdown ID from prefs: $countdownId")
+
+                    if (countdownId == -1L) {
+                        Log.e(TAG, "No countdown ID found in preferences!")
+                        withContext(Dispatchers.Main) {
+                            showErrorWidget(context, appWidgetManager, appWidgetId, "Keine Konfiguration gefunden")
+                        }
+                        return@launch
+                    }
+
+                    // 2. Versuche Countdown zu laden
+                    Log.d(TAG, "Loading countdown from database...")
+                    val database = CountdownDatabase.getDatabase(context)
+                    val countdown = database.countdownDao().getCountdownById(countdownId)
+
+                    if (countdown == null) {
+                        Log.e(TAG, "Countdown $countdownId not found in database!")
+                        withContext(Dispatchers.Main) {
+                            showErrorWidget(context, appWidgetManager, appWidgetId, "Countdown nicht gefunden")
+                        }
+                        return@launch
+                    }
+
+                    Log.d(TAG, "Countdown loaded: ${countdown.title}")
+
+                    // 3. Erstelle Widget-View
+                    Log.d(TAG, "Creating widget view...")
+                    val views = createSimpleWidget(context, countdown, appWidgetId)
+
+                    // 4. Update Widget
+                    withContext(Dispatchers.Main) {
+                        Log.d(TAG, "Updating widget on main thread...")
+                        appWidgetManager.updateAppWidget(appWidgetId, views)
+                        Log.d(TAG, "Widget updated successfully!")
+
+                        // Toast zur Bestätigung
+                        Toast.makeText(context, "Widget aktualisiert: ${countdown.title}", Toast.LENGTH_SHORT).show()
+                    }
+
+                } catch (e: Exception) {
+                    Log.e(TAG, "ERROR updating widget", e)
+                    Log.e(TAG, "Error message: ${e.message}")
+                    Log.e(TAG, "Error stacktrace:", e)
+
+                    withContext(Dispatchers.Main) {
+                        showErrorWidget(context, appWidgetManager, appWidgetId, e.message ?: "Unbekannter Fehler")
+                    }
+                }
+            }
+
+            Log.d(TAG, "=== UPDATE WIDGET END ===")
+        }
+
+        private fun createSimpleWidget(
+            context: Context,
+            countdown: Countdown,
+            appWidgetId: Int
+        ): RemoteViews {
+            Log.d(TAG, "Creating simple widget view")
+
+            val views = RemoteViews(context.packageName, R.layout.widget_small)
+            val timeInfo = countdown.calculateTimeRemaining()
+
+            try {
+                // Farbe setzen
+                try {
+                    val color = android.graphics.Color.parseColor(countdown.color)
+                    views.setInt(R.id.widget_color_bar, "setBackgroundColor", color)
+                    Log.d(TAG, "Color set: ${countdown.color}")
+                } catch (e: Exception) {
+                    Log.w(TAG, "Error setting color: ${e.message}")
+                }
+
+                // Titel
+                views.setTextViewText(R.id.widget_title, countdown.title)
+                Log.d(TAG, "Title set: ${countdown.title}")
+
+                // Countdown-Zahl
+                val countdownText = "${timeInfo.days}"
+                views.setTextViewText(R.id.widget_countdown, countdownText)
+                Log.d(TAG, "Countdown set: $countdownText")
+
+                // Subtitle
+                val subtitle = if (timeInfo.days == 1L) "Tag" else "Tage"
+                views.setTextViewText(R.id.widget_subtitle, subtitle)
+                Log.d(TAG, "Subtitle set: $subtitle")
+
+                // Datum
+                val dateText = countdown.targetDateTime.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))
+                views.setTextViewText(R.id.widget_date, dateText)
+                Log.d(TAG, "Date set: $dateText")
+
+                // Click-Handler
+                val intent = Intent(context, MainActivity::class.java)
+                val pendingIntent = PendingIntent.getActivity(
+                    context,
+                    appWidgetId,
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                views.setOnClickPendingIntent(R.id.widget_container, pendingIntent)
+                Log.d(TAG, "Click handler set")
+
+            } catch (e: Exception) {
+                Log.e(TAG, "Error creating widget content", e)
+                throw e
+            }
+
+            return views
+        }
+
+        private fun showErrorWidget(
+            context: Context,
+            appWidgetManager: AppWidgetManager,
+            appWidgetId: Int,
+            errorMessage: String
+        ) {
+            Log.d(TAG, "Showing error widget: $errorMessage")
+
+            val views = RemoteViews(context.packageName, R.layout.widget_small)
+
+            try {
+                views.setTextViewText(R.id.widget_title, "❌ Fehler")
+                views.setTextViewText(R.id.widget_countdown, "!")
+                views.setTextViewText(R.id.widget_subtitle, "Widget-Fehler")
+                views.setTextViewText(R.id.widget_date, errorMessage.take(50))
+
+                // Click zum Öffnen der Config
+                val configIntent = Intent(context, CountdownWidgetConfigActivity::class.java).apply {
+                    putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                }
+                val pendingIntent = PendingIntent.getActivity(
+                    context,
+                    appWidgetId,
+                    configIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                views.setOnClickPendingIntent(R.id.widget_container, pendingIntent)
+
+                appWidgetManager.updateAppWidget(appWidgetId, views)
+
+                // Toast mit Fehler
+                Toast.makeText(context, "Widget-Fehler: $errorMessage", Toast.LENGTH_LONG).show()
+
+            } catch (e: Exception) {
+                Log.e(TAG, "Error creating error widget", e)
+            }
+        }
+    }
 
     override fun onUpdate(
         context: Context,
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray
     ) {
+        Log.d(TAG, "onUpdate called for ${appWidgetIds.size} widgets: ${appWidgetIds.joinToString()}")
         appWidgetIds.forEach { appWidgetId ->
             updateWidget(context, appWidgetManager, appWidgetId)
         }
@@ -33,349 +207,55 @@ class CountdownWidgetReceiver : AppWidgetProvider() {
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
 
+        Log.d(TAG, "onReceive: action=${intent.action}, extras=${intent.extras}")
+
         if (intent.action == ACTION_UPDATE_WIDGET) {
             val appWidgetManager = AppWidgetManager.getInstance(context)
             val appWidgetIds = appWidgetManager.getAppWidgetIds(
                 ComponentName(context, CountdownWidgetReceiver::class.java)
             )
+            Log.d(TAG, "Manual update triggered for ${appWidgetIds.size} widgets")
             onUpdate(context, appWidgetManager, appWidgetIds)
         }
     }
 
-    companion object {
-        const val ACTION_UPDATE_WIDGET = "de.beigel.nextime.ACTION_UPDATE_WIDGET"
+    override fun onDeleted(context: Context, appWidgetIds: IntArray) {
+        super.onDeleted(context, appWidgetIds)
 
-        fun updateWidget(
-            context: Context,
-            appWidgetManager: AppWidgetManager,
-            appWidgetId: Int
-        ) {
-            CoroutineScope(Dispatchers.IO).launch {
-                val prefs = context.getSharedPreferences("widget_prefs", Context.MODE_PRIVATE)
-                val countdownId = prefs.getLong("widget_${appWidgetId}_countdown_id", -1L)
+        Log.d(TAG, "onDeleted: ${appWidgetIds.joinToString()}")
 
-                if (countdownId == -1L) {
-                    updateWidgetWithPlaceholder(context, appWidgetManager, appWidgetId)
-                    return@launch
-                }
+        val prefs = context.getSharedPreferences("widget_prefs", Context.MODE_PRIVATE)
+        val editor = prefs.edit()
 
-                val database = CountdownDatabase.getDatabase(context)
-                val countdown = database.countdownDao().getCountdownById(countdownId)
-
-                if (countdown == null) {
-                    updateWidgetWithPlaceholder(context, appWidgetManager, appWidgetId)
-                    return@launch
-                }
-
-                // Widget-Größe aus den Optionen ermitteln
-                val options = appWidgetManager.getAppWidgetOptions(appWidgetId)
-                val minWidth = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH)
-                val minHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT)
-
-                val views = when {
-                    minWidth >= 250 && minHeight >= 180 -> createLargeWidget(context, countdown, appWidgetId)
-                    minWidth >= 250 -> createMediumWidget(context, countdown, appWidgetId)
-                    else -> createSmallWidget(context, countdown, appWidgetId)
-                }
-
-                appWidgetManager.updateAppWidget(appWidgetId, views)
-            }
+        appWidgetIds.forEach { appWidgetId ->
+            editor.remove("widget_${appWidgetId}_countdown_id")
+            Log.d(TAG, "Deleted config for widget $appWidgetId")
         }
 
-        private fun updateWidgetWithPlaceholder(
-            context: Context,
-            appWidgetManager: AppWidgetManager,
-            appWidgetId: Int
-        ) {
-            val views = RemoteViews(context.packageName, R.layout.widget_small)
-            views.setTextViewText(R.id.widget_title, "⏰ NexTime")
-            views.setTextViewText(R.id.widget_countdown, "--")
-            views.setTextViewText(R.id.widget_subtitle, "Nicht konfiguriert")
-            views.setTextViewText(R.id.widget_date, "Tippen zum Einrichten")
+        editor.apply()
+    }
 
-            // Click zum Öffnen der Config
-            val configIntent = Intent(context, CountdownWidgetConfigActivity::class.java).apply {
-                putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-            }
-            val pendingIntent = PendingIntent.getActivity(
-                context,
-                appWidgetId,
-                configIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-            views.setOnClickPendingIntent(R.id.widget_container, pendingIntent)
+    override fun onEnabled(context: Context) {
+        super.onEnabled(context)
+        Log.d(TAG, "First widget added")
 
-            appWidgetManager.updateAppWidget(appWidgetId, views)
+        try {
+            WidgetUpdateWorker.scheduleWork(context)
+            Log.d(TAG, "WorkManager scheduled")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error scheduling WorkManager", e)
         }
+    }
 
-        private fun createSmallWidget(
-            context: Context,
-            countdown: Countdown,
-            appWidgetId: Int
-        ): RemoteViews {
-            val views = RemoteViews(context.packageName, R.layout.widget_small)
-            val timeInfo = countdown.calculateTimeRemaining()
+    override fun onDisabled(context: Context) {
+        super.onDisabled(context)
+        Log.d(TAG, "Last widget removed")
 
-            // Farbe setzen
-            try {
-                val color = android.graphics.Color.parseColor(countdown.color)
-                views.setInt(R.id.widget_color_bar, "setBackgroundColor", color)
-            } catch (e: Exception) {
-                // Fallback auf Orange
-            }
-
-            // Titel
-            views.setTextViewText(R.id.widget_title, countdown.title)
-
-            // Countdown - wie in der App formatiert
-            val format = try {
-                CountdownDisplayFormat.valueOf(countdown.displayFormat)
-            } catch (e: Exception) {
-                CountdownDisplayFormat.FULL_DETAILED
-            }
-
-            val countdownText = when (format) {
-                CountdownDisplayFormat.FULL_DETAILED -> {
-                    if (timeInfo.years > 0 || timeInfo.months > 0) {
-                        "${timeInfo.days}"
-                    } else {
-                        String.format("%02d:%02d:%02d", timeInfo.hours, timeInfo.minutes, timeInfo.seconds)
-                    }
-                }
-                CountdownDisplayFormat.DAYS_ONLY -> "${timeInfo.days}"
-                CountdownDisplayFormat.HOURS_MINUTES -> String.format("%d:%02d", timeInfo.hours, timeInfo.minutes)
-                else -> "${timeInfo.days}"
-            }
-            views.setTextViewText(R.id.widget_countdown, countdownText)
-
-            // Subtitle
-            val subtitle = when (format) {
-                CountdownDisplayFormat.FULL_DETAILED -> {
-                    if (timeInfo.years > 0 || timeInfo.months > 0) {
-                        if (timeInfo.days == 1L) "Tag" else "Tage"
-                    } else {
-                        if (countdown.includeTime) "verbleibend" else if (timeInfo.days == 1L) "Tag" else "Tage"
-                    }
-                }
-                CountdownDisplayFormat.DAYS_ONLY -> if (timeInfo.days == 1L) "Tag" else "Tage"
-                CountdownDisplayFormat.HOURS_MINUTES -> "Stunden"
-                else -> if (timeInfo.days == 1L) "Tag" else "Tage"
-            }
-            views.setTextViewText(R.id.widget_subtitle, subtitle)
-
-            // Datum
-            views.setTextViewText(
-                R.id.widget_date,
-                countdown.targetDateTime.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))
-            )
-
-            // Click zum Öffnen der App
-            val intent = Intent(context, MainActivity::class.java)
-            val pendingIntent = PendingIntent.getActivity(
-                context,
-                appWidgetId,
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-            views.setOnClickPendingIntent(R.id.widget_container, pendingIntent)
-
-            return views
-        }
-
-        private fun createMediumWidget(
-            context: Context,
-            countdown: Countdown,
-            appWidgetId: Int
-        ): RemoteViews {
-            val views = RemoteViews(context.packageName, R.layout.widget_medium)
-            val timeInfo = countdown.calculateTimeRemaining()
-
-            // Farbe setzen
-            try {
-                val color = android.graphics.Color.parseColor(countdown.color)
-                views.setInt(R.id.widget_color_bar, "setBackgroundColor", color)
-                views.setInt(R.id.widget_background, "setBackgroundColor",
-                    android.graphics.Color.argb(30,
-                        android.graphics.Color.red(color),
-                        android.graphics.Color.green(color),
-                        android.graphics.Color.blue(color)
-                    )
-                )
-            } catch (e: Exception) {
-                // Fallback
-            }
-
-            // Titel
-            views.setTextViewText(R.id.widget_title, countdown.title)
-
-            // Format ermitteln
-            val format = try {
-                CountdownDisplayFormat.valueOf(countdown.displayFormat)
-            } catch (e: Exception) {
-                CountdownDisplayFormat.FULL_DETAILED
-            }
-
-            // Countdown anzeigen - abhängig vom Format
-            when (format) {
-                CountdownDisplayFormat.FULL_DETAILED -> {
-                    // Zeige Jahre/Monate/Tage und Zeit
-                    views.setTextViewText(R.id.widget_days, "${timeInfo.days % 30}")
-                    views.setTextViewText(R.id.widget_days_label, if (timeInfo.days % 30 == 1L) "Tag" else "Tage")
-
-                    if (countdown.includeTime) {
-                        views.setTextViewText(R.id.widget_hours, "${timeInfo.hours}")
-                        views.setTextViewText(R.id.widget_minutes, String.format("%02d", timeInfo.minutes))
-                        views.setTextViewText(R.id.widget_seconds, String.format("%02d", timeInfo.seconds))
-                    }
-                }
-                CountdownDisplayFormat.DAYS_ONLY -> {
-                    views.setTextViewText(R.id.widget_days, "${timeInfo.days}")
-                    views.setTextViewText(R.id.widget_days_label, if (timeInfo.days == 1L) "Tag" else "Tage")
-                    views.setTextViewText(R.id.widget_hours, "")
-                    views.setTextViewText(R.id.widget_minutes, "")
-                    views.setTextViewText(R.id.widget_seconds, "")
-                }
-                else -> {
-                    views.setTextViewText(R.id.widget_days, "${timeInfo.days}")
-                    views.setTextViewText(R.id.widget_days_label, if (timeInfo.days == 1L) "Tag" else "Tage")
-                    if (countdown.includeTime) {
-                        views.setTextViewText(R.id.widget_hours, "${timeInfo.hours}")
-                        views.setTextViewText(R.id.widget_minutes, String.format("%02d", timeInfo.minutes))
-                        views.setTextViewText(R.id.widget_seconds, String.format("%02d", timeInfo.seconds))
-                    }
-                }
-            }
-
-            // Datum und Uhrzeit
-            views.setTextViewText(
-                R.id.widget_date,
-                countdown.targetDateTime.format(DateTimeFormatter.ofPattern("dd. MMMM yyyy"))
-            )
-
-            if (countdown.includeTime) {
-                views.setTextViewText(
-                    R.id.widget_time,
-                    countdown.targetDateTime.format(DateTimeFormatter.ofPattern("HH:mm 'Uhr'"))
-                )
-            } else {
-                views.setTextViewText(R.id.widget_time, "")
-            }
-
-            // Click zum Öffnen der App
-            val intent = Intent(context, MainActivity::class.java)
-            val pendingIntent = PendingIntent.getActivity(
-                context,
-                appWidgetId,
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-            views.setOnClickPendingIntent(R.id.widget_container, pendingIntent)
-
-            return views
-        }
-
-        private fun createLargeWidget(
-            context: Context,
-            countdown: Countdown,
-            appWidgetId: Int
-        ): RemoteViews {
-            val views = RemoteViews(context.packageName, R.layout.widget_large)
-            val timeInfo = countdown.calculateTimeRemaining()
-
-            // Farbe setzen
-            try {
-                val color = android.graphics.Color.parseColor(countdown.color)
-                views.setInt(R.id.widget_accent_bar, "setBackgroundColor", color)
-            } catch (e: Exception) {
-                // Fallback
-            }
-
-            // Status
-            views.setTextViewText(
-                R.id.widget_status,
-                if (timeInfo.isPast) "⏱️ Count-up" else "⏰ Countdown"
-            )
-
-            // Titel
-            views.setTextViewText(R.id.widget_title, countdown.title)
-
-            // Format ermitteln
-            val format = try {
-                CountdownDisplayFormat.valueOf(countdown.displayFormat)
-            } catch (e: Exception) {
-                CountdownDisplayFormat.FULL_DETAILED
-            }
-
-            // Countdown - detailliert wie in der App
-            when (format) {
-                CountdownDisplayFormat.FULL_DETAILED -> {
-                    val remainingDays = timeInfo.days % 30
-                    views.setTextViewText(R.id.widget_days_value, "$remainingDays")
-                    views.setTextViewText(R.id.widget_days_label, if (remainingDays == 1L) "Tag" else "Tage")
-
-                    if (countdown.includeTime) {
-                        views.setTextViewText(R.id.widget_hours_value, String.format("%02d", timeInfo.hours))
-                        views.setTextViewText(R.id.widget_minutes_value, String.format("%02d", timeInfo.minutes))
-                        views.setTextViewText(R.id.widget_seconds_value, String.format("%02d", timeInfo.seconds))
-                    }
-                }
-                CountdownDisplayFormat.DAYS_ONLY -> {
-                    views.setTextViewText(R.id.widget_days_value, "${timeInfo.days}")
-                    views.setTextViewText(R.id.widget_days_label, if (timeInfo.days == 1L) "Tag" else "Tage")
-                    views.setTextViewText(R.id.widget_hours_value, "--")
-                    views.setTextViewText(R.id.widget_minutes_value, "--")
-                    views.setTextViewText(R.id.widget_seconds_value, "--")
-                }
-                else -> {
-                    views.setTextViewText(R.id.widget_days_value, "${timeInfo.days}")
-                    views.setTextViewText(R.id.widget_days_label, if (timeInfo.days == 1L) "Tag" else "Tage")
-
-                    if (countdown.includeTime) {
-                        views.setTextViewText(R.id.widget_hours_value, String.format("%02d", timeInfo.hours))
-                        views.setTextViewText(R.id.widget_minutes_value, String.format("%02d", timeInfo.minutes))
-                        views.setTextViewText(R.id.widget_seconds_value, String.format("%02d", timeInfo.seconds))
-                    }
-                }
-            }
-
-            // Datum
-            views.setTextViewText(
-                R.id.widget_date,
-                "📅 " + countdown.targetDateTime.format(DateTimeFormatter.ofPattern("dd. MMMM yyyy"))
-            )
-
-            // Uhrzeit
-            if (countdown.includeTime) {
-                views.setTextViewText(
-                    R.id.widget_time,
-                    "🕐 " + countdown.targetDateTime.format(DateTimeFormatter.ofPattern("HH:mm 'Uhr'"))
-                )
-            } else {
-                views.setTextViewText(R.id.widget_time, "")
-            }
-
-            // Nächte
-            if (countdown.showNights && timeInfo.nights > 0) {
-                views.setTextViewText(
-                    R.id.widget_nights,
-                    "🌙 ${timeInfo.nights} ${if (timeInfo.nights == 1L) "Nacht" else "Nächte"}"
-                )
-            } else {
-                views.setTextViewText(R.id.widget_nights, "")
-            }
-
-            // Click zum Öffnen der App
-            val intent = Intent(context, MainActivity::class.java)
-            val pendingIntent = PendingIntent.getActivity(
-                context,
-                appWidgetId,
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-            views.setOnClickPendingIntent(R.id.widget_container, pendingIntent)
-
-            return views
+        try {
+            WidgetUpdateWorker.cancelWork(context)
+            Log.d(TAG, "WorkManager cancelled")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error cancelling WorkManager", e)
         }
     }
 }

@@ -3,6 +3,7 @@ package de.beigel.nextime.widget
 import android.appwidget.AppWidgetManager
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -28,6 +29,7 @@ import de.beigel.nextime.data.model.Countdown
 import de.beigel.nextime.data.model.calculateTimeRemaining
 import de.beigel.nextime.ui.theme.DesignSystem
 import de.beigel.nextime.ui.theme.NexTimeTheme
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.time.format.DateTimeFormatter
@@ -36,8 +38,14 @@ class CountdownWidgetConfigActivity : ComponentActivity() {
 
     private var appWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
 
+    companion object {
+        private const val TAG = "WidgetConfig"
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        Log.d(TAG, "onCreate")
 
         // Standard-Ergebnis auf CANCELLED setzen
         setResult(RESULT_CANCELED)
@@ -48,49 +56,81 @@ class CountdownWidgetConfigActivity : ComponentActivity() {
             AppWidgetManager.INVALID_APPWIDGET_ID
         ) ?: AppWidgetManager.INVALID_APPWIDGET_ID
 
+        Log.d(TAG, "Widget ID: $appWidgetId")
+
         if (appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID) {
+            Log.e(TAG, "Invalid widget ID, finishing")
             finish()
             return
         }
 
         setContent {
             NexTimeTheme {
-                WidgetConfigScreen(
-                    appWidgetId = appWidgetId,
-                    onConfigComplete = { countdownId ->
-                        saveWidgetConfig(countdownId)
-                        finishWithSuccess()
-                    },
-                    onCancel = {
-                        finish()
-                    }
-                )
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    WidgetConfigScreen(
+                        appWidgetId = appWidgetId,
+                        onConfigComplete = { countdownId ->
+                            Log.d(TAG, "Config complete for countdown $countdownId")
+                            saveWidgetConfig(countdownId)
+                            finishWithSuccess()
+                        },
+                        onCancel = {
+                            Log.d(TAG, "Config cancelled")
+                            finish()
+                        }
+                    )
+                }
             }
         }
     }
 
     private fun saveWidgetConfig(countdownId: Long) {
+        Log.d(TAG, "Saving config: widget=$appWidgetId, countdown=$countdownId")
+
         val prefs = getSharedPreferences("widget_prefs", MODE_PRIVATE)
         prefs.edit().apply {
             putLong("widget_${appWidgetId}_countdown_id", countdownId)
             apply()
         }
+
+        // Verifizieren
+        val savedId = prefs.getLong("widget_${appWidgetId}_countdown_id", -1L)
+        Log.d(TAG, "Verified saved ID: $savedId")
     }
 
     private fun finishWithSuccess() {
-        // Widget updaten
-        val appWidgetManager = AppWidgetManager.getInstance(this)
-        CountdownWidgetReceiver.updateWidget(this, appWidgetManager, appWidgetId)
+        Log.d(TAG, "Finishing with success")
 
-        // WorkManager für Updates starten
-        WidgetUpdateWorker.scheduleWork(this)
+        try {
+            // Widget updaten
+            val appWidgetManager = AppWidgetManager.getInstance(this)
 
-        // Erfolg zurückmelden
-        val resultValue = Intent().apply {
-            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+            // Kurze Verzögerung, damit die Datenbank-Transaktion sicher abgeschlossen ist
+            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+                delay(100)
+
+                Log.d(TAG, "Triggering widget update")
+                CountdownWidgetReceiver.updateWidget(this@CountdownWidgetConfigActivity, appWidgetManager, appWidgetId)
+
+                // WorkManager für regelmäßige Updates starten
+                WidgetUpdateWorker.scheduleWork(this@CountdownWidgetConfigActivity)
+
+                // Erfolg zurückmelden
+                val resultValue = Intent().apply {
+                    putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+                }
+                setResult(RESULT_OK, resultValue)
+
+                Log.d(TAG, "Success result set, finishing activity")
+                finish()
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in finishWithSuccess", e)
+            finish()
         }
-        setResult(RESULT_OK, resultValue)
-        finish()
     }
 }
 
@@ -106,135 +146,195 @@ fun WidgetConfigScreen(
 
     var countdowns by remember { mutableStateOf<List<Countdown>>(emptyList()) }
     var selectedCountdown by remember { mutableStateOf<Countdown?>(null) }
+    var isLoading by remember { mutableStateOf(true) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     // Countdowns laden
     LaunchedEffect(Unit) {
         scope.launch {
-            val database = CountdownDatabase.getDatabase(context)
-            countdowns = database.countdownDao().getAllCountdowns().first()
+            try {
+                Log.d("WidgetConfig", "Loading countdowns...")
+                val database = CountdownDatabase.getDatabase(context)
+                val loadedCountdowns = database.countdownDao().getAllCountdowns().first()
+                countdowns = loadedCountdowns
+                isLoading = false
+                Log.d("WidgetConfig", "Loaded ${countdowns.size} countdowns")
+            } catch (e: Exception) {
+                Log.e("WidgetConfig", "Error loading countdowns", e)
+                errorMessage = e.message
+                isLoading = false
+            }
         }
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Countdown für Widget auswählen") },
+                title = { Text("Widget einrichten") },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent
                 )
             )
         }
     ) { paddingValues ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            if (countdowns.isEmpty()) {
-                // Keine Countdowns vorhanden
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(DesignSystem.Spacing.xxLarge),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer
-                        )
+            when {
+                isLoading -> {
+                    // Loading
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
                     ) {
                         Column(
-                            modifier = Modifier.padding(DesignSystem.Spacing.large),
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(DesignSystem.Spacing.medium)
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            Text(
-                                text = "⚠️",
-                                fontSize = 48.sp
+                            CircularProgressIndicator()
+                            Text("Lade Countdowns...")
+                        }
+                    }
+                }
+                errorMessage != null -> {
+                    // Error
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer
                             )
-                            Text(
-                                text = "Keine Countdowns vorhanden",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onErrorContainer
-                            )
-                            Text(
-                                text = "Erstelle zuerst einen Countdown in der NexTime App, bevor du ein Widget hinzufügst.",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onErrorContainer
-                            )
-                            Spacer(modifier = Modifier.height(DesignSystem.Spacing.small))
-                            Button(
-                                onClick = onCancel,
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.error
-                                )
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(24.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(16.dp)
                             ) {
-                                Text("Schließen")
+                                Text("❌", fontSize = 48.sp)
+                                Text(
+                                    "Fehler beim Laden",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    errorMessage ?: "Unbekannter Fehler",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onErrorContainer
+                                )
+                                Button(
+                                    onClick = onCancel,
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.error
+                                    )
+                                ) {
+                                    Text("Schließen")
+                                }
                             }
                         }
                     }
                 }
-            } else {
-                // Countdown-Liste
-                Column(modifier = Modifier.weight(1f)) {
-                    // Info-Text
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                countdowns.isEmpty() -> {
+                    // No countdowns
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(24.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = "Wähle einen Countdown für dein Widget aus:",
-                            modifier = Modifier.padding(DesignSystem.Spacing.medium),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-
-                    LazyColumn(
-                        modifier = Modifier.weight(1f),
-                        contentPadding = PaddingValues(DesignSystem.Spacing.medium),
-                        verticalArrangement = Arrangement.spacedBy(DesignSystem.Spacing.small)
-                    ) {
-                        items(countdowns) { countdown ->
-                            WidgetCountdownCard(
-                                countdown = countdown,
-                                isSelected = selectedCountdown?.id == countdown.id,
-                                onClick = { selectedCountdown = countdown }
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer
                             )
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(24.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                Text("⚠️", fontSize = 48.sp)
+                                Text(
+                                    "Keine Countdowns vorhanden",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    "Erstelle zuerst einen Countdown in der NexTime App, bevor du ein Widget hinzufügst.",
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                Button(onClick = onCancel) {
+                                    Text("Schließen")
+                                }
+                            }
                         }
                     }
                 }
-
-                // Buttons
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shadowElevation = 8.dp
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(DesignSystem.Spacing.medium),
-                        horizontalArrangement = Arrangement.spacedBy(DesignSystem.Spacing.small)
-                    ) {
-                        OutlinedButton(
-                            onClick = onCancel,
-                            modifier = Modifier.weight(1f)
+                else -> {
+                    // Countdown list
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        // Info-Text
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
                         ) {
-                            Text("Abbrechen")
+                            Text(
+                                text = "Wähle einen Countdown für dein Widget aus:",
+                                modifier = Modifier.padding(16.dp),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
                         }
 
-                        Button(
-                            onClick = {
-                                selectedCountdown?.let { countdown ->
-                                    onConfigComplete(countdown.id)
-                                }
-                            },
+                        LazyColumn(
                             modifier = Modifier.weight(1f),
-                            enabled = selectedCountdown != null
+                            contentPadding = PaddingValues(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Text("Widget hinzufügen")
+                            items(countdowns) { countdown ->
+                                WidgetCountdownCard(
+                                    countdown = countdown,
+                                    isSelected = selectedCountdown?.id == countdown.id,
+                                    onClick = { selectedCountdown = countdown }
+                                )
+                            }
+                        }
+
+                        // Buttons
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shadowElevation = 8.dp,
+                            tonalElevation = 2.dp
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                OutlinedButton(
+                                    onClick = onCancel,
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text("Abbrechen")
+                                }
+
+                                Button(
+                                    onClick = {
+                                        selectedCountdown?.let { countdown ->
+                                            onConfigComplete(countdown.id)
+                                        }
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    enabled = selectedCountdown != null
+                                ) {
+                                    Text("Widget hinzufügen")
+                                }
+                            }
                         }
                     }
                 }
@@ -270,11 +370,11 @@ private fun WidgetCountdownCard(
                 MaterialTheme.colorScheme.surfaceVariant
         ),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isSelected) 8.dp else DesignSystem.Card.elevation
+            defaultElevation = if (isSelected) 8.dp else 2.dp
         )
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // Gradient Hintergrund
+            // Gradient Hintergrund (nur wenn nicht ausgewählt)
             if (!isSelected) {
                 Box(
                     modifier = Modifier
@@ -293,10 +393,10 @@ private fun WidgetCountdownCard(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(DesignSystem.Spacing.medium),
+                    .padding(16.dp),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
-                // Titel
+                // Titel und Check
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -306,7 +406,6 @@ private fun WidgetCountdownCard(
                         text = countdown.title,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.weight(1f)
                     )
 
@@ -327,7 +426,7 @@ private fun WidgetCountdownCard(
                     }
                 }
 
-                // Countdown-Anzeige (vereinfacht)
+                // Countdown-Anzeige
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.fillMaxWidth()
