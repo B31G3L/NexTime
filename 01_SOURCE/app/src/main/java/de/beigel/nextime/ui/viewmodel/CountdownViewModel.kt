@@ -7,6 +7,7 @@ import de.beigel.nextime.data.database.CountdownDatabase
 import de.beigel.nextime.data.model.Countdown
 import de.beigel.nextime.data.repository.CountdownRepository
 import de.beigel.nextime.notifications.NotificationScheduler
+import de.beigel.nextime.widget.CountdownWidget
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -30,6 +31,8 @@ class CountdownViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch {
             repository.allCountdowns.collect { list ->
                 _countdowns.value = list
+                // Widget bei Änderungen aktualisieren
+                CountdownWidget.updateAllWidgets(context)
             }
         }
     }
@@ -43,6 +46,9 @@ class CountdownViewModel(application: Application) : AndroidViewModel(applicatio
             savedCountdown?.let {
                 NotificationScheduler.scheduleNotifications(context, it)
             }
+
+            // Widget aktualisieren
+            CountdownWidget.updateAllWidgets(context)
         }
     }
 
@@ -53,6 +59,9 @@ class CountdownViewModel(application: Application) : AndroidViewModel(applicatio
             // Notifikationen neu planen
             NotificationScheduler.cancelAllNotifications(context, countdown)
             NotificationScheduler.scheduleNotifications(context, countdown)
+
+            // Widget aktualisieren
+            CountdownWidget.updateAllWidgets(context)
         }
     }
 
@@ -61,6 +70,9 @@ class CountdownViewModel(application: Application) : AndroidViewModel(applicatio
             // Notifikationen abbrechen
             NotificationScheduler.cancelAllNotifications(context, countdown)
             repository.deleteCountdown(countdown)
+
+            // Widget aktualisieren
+            CountdownWidget.updateAllWidgets(context)
         }
     }
 

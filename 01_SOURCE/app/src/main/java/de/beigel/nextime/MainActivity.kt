@@ -1,6 +1,8 @@
 package de.beigel.nextime
 
 import android.Manifest
+import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -23,6 +25,7 @@ import de.beigel.nextime.notifications.CountdownNotificationManager
 import de.beigel.nextime.ui.theme.NexTimeTheme
 import de.beigel.nextime.ui.theme.ThemePreferences
 import de.beigel.nextime.ui.screens.MainScreen
+import de.beigel.nextime.widget.CountdownWidget
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
@@ -76,9 +79,27 @@ class MainActivity : ComponentActivity() {
             }
         }
         insertTestData()
+
+        // Widget-Test beim Start
+        testWidget()
     }
 
-    // In MainActivity.kt nach onCreate() hinzufügen:
+    private fun testWidget() {
+        try {
+            val appWidgetManager = AppWidgetManager.getInstance(this)
+            val widgetComponent = ComponentName(this, CountdownWidget::class.java)
+            val appWidgetIds = appWidgetManager.getAppWidgetIds(widgetComponent)
+
+            android.util.Log.d("MainActivity", "Found ${appWidgetIds.size} widgets")
+
+            if (appWidgetIds.isNotEmpty()) {
+                Toast.makeText(this, "Widget wird aktualisiert...", Toast.LENGTH_SHORT).show()
+                CountdownWidget.updateAllWidgets(this)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "Widget test error", e)
+        }
+    }
 
     private fun insertTestData() {
         val database = CountdownDatabase.getDatabase(this)
@@ -195,6 +216,9 @@ class MainActivity : ComponentActivity() {
                 "✅ ${testCountdowns.size} Test-Countdowns erstellt!",
                 Toast.LENGTH_LONG
             ).show()
+
+            // Widget nach Test-Daten aktualisieren
+            CountdownWidget.updateAllWidgets(this@MainActivity)
         }
     }
 }
