@@ -287,7 +287,7 @@ private fun openPlayStore(context: android.content.Context) {
 
 private fun openKofi(context: android.content.Context) {
     // Ersetze "deinusername" mit deinem echten Ko-fi Username
-    val kofiUrl = "https://ko-fi.com/deinusername"
+    val kofiUrl = "https://ko-fi.com/beigel"
     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(kofiUrl))
     context.startActivity(intent)
 }
