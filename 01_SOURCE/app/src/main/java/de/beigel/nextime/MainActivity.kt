@@ -11,6 +11,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -23,6 +24,7 @@ import de.beigel.nextime.data.model.Countdown
 import de.beigel.nextime.data.model.CountdownDisplayFormat
 import de.beigel.nextime.notifications.CountdownNotificationManager
 import de.beigel.nextime.ui.theme.NexTimeTheme
+import de.beigel.nextime.ui.theme.ThemeMode
 import de.beigel.nextime.ui.theme.ThemePreferences
 import de.beigel.nextime.ui.screens.MainScreen
 import de.beigel.nextime.widget.CountdownWidget
@@ -32,7 +34,6 @@ import java.time.LocalDateTime
 
 class MainActivity : ComponentActivity() {
 
-    // Permission Launcher für Benachrichtigungen
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
@@ -42,10 +43,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Notification Channel erstellen
         CountdownNotificationManager.createNotificationChannel(this)
 
-        // Benachrichtigungs-Permission anfragen (Android 13+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(
                     this,
@@ -60,7 +59,15 @@ class MainActivity : ComponentActivity() {
         setContent {
             val context = LocalContext.current
             val scope = rememberCoroutineScope()
-            val isDarkTheme by ThemePreferences.getDarkMode(context).collectAsState(initial = false)
+
+            val themeMode by ThemePreferences.getThemeMode(context).collectAsState(initial = ThemeMode.SYSTEM)
+            val systemDarkTheme = isSystemInDarkTheme()
+
+            val isDarkTheme = when (themeMode) {
+                ThemeMode.SYSTEM -> systemDarkTheme
+                ThemeMode.LIGHT -> false
+                ThemeMode.DARK -> true
+            }
 
             NexTimeTheme(darkTheme = isDarkTheme) {
                 Surface(
@@ -69,36 +76,12 @@ class MainActivity : ComponentActivity() {
                 ) {
                     MainScreen(
                         isDarkTheme = isDarkTheme,
-                        onThemeToggle = {
-                            scope.launch {
-                                ThemePreferences.setDarkMode(context, !isDarkTheme)
-                            }
-                        }
+                        onThemeToggle = { }
                     )
                 }
             }
         }
-        //insertTestData()
-
-        // Widget-Test beim Start
-        //testWidget()
-    }
-
-    private fun testWidget() {
-        try {
-            val appWidgetManager = AppWidgetManager.getInstance(this)
-            val widgetComponent = ComponentName(this, CountdownWidget::class.java)
-            val appWidgetIds = appWidgetManager.getAppWidgetIds(widgetComponent)
-
-            android.util.Log.d("MainActivity", "Found ${appWidgetIds.size} widgets")
-
-            if (appWidgetIds.isNotEmpty()) {
-                Toast.makeText(this, "Widget wird aktualisiert...", Toast.LENGTH_SHORT).show()
-                CountdownWidget.updateAllWidgets(this)
-            }
-        } catch (e: Exception) {
-            android.util.Log.e("MainActivity", "Widget test error", e)
-        }
+        insertTestData()
     }
 
     private fun insertTestData() {
@@ -106,15 +89,13 @@ class MainActivity : ComponentActivity() {
         val dao = database.countdownDao()
 
         lifecycleScope.launch {
-            // Prüfen ob schon Daten vorhanden
             val existing = dao.getAllCountdowns().first()
             if (existing.isNotEmpty()) return@launch
 
-            // Test-Countdowns
             val testCountdowns = listOf(
-                // 1. Nahe Zukunft mit Zeit
+                // 1. FULL_DETAILED Format
                 Countdown(
-                    title = "🎂 Geburtstag",
+                    title = "🎂 Geburtstag (FULL_DETAILED)",
                     targetDateTime = LocalDateTime.now().plusDays(7).withHour(18).withMinute(0),
                     includeTime = true,
                     displayFormat = CountdownDisplayFormat.FULL_DETAILED.name,
@@ -123,86 +104,84 @@ class MainActivity : ComponentActivity() {
                     reminderOptions = "DAY_1,HOUR_1"
                 ),
 
-                // 2. Weit in der Zukunft
+                // 2. DAYS_ONLY Format
                 Countdown(
-                    title = "🏖️ Sommerurlaub 2026",
-                    targetDateTime = LocalDateTime.of(2026, 7, 15, 10, 0),
-                    includeTime = true,
-                    displayFormat = CountdownDisplayFormat.FULL_DETAILED.name,
-                    color = "#42A5F5",
-                    showNights = true
-                ),
-
-                // 3. Nur Tage-Format
-                Countdown(
-                    title = "🎄 Weihnachten",
+                    title = "🎄 Weihnachten (DAYS_ONLY)",
                     targetDateTime = LocalDateTime.of(2025, 12, 24, 0, 0),
                     includeTime = false,
                     displayFormat = CountdownDisplayFormat.DAYS_ONLY.name,
                     color = "#66BB6A"
                 ),
 
-                // 4. Wochen-Format
+                // 3. DAYS_HOURS Format
                 Countdown(
-                    title = "🎓 Prüfung",
-                    targetDateTime = LocalDateTime.now().plusWeeks(3),
-                    includeTime = false,
-                    displayFormat = CountdownDisplayFormat.WEEKS_DAYS.name,
-                    color = "#AB47BC"
+                    title = "🎆 Silvester (DAYS_HOURS)",
+                    targetDateTime = LocalDateTime.of(2025, 12, 31, 23, 59),
+                    includeTime = true,
+                    displayFormat = CountdownDisplayFormat.DAYS_HOURS.name,
+                    color = "#5C6BC0"
                 ),
 
-                // 5. Monate-Format
+                // 4. HOURS_MINUTES Format
                 Countdown(
-                    title = "🏠 Umzug",
-                    targetDateTime = LocalDateTime.now().plusMonths(2).plusDays(5),
-                    includeTime = false,
-                    displayFormat = CountdownDisplayFormat.MONTHS_DAYS.name,
-                    color = "#FFA726"
-                ),
-
-                // 6. Stunden-Format (sehr nah)
-                Countdown(
-                    title = "⚽ Fußballspiel",
+                    title = "⚽ Fußballspiel (HOURS_MINUTES)",
                     targetDateTime = LocalDateTime.now().plusHours(5).plusMinutes(30),
                     includeTime = true,
                     displayFormat = CountdownDisplayFormat.HOURS_MINUTES.name,
                     color = "#EF5350"
                 ),
 
-                // 7. Count-up (Vergangenheit)
+                // 5. FULL_TIME Format
                 Countdown(
-                    title = "💍 Hochzeitstag",
-                    targetDateTime = LocalDateTime.now().minusYears(2).minusMonths(3),
-                    includeTime = false,
-                    displayFormat = CountdownDisplayFormat.FULL_DETAILED.name,
-                    color = "#EC407A"
-                ),
-
-                // 8. Heute
-                Countdown(
-                    title = "🍕 Pizza-Abend",
+                    title = "🍕 Pizza-Abend (FULL_TIME)",
                     targetDateTime = LocalDateTime.now().withHour(19).withMinute(30),
                     includeTime = true,
                     displayFormat = CountdownDisplayFormat.FULL_TIME.name,
                     color = "#26A69A"
                 ),
 
-                // 9. Silvester
+                // 6. WEEKS_DAYS Format
                 Countdown(
-                    title = "🎆 Silvester 2025",
-                    targetDateTime = LocalDateTime.of(2025, 12, 31, 23, 59),
-                    includeTime = true,
-                    displayFormat = CountdownDisplayFormat.DAYS_HOURS.name,
-                    color = "#5C6BC0",
-                    showNights = true
+                    title = "🎓 Prüfung (WEEKS_DAYS)",
+                    targetDateTime = LocalDateTime.now().plusWeeks(3),
+                    includeTime = false,
+                    displayFormat = CountdownDisplayFormat.WEEKS_DAYS.name,
+                    color = "#AB47BC"
                 ),
 
-                // 10. Langfristig
+                // 7. MONTHS_DAYS Format
                 Countdown(
-                    title = "🚀 Mars Mission 2030",
-                    targetDateTime = LocalDateTime.of(2030, 1, 1, 0, 0),
+                    title = "🏠 Umzug (MONTHS_DAYS)",
+                    targetDateTime = LocalDateTime.now().plusMonths(2).plusDays(5),
+                    includeTime = false,
+                    displayFormat = CountdownDisplayFormat.MONTHS_DAYS.name,
+                    color = "#FFA726"
+                ),
+
+                // 8. Count-up Beispiel
+                Countdown(
+                    title = "💍 Hochzeitstag (FULL_DETAILED)",
+                    targetDateTime = LocalDateTime.now().minusYears(2).minusMonths(3),
                     includeTime = false,
                     displayFormat = CountdownDisplayFormat.FULL_DETAILED.name,
+                    color = "#EC407A"
+                ),
+
+                // 9. Langfristig
+                Countdown(
+                    title = "🏖️ Sommerurlaub (FULL_DETAILED)",
+                    targetDateTime = LocalDateTime.of(2026, 7, 15, 10, 0),
+                    includeTime = true,
+                    displayFormat = CountdownDisplayFormat.FULL_DETAILED.name,
+                    color = "#42A5F5"
+                ),
+
+                // 10. Sehr langfristig
+                Countdown(
+                    title = "🚀 Mars Mission (MONTHS_DAYS)",
+                    targetDateTime = LocalDateTime.of(2030, 1, 1, 0, 0),
+                    includeTime = false,
+                    displayFormat = CountdownDisplayFormat.MONTHS_DAYS.name,
                     color = "#8D6E63"
                 )
             )
@@ -217,7 +196,6 @@ class MainActivity : ComponentActivity() {
                 Toast.LENGTH_LONG
             ).show()
 
-            // Widget nach Test-Daten aktualisieren
             CountdownWidget.updateAllWidgets(this@MainActivity)
         }
     }

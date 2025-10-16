@@ -215,8 +215,6 @@ private fun InfoTab(haptic: HapticFeedback) {
         // Features
         FeaturesCard()
 
-        // What's New
-        WhatsNewCard()
     }
 }
 
@@ -377,50 +375,6 @@ private fun FeaturesCard() {
             FeatureItem(Icons.Outlined.Widgets, "Widget für den Homescreen")
             FeatureItem(Icons.Outlined.DarkMode, "Dark Mode Support")
             FeatureItem(Icons.Outlined.Share, "Teile deine Countdowns")
-        }
-    }
-}
-
-@Composable
-private fun WhatsNewCard() {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.NewReleases,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.tertiary,
-                    modifier = Modifier.size(20.dp)
-                )
-                Text(
-                    text = "Neu in dieser Version",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.tertiary
-                )
-            }
-
-            Text(
-                text = "• Verbessertes Card-Design mit Farbbalken\n" +
-                        "• Neue Detailansicht mit Statistiken\n" +
-                        "• Optimierte Widget-Performance\n" +
-                        "• Haptisches Feedback überall\n" +
-                        "• Bugfixes und Stabilitätsverbesserungen",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                lineHeight = 22.sp
-            )
         }
     }
 }

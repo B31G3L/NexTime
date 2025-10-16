@@ -3,7 +3,6 @@ package de.beigel.nextime.ui.theme
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -13,19 +12,30 @@ import java.time.LocalTime
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
-object ThemePreferences {
-    val DARK_MODE = booleanPreferencesKey("dark_mode")
-    val DEFAULT_TIME = stringPreferencesKey("default_time")
+enum class ThemeMode {
+    SYSTEM,  // Folgt der Systemeinstellung
+    LIGHT,   // Immer hell
+    DARK     // Immer dunkel
+}
 
-    fun getDarkMode(context: Context): Flow<Boolean> {
+object ThemePreferences {
+    private val THEME_MODE = stringPreferencesKey("theme_mode")
+    private val DEFAULT_TIME = stringPreferencesKey("default_time")
+
+    fun getThemeMode(context: Context): Flow<ThemeMode> {
         return context.dataStore.data.map { preferences ->
-            preferences[DARK_MODE] ?: false
+            val modeString = preferences[THEME_MODE] ?: ThemeMode.SYSTEM.name
+            try {
+                ThemeMode.valueOf(modeString)
+            } catch (e: Exception) {
+                ThemeMode.SYSTEM
+            }
         }
     }
 
-    suspend fun setDarkMode(context: Context, isDark: Boolean) {
+    suspend fun setThemeMode(context: Context, mode: ThemeMode) {
         context.dataStore.edit { preferences ->
-            preferences[DARK_MODE] = isDark
+            preferences[THEME_MODE] = mode.name
         }
     }
 
