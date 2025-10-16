@@ -63,7 +63,7 @@ class CountdownWidget : AppWidgetProvider() {
                 try {
                     val views = RemoteViews(context.packageName, R.layout.widget_countdown)
 
-                    // Standard-Werte setzen (falls keine Daten)
+                    // Standard-Werte setzen
                     views.setTextViewText(R.id.widget_title, "NexTime")
                     views.setTextViewText(R.id.widget_days, "--")
                     views.setTextViewText(R.id.widget_hours, "--")
@@ -133,14 +133,7 @@ class CountdownWidget : AppWidgetProvider() {
                 // Titel
                 views.setTextViewText(R.id.widget_title, countdown.title)
 
-                // Count-up Badge anzeigen wenn in der Vergangenheit
-                if (timeInfo.isPast) {
-                    views.setViewVisibility(R.id.widget_count_up_badge, View.VISIBLE)
-                } else {
-                    views.setViewVisibility(R.id.widget_count_up_badge, View.GONE)
-                }
-
-                // Countdown-Werte
+                // Countdown-Werte - immer Tage:Stunden:Minuten anzeigen (wie in der Card)
                 views.setTextViewText(R.id.widget_days, "${timeInfo.days}")
                 views.setTextViewText(R.id.widget_hours, String.format("%02d", timeInfo.hours))
                 views.setTextViewText(R.id.widget_minutes, String.format("%02d", timeInfo.minutes))
@@ -159,39 +152,43 @@ class CountdownWidget : AppWidgetProvider() {
                     if (timeInfo.minutes == 1L) "Minute" else "Minuten"
                 )
 
+                // Sekunden anzeigen wenn includeTime gesetzt ist
+                if (countdown.includeTime) {
+                    views.setViewVisibility(R.id.widget_seconds_container, View.VISIBLE)
+                    views.setTextViewText(R.id.widget_seconds, String.format("%02d", timeInfo.seconds))
+                } else {
+                    views.setViewVisibility(R.id.widget_seconds_container, View.GONE)
+                }
+
                 // Datum
                 val dateText = countdown.targetDateTime.format(
                     DateTimeFormatter.ofPattern("dd.MM.yyyy")
                 )
-                views.setTextViewText(R.id.widget_date, dateText)
+                views.setTextViewText(R.id.widget_date, " $dateText")
 
                 // Zeit anzeigen wenn includeTime gesetzt ist
                 if (countdown.includeTime) {
                     val timeText = countdown.targetDateTime.format(
                         DateTimeFormatter.ofPattern("HH:mm")
                     )
-                    views.setTextViewText(R.id.widget_time, timeText)
-                    views.setViewVisibility(R.id.widget_time_icon, View.VISIBLE)
-                    views.setViewVisibility(R.id.widget_time, View.VISIBLE)
-
-                    // Bei großen Widgets könnten wir auch Sekunden anzeigen
-                    // views.setViewVisibility(R.id.widget_seconds_container, View.VISIBLE)
-                    // views.setTextViewText(R.id.widget_seconds, String.format("%02d", timeInfo.seconds))
+                    views.setTextViewText(R.id.widget_time_with_icon, " 🕐 $timeText")
+                    views.setViewVisibility(R.id.widget_time_with_icon, View.VISIBLE)
                 } else {
-                    views.setViewVisibility(R.id.widget_time_icon, View.GONE)
-                    views.setViewVisibility(R.id.widget_time, View.GONE)
-                    views.setViewVisibility(R.id.widget_seconds_container, View.GONE)
+                    views.setViewVisibility(R.id.widget_time_with_icon, View.GONE)
                 }
 
-                // Farbe setzen
+                // Farbe setzen für beide Farbbalken
                 try {
                     val color = android.graphics.Color.parseColor(countdown.color)
-                    views.setInt(R.id.widget_color_bar, "setBackgroundColor", color)
 
-                    // Hauptzahl (Tage) in der Countdown-Farbe
+                    // Beide Farbbalken (oben und unten)
+                    views.setInt(R.id.widget_color_bar_top, "setBackgroundColor", color)
+                    views.setInt(R.id.widget_color_bar_bottom, "setBackgroundColor", color)
+
+                    // Tage-Zahl in der Countdown-Farbe (Primary)
                     views.setTextColor(R.id.widget_days, color)
 
-                    // Stunden etwas transparenter
+                    // Stunden mit 85% Transparenz
                     views.setTextColor(R.id.widget_hours,
                         android.graphics.Color.argb(217, // 85% alpha
                             android.graphics.Color.red(color),
@@ -200,7 +197,7 @@ class CountdownWidget : AppWidgetProvider() {
                         )
                     )
 
-                    // Minuten noch transparenter
+                    // Minuten mit 70% Transparenz
                     views.setTextColor(R.id.widget_minutes,
                         android.graphics.Color.argb(178, // 70% alpha
                             android.graphics.Color.red(color),
@@ -208,6 +205,17 @@ class CountdownWidget : AppWidgetProvider() {
                             android.graphics.Color.blue(color)
                         )
                     )
+
+                    // Sekunden mit 55% Transparenz (wenn sichtbar)
+                    if (countdown.includeTime) {
+                        views.setTextColor(R.id.widget_seconds,
+                            android.graphics.Color.argb(140, // 55% alpha
+                                android.graphics.Color.red(color),
+                                android.graphics.Color.green(color),
+                                android.graphics.Color.blue(color)
+                            )
+                        )
+                    }
                 } catch (e: Exception) {
                     Log.e(TAG, "Error parsing color", e)
                 }

@@ -471,10 +471,6 @@ private fun TechnicalDetailsCard() {
 
             DetailRow("App Version", BuildConfig.VERSION_NAME)
             DetailRow("Build Nummer", "${BuildConfig.VERSION_CODE}")
-            DetailRow("Package", "de.beigel.nextime")
-            DetailRow("Min SDK", "26 (Android 8.0)")
-            DetailRow("Target SDK", "34 (Android 14)")
-            DetailRow("Erstellt mit", "Jetpack Compose")
         }
     }
 }
@@ -552,16 +548,6 @@ private fun CreditsCard() {
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            CreditItem(
-                "🎨",
-                "Material Design 3",
-                "Für das moderne Design-System"
-            )
-            CreditItem(
-                "🚀",
-                "Jetpack Compose",
-                "Für das reaktive UI-Framework"
-            )
             CreditItem(
                 "☕",
                 "Alle Unterstützer",
