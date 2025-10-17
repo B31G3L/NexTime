@@ -81,7 +81,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-        insertTestData()
+        //insertTestData()
     }
 
     private fun insertTestData() {
