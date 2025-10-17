@@ -1,6 +1,5 @@
 package de.beigel.nextime.widget
 
-import android.app.Activity
 import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.Intent
@@ -12,8 +11,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -189,19 +186,6 @@ class CountdownWidgetConfigActivity : ComponentActivity() {
                     Column(
                         modifier = Modifier.fillMaxSize()
                     ) {
-                        // Header
-                        Surface(
-                            modifier = Modifier.fillMaxWidth(),
-                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                        ) {
-                            Text(
-                                text = "Wähle einen Countdown",
-                                modifier = Modifier.padding(16.dp),
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-
                         // Liste der Countdowns
                         LazyColumn(
                             modifier = Modifier.weight(1f),
@@ -244,11 +228,8 @@ class CountdownWidgetConfigActivity : ComponentActivity() {
         onClick: () -> Unit
     ) {
         val timeInfo = countdown.calculateTimeRemaining()
-        val cardColor = try {
-            Color(android.graphics.Color.parseColor(countdown.color))
-        } catch (e: Exception) {
-            MaterialTheme.colorScheme.primary
-        }
+        val baseColor = runCatching { Color(android.graphics.Color.parseColor(countdown.color)) }
+            .getOrElse { MaterialTheme.colorScheme.primary }
 
         Card(
             modifier = Modifier
@@ -256,9 +237,8 @@ class CountdownWidgetConfigActivity : ComponentActivity() {
                 .clickable(onClick = onClick),
             shape = RoundedCornerShape(DesignSystem.CornerRadius.large),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                containerColor = baseColor.copy(alpha = 0.08f)
+            )
         ) {
             Column(
                 modifier = Modifier.padding(16.dp)
@@ -268,7 +248,7 @@ class CountdownWidgetConfigActivity : ComponentActivity() {
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(4.dp),
-                    color = cardColor,
+                    color = baseColor,
                     shape = RoundedCornerShape(2.dp)
                 ) {}
 
@@ -295,7 +275,7 @@ class CountdownWidgetConfigActivity : ComponentActivity() {
                             text = "${timeInfo.days}",
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold,
-                            color = cardColor
+                            color = baseColor
                         )
                         Text(
                             text = "Tage",
@@ -311,7 +291,7 @@ class CountdownWidgetConfigActivity : ComponentActivity() {
                                 text = String.format("%02d", timeInfo.hours),
                                 style = MaterialTheme.typography.headlineMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = cardColor.copy(alpha = 0.8f)
+                                color = baseColor.copy(alpha = 0.8f)
                             )
                             Text(
                                 text = "Std",
@@ -326,7 +306,7 @@ class CountdownWidgetConfigActivity : ComponentActivity() {
                                 text = String.format("%02d", timeInfo.minutes),
                                 style = MaterialTheme.typography.headlineMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = cardColor.copy(alpha = 0.6f)
+                                color = baseColor.copy(alpha = 0.6f)
                             )
                             Text(
                                 text = "Min",
@@ -338,22 +318,13 @@ class CountdownWidgetConfigActivity : ComponentActivity() {
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
-
-                // Datum - IMMER zeigen
-                Text(
-                    text = "📅 ${countdown.targetDateTime.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                // Uhrzeit - NUR wenn countdown.includeTime=true
-                if (countdown.includeTime) {
-                    Text(
-                        text = "🕐 ${countdown.targetDateTime.format(DateTimeFormatter.ofPattern("HH:mm"))} Uhr",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(4.dp),
+                    color = baseColor,
+                    shape = RoundedCornerShape(2.dp)
+                ) {}
             }
         }
     }
