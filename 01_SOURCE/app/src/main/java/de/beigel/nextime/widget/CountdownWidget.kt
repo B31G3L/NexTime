@@ -258,18 +258,17 @@ class CountdownWidget : AppWidgetProvider() {
         }
 
         private fun getLayoutForWidget(context: Context, appWidgetId: Int): Int {
-            // Abrufen der gespeicherten Widget-Größe aus SharedPreferences (0=SMALL, 1=MEDIUM, 2=LARGE)
             val prefs = context.getSharedPreferences(
                 "de.beigel.nextime.widget.CountdownWidget",
                 Context.MODE_PRIVATE
             )
-            val sizeOrdinal = prefs.getInt("widget_size_$appWidgetId", 1)  // Default: MEDIUM (1)
+            val sizeOrdinal = prefs.getInt("widget_size_$appWidgetId", 1)  // ❌ DEFAULT: 1 (MEDIUM)
 
             return when (sizeOrdinal) {
-                0 -> R.layout.widget_countdown_small
-                1 -> R.layout.widget_countdown_medium
-                2 -> R.layout.widget_countdown_large
-                else -> R.layout.widget_countdown_medium  // Default
+                0 -> R.layout.widget_countdown_small      // 4×1
+                1 -> R.layout.widget_countdown_medium     // 4×2  ← DEFAULT
+                2 -> R.layout.widget_countdown_large      // 4×3
+                else -> R.layout.widget_countdown_medium  // ← Fallback auf MEDIUM
             }
         }
     }

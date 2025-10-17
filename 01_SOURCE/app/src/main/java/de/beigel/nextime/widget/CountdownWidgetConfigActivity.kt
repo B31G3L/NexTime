@@ -337,7 +337,11 @@ class CountdownWidgetConfigActivity : ComponentActivity() {
     private fun updateWidgetAndFinish() {
         val appWidgetManager = AppWidgetManager.getInstance(this)
 
-        // Aktualisiere das Widget mit der korrekten Größe
+        // ✅ Speichere die Widget-Größe
+        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putInt("widget_size_$appWidgetId", selectedWidgetSize.ordinal).apply()
+
+        // Aktualisiere das Widget
         CountdownWidget.updateAppWidget(
             this,
             appWidgetManager,
@@ -345,14 +349,12 @@ class CountdownWidgetConfigActivity : ComponentActivity() {
             selectedWidgetSize.layoutResId
         )
 
-        // Ergebnis auf OK setzen
         val resultValue = Intent().apply {
             putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
         }
         setResult(RESULT_OK, resultValue)
         finish()
     }
-
     companion object {
         const val PREFS_NAME = "de.beigel.nextime.widget.CountdownWidget"
         const val PREF_KEY_COUNTDOWN_ID = "countdown_id_"
