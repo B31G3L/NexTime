@@ -36,11 +36,18 @@ class CountdownWidgetConfigActivity : ComponentActivity() {
 
     private var appWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
     private lateinit var database: CountdownDatabase
+    private var selectedWidgetSize: WidgetSize = WidgetSize.MEDIUM  // Default: Mittel
+
+    enum class WidgetSize(val displayName: String, val cellHeight: Int, val layoutResId: Int) {
+        SMALL("Kompakt (4×1)", 1, de.beigel.nextime.R.layout.widget_countdown_small),
+        MEDIUM("Mittel (4×2)", 2, de.beigel.nextime.R.layout.widget_countdown_medium),
+        LARGE("Groß (4×3)", 3, de.beigel.nextime.R.layout.widget_countdown_large)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Ergebnis auf CANCELED setzen - wird auf OK gesetzt, wenn Countdown gewählt wird
+        // Ergebnis auf CANCELED setzen
         setResult(RESULT_CANCELED)
 
         // Widget-ID aus Intent holen
@@ -93,10 +100,195 @@ class CountdownWidgetConfigActivity : ComponentActivity() {
             }
         }
 
+        // Direkt zum Countdown Selection (nur noch ein Schritt)
+        CountdownSelectionScreen(
+            countdowns = countdowns,
+            isLoading = isLoading,
+            onCountdownSelected = onCountdownSelected,
+            onCancel = onCancel
+        )
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    private fun WidgetSizeSelectionScreen(
+        onSizeSelected: (WidgetSize) -> Unit,
+        onCancel: () -> Unit
+    ) {
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("Widget einrichten") },
+                    title = { Text("Widget-Größe wählen") },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    )
+                )
+            }
+        ) { paddingValues ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    "Wähle die Widget-Größe:",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+
+                // Kleine Widget
+                WidgetSizeCard(
+                    size = WidgetSize.SMALL,
+                    isSelected = selectedWidgetSize == WidgetSize.SMALL,
+                    onClick = { onSizeSelected(WidgetSize.SMALL) }
+                )
+
+                // Mittlere Widget (Default)
+                WidgetSizeCard(
+                    size = WidgetSize.MEDIUM,
+                    isSelected = selectedWidgetSize == WidgetSize.MEDIUM,
+                    isDefault = true,
+                    onClick = { onSizeSelected(WidgetSize.MEDIUM) }
+                )
+
+                // Große Widget
+                WidgetSizeCard(
+                    size = WidgetSize.LARGE,
+                    isSelected = selectedWidgetSize == WidgetSize.LARGE,
+                    onClick = { onSizeSelected(WidgetSize.LARGE) }
+                )
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                // Buttons
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    TextButton(
+                        onClick = onCancel,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp)
+                    ) {
+                        Text("Abbrechen")
+                    }
+
+                    Button(
+                        onClick = { onSizeSelected(selectedWidgetSize) },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp)
+                    ) {
+                        Text("Weiter")
+                    }
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun WidgetSizeCard(
+        size: WidgetSize,
+        isSelected: Boolean,
+        isDefault: Boolean = false,
+        onClick: () -> Unit
+    ) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick),
+            shape = RoundedCornerShape(DesignSystem.CornerRadius.large),
+            colors = CardDefaults.cardColors(
+                containerColor = if (isSelected)
+                    MaterialTheme.colorScheme.primaryContainer
+                else
+                    MaterialTheme.colorScheme.surfaceVariant
+            ),
+            elevation = CardDefaults.cardElevation(
+                defaultElevation = if (isSelected) 4.dp else 2.dp
+            )
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            size.displayName,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        if (isDefault) {
+                            Surface(
+                                shape = RoundedCornerShape(4.dp),
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                            ) {
+                                Text(
+                                    "Standard",
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                    }
+
+                    Text(
+                        getWidgetSizeDescription(size),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+
+                if (isSelected) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = "Ausgewählt",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+        }
+    }
+
+    private fun getWidgetSizeDescription(size: WidgetSize): String {
+        return when (size) {
+            WidgetSize.SMALL -> "Eine Zeile - platzsparend"
+            WidgetSize.MEDIUM -> "Balance zwischen Info und Größe"
+            WidgetSize.LARGE -> "Detailliert mit Sekunden"
+        }
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    private fun CountdownSelectionScreen(
+        countdowns: List<Countdown>,
+        isLoading: Boolean,
+        onCountdownSelected: (Countdown) -> Unit,
+        onCancel: () -> Unit
+    ) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Countdown wählen") },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = MaterialTheme.colorScheme.surface
                     )
@@ -143,8 +335,15 @@ class CountdownWidgetConfigActivity : ComponentActivity() {
                             textAlign = TextAlign.Center
                         )
                         Spacer(modifier = Modifier.height(24.dp))
-                        Button(onClick = onCancel) {
-                            Text("Abbrechen")
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            TextButton(onClick = onCancel) {
+                                Text("Zurück")
+                            }
+                            Button(onClick = onCancel) {
+                                Text("Abbrechen")
+                            }
                         }
                     }
                 } else {
@@ -157,12 +356,20 @@ class CountdownWidgetConfigActivity : ComponentActivity() {
                             modifier = Modifier.fillMaxWidth(),
                             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                         ) {
-                            Text(
-                                text = "Wähle einen Countdown für dein Widget",
-                                modifier = Modifier.padding(16.dp),
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            Column(
+                                modifier = Modifier.padding(16.dp)
+                            ) {
+                                Text(
+                                    text = "Wähle einen Countdown",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = "Widget-Größe: ${selectedWidgetSize.displayName}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
 
                         // Liste der Countdowns
@@ -179,14 +386,21 @@ class CountdownWidgetConfigActivity : ComponentActivity() {
                             }
                         }
 
-                        // Abbrechen-Button
-                        TextButton(
-                            onClick = onCancel,
+                        // Navigation Buttons
+                        Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp)
+                                .padding(16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Text("Abbrechen")
+                            TextButton(
+                                onClick = onCancel,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp)
+                            ) {
+                                Text("Zurück")
+                            }
                         }
                     }
                 }
@@ -314,11 +528,19 @@ class CountdownWidgetConfigActivity : ComponentActivity() {
     private fun saveCountdownPref(countdownId: Long) {
         val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit().putLong(PREF_KEY_COUNTDOWN_ID + appWidgetId, countdownId).apply()
+        prefs.edit().putInt(PREF_KEY_WIDGET_SIZE + appWidgetId, selectedWidgetSize.ordinal).apply()
     }
 
     private fun updateWidgetAndFinish() {
         val appWidgetManager = AppWidgetManager.getInstance(this)
-        CountdownWidget.updateAppWidget(this, appWidgetManager, appWidgetId)
+
+        // Aktualisiere das Widget mit der korrekten Größe
+        CountdownWidget.updateAppWidget(
+            this,
+            appWidgetManager,
+            appWidgetId,
+            selectedWidgetSize.layoutResId
+        )
 
         // Ergebnis auf OK setzen
         val resultValue = Intent().apply {
@@ -331,6 +553,7 @@ class CountdownWidgetConfigActivity : ComponentActivity() {
     companion object {
         const val PREFS_NAME = "de.beigel.nextime.widget.CountdownWidget"
         const val PREF_KEY_COUNTDOWN_ID = "countdown_id_"
+        const val PREF_KEY_WIDGET_SIZE = "widget_size_"
 
         fun getCountdownId(context: Context, appWidgetId: Int): Long {
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -340,6 +563,7 @@ class CountdownWidgetConfigActivity : ComponentActivity() {
         fun deleteCountdownPref(context: Context, appWidgetId: Int) {
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             prefs.edit().remove(PREF_KEY_COUNTDOWN_ID + appWidgetId).apply()
+            prefs.edit().remove(PREF_KEY_WIDGET_SIZE + appWidgetId).apply()
         }
     }
 }

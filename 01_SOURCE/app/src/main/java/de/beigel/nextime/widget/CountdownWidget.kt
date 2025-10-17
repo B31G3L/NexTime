@@ -21,6 +21,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.format.DateTimeFormatter
 
+// ================== MITTLERE WIDGET (4x2) - DEFAULT ==================
 class CountdownWidget : AppWidgetProvider() {
 
     override fun onUpdate(
@@ -30,25 +31,8 @@ class CountdownWidget : AppWidgetProvider() {
     ) {
         Log.d("CountdownWidget", "onUpdate called for ${appWidgetIds.size} widgets")
         for (appWidgetId in appWidgetIds) {
-            updateAppWidget(context, appWidgetManager, appWidgetId)
+            updateAppWidget(context, appWidgetManager, appWidgetId, R.layout.widget_countdown_medium)
         }
-    }
-
-    override fun onEnabled(context: Context) {
-        super.onEnabled(context)
-        Log.d("CountdownWidget", "Widget enabled")
-    }
-
-    override fun onDeleted(context: Context, appWidgetIds: IntArray) {
-        super.onDeleted(context, appWidgetIds)
-        for (appWidgetId in appWidgetIds) {
-            CountdownWidgetConfigActivity.deleteCountdownPref(context, appWidgetId)
-        }
-    }
-
-    override fun onDisabled(context: Context) {
-        super.onDisabled(context)
-        Log.d("CountdownWidget", "Widget disabled")
     }
 
     companion object {
@@ -57,11 +41,12 @@ class CountdownWidget : AppWidgetProvider() {
         fun updateAppWidget(
             context: Context,
             appWidgetManager: AppWidgetManager,
-            appWidgetId: Int
+            appWidgetId: Int,
+            layoutResId: Int
         ) {
             CoroutineScope(Dispatchers.Main).launch {
                 try {
-                    val views = RemoteViews(context.packageName, R.layout.widget_countdown)
+                    val views = RemoteViews(context.packageName, layoutResId)
 
                     // Standard-Werte setzen
                     views.setTextViewText(R.id.widget_title, "NexTime")
@@ -76,7 +61,7 @@ class CountdownWidget : AppWidgetProvider() {
                     }
 
                     if (countdown != null) {
-                        updateWidgetViews(views, countdown)
+                        updateWidgetViews(views, countdown, layoutResId)
                     }
 
                     // Click-Intent zum Öffnen der App
@@ -125,7 +110,8 @@ class CountdownWidget : AppWidgetProvider() {
 
         private fun updateWidgetViews(
             views: RemoteViews,
-            countdown: Countdown
+            countdown: Countdown,
+            layoutResId: Int
         ) {
             try {
                 val timeInfo = countdown.calculateTimeRemaining()
@@ -133,7 +119,7 @@ class CountdownWidget : AppWidgetProvider() {
                 // Titel
                 views.setTextViewText(R.id.widget_title, countdown.title)
 
-                // Countdown-Werte - immer Tage:Stunden:Minuten anzeigen (wie in der Card)
+                // Countdown-Werte
                 views.setTextViewText(R.id.widget_days, "${timeInfo.days}")
                 views.setTextViewText(R.id.widget_hours, String.format("%02d", timeInfo.hours))
                 views.setTextViewText(R.id.widget_minutes, String.format("%02d", timeInfo.minutes))
@@ -152,11 +138,11 @@ class CountdownWidget : AppWidgetProvider() {
                     if (timeInfo.minutes == 1L) "Minute" else "Minuten"
                 )
 
-                // Sekunden anzeigen wenn includeTime gesetzt ist
-                if (countdown.includeTime) {
+                // Sekunden anzeigen wenn includeTime gesetzt ist (nur bei LARGE Widget)
+                if (countdown.includeTime && layoutResId == R.layout.widget_countdown_large) {
                     views.setViewVisibility(R.id.widget_seconds_container, View.VISIBLE)
                     views.setTextViewText(R.id.widget_seconds, String.format("%02d", timeInfo.seconds))
-                } else {
+                } else if (layoutResId == R.layout.widget_countdown_large) {
                     views.setViewVisibility(R.id.widget_seconds_container, View.GONE)
                 }
 
@@ -171,13 +157,13 @@ class CountdownWidget : AppWidgetProvider() {
                     val timeText = countdown.targetDateTime.format(
                         DateTimeFormatter.ofPattern("HH:mm")
                     )
-                    views.setTextViewText(R.id.widget_time_with_icon, " 🕐 $timeText")
+                    views.setTextViewText(R.id.widget_time_with_icon, " 🕐 $timeText Uhr")
                     views.setViewVisibility(R.id.widget_time_with_icon, View.VISIBLE)
                 } else {
                     views.setViewVisibility(R.id.widget_time_with_icon, View.GONE)
                 }
 
-                // Farbe setzen für beide Farbbalken
+                // Farbe setzen für Farbbalken
                 try {
                     val color = android.graphics.Color.parseColor(countdown.color)
 
@@ -185,10 +171,10 @@ class CountdownWidget : AppWidgetProvider() {
                     views.setInt(R.id.widget_color_bar_top, "setBackgroundColor", color)
                     views.setInt(R.id.widget_color_bar_bottom, "setBackgroundColor", color)
 
-                    // Tage-Zahl in der Countdown-Farbe (Primary)
+                    // Tage-Zahl in der Countdown-Farbe
                     views.setTextColor(R.id.widget_days, color)
 
-                    // Stunden mit 85% Transparenz
+                    // Stunden mit Transparenz
                     views.setTextColor(R.id.widget_hours,
                         android.graphics.Color.argb(217, // 85% alpha
                             android.graphics.Color.red(color),
@@ -197,7 +183,7 @@ class CountdownWidget : AppWidgetProvider() {
                         )
                     )
 
-                    // Minuten mit 70% Transparenz
+                    // Minuten mit Transparenz
                     views.setTextColor(R.id.widget_minutes,
                         android.graphics.Color.argb(178, // 70% alpha
                             android.graphics.Color.red(color),
@@ -206,8 +192,8 @@ class CountdownWidget : AppWidgetProvider() {
                         )
                     )
 
-                    // Sekunden mit 55% Transparenz (wenn sichtbar)
-                    if (countdown.includeTime) {
+                    // Sekunden mit Transparenz (wenn sichtbar)
+                    if (countdown.includeTime && layoutResId == R.layout.widget_countdown_large) {
                         views.setTextColor(R.id.widget_seconds,
                             android.graphics.Color.argb(140, // 55% alpha
                                 android.graphics.Color.red(color),
@@ -228,16 +214,93 @@ class CountdownWidget : AppWidgetProvider() {
         fun updateAllWidgets(context: Context) {
             try {
                 val appWidgetManager = AppWidgetManager.getInstance(context)
-                val appWidgetIds = appWidgetManager.getAppWidgetIds(
-                    ComponentName(context, CountdownWidget::class.java)
-                )
-                Log.d(TAG, "Updating ${appWidgetIds.size} widgets")
-                for (appWidgetId in appWidgetIds) {
-                    updateAppWidget(context, appWidgetManager, appWidgetId)
-                }
+
+                // Aktualisiere alle drei Widget-Varianten
+                updateWidgetsByProvider(context, appWidgetManager, "de.beigel.nextime.widget.CountdownWidgetSmall")
+                updateWidgetsByProvider(context, appWidgetManager, "de.beigel.nextime.widget.CountdownWidget")
+                updateWidgetsByProvider(context, appWidgetManager, "de.beigel.nextime.widget.CountdownWidgetLarge")
+
             } catch (e: Exception) {
                 Log.e(TAG, "Error updating all widgets", e)
             }
+        }
+
+        private fun updateWidgetsByProvider(
+            context: Context,
+            appWidgetManager: AppWidgetManager,
+            providerName: String
+        ) {
+            try {
+                val componentName = ComponentName(context, providerName)
+                val appWidgetIds = appWidgetManager.getAppWidgetIds(componentName)
+                Log.d(TAG, "Updating ${appWidgetIds.size} widgets from $providerName")
+
+                val layoutResId = when (providerName) {
+                    "de.beigel.nextime.widget.CountdownWidgetSmall" -> R.layout.widget_countdown_small
+                    "de.beigel.nextime.widget.CountdownWidgetLarge" -> R.layout.widget_countdown_large
+                    else -> R.layout.widget_countdown_medium
+                }
+
+                for (appWidgetId in appWidgetIds) {
+                    updateAppWidget(context, appWidgetManager, appWidgetId, layoutResId)
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error updating widgets from provider $providerName", e)
+            }
+        }
+    }
+}
+
+// ================== KLEINE WIDGET (4x1) ==================
+class CountdownWidgetSmall : AppWidgetProvider() {
+
+    override fun onUpdate(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetIds: IntArray
+    ) {
+        Log.d("CountdownWidgetSmall", "onUpdate called for ${appWidgetIds.size} widgets")
+        for (appWidgetId in appWidgetIds) {
+            CountdownWidget.updateAppWidget(context, appWidgetManager, appWidgetId, R.layout.widget_countdown_small)
+        }
+    }
+
+    override fun onEnabled(context: Context) {
+        super.onEnabled(context)
+        Log.d("CountdownWidgetSmall", "Small widget enabled")
+    }
+
+    override fun onDeleted(context: Context, appWidgetIds: IntArray) {
+        super.onDeleted(context, appWidgetIds)
+        for (appWidgetId in appWidgetIds) {
+            CountdownWidgetConfigActivity.deleteCountdownPref(context, appWidgetId)
+        }
+    }
+}
+
+// ================== GROSSE WIDGET (4x3) ==================
+class CountdownWidgetLarge : AppWidgetProvider() {
+
+    override fun onUpdate(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetIds: IntArray
+    ) {
+        Log.d("CountdownWidgetLarge", "onUpdate called for ${appWidgetIds.size} widgets")
+        for (appWidgetId in appWidgetIds) {
+            CountdownWidget.updateAppWidget(context, appWidgetManager, appWidgetId, R.layout.widget_countdown_large)
+        }
+    }
+
+    override fun onEnabled(context: Context) {
+        super.onEnabled(context)
+        Log.d("CountdownWidgetLarge", "Large widget enabled")
+    }
+
+    override fun onDeleted(context: Context, appWidgetIds: IntArray) {
+        super.onDeleted(context, appWidgetIds)
+        for (appWidgetId in appWidgetIds) {
+            CountdownWidgetConfigActivity.deleteCountdownPref(context, appWidgetId)
         }
     }
 }
