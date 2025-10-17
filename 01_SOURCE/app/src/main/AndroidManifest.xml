@@ -44,7 +44,19 @@
             android:enabled="true"
             android:exported="false" />
 
-        <!-- Widget -->
+        <!-- Kleine Widget Receiver (4x1) -->
+        <receiver
+            android:name=".widget.CountdownWidgetSmall"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/countdown_widget_small" />
+        </receiver>
+
+        <!-- Mittlere Widget Receiver (4x2) - STANDART/DEFAULT -->
         <receiver
             android:name=".widget.CountdownWidget"
             android:exported="true">
@@ -53,7 +65,19 @@
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/countdown_widget_info" />
+                android:resource="@xml/countdown_widget_medium" />
+        </receiver>
+
+        <!-- Große Widget Receiver (4x3) -->
+        <receiver
+            android:name=".widget.CountdownWidgetLarge"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/countdown_widget_large" />
         </receiver>
 
     </application>

@@ -23,7 +23,7 @@
         android:layout_below="@id/widget_color_bar_top"
         android:layout_above="@id/widget_color_bar_bottom"
         android:orientation="vertical"
-        android:padding="16dp"
+        android:padding="12dp"
         android:gravity="center">
 
         <!-- Titel -->
@@ -38,15 +38,15 @@
             android:maxLines="1"
             android:ellipsize="end"
             android:gravity="center_horizontal"
-            android:layout_marginBottom="16dp" />
+            android:layout_marginBottom="8dp" />
 
-        <!-- Countdown-Anzeige -->
+        <!-- Countdown-Anzeige: Tage Stunden Minuten -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center"
-            android:layout_marginBottom="16dp">
+            android:layout_marginBottom="8dp">
 
             <!-- Tage -->
             <LinearLayout
@@ -61,7 +61,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="42"
-                    android:textSize="36sp"
+                    android:textSize="28sp"
                     android:textStyle="bold"
                     android:textColor="#FFFFFF" />
 
@@ -70,7 +70,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Tage"
-                    android:textSize="11sp"
+                    android:textSize="10sp"
                     android:textColor="#B0B0B0"
                     android:textStyle="bold" />
             </LinearLayout>
@@ -88,7 +88,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="05"
-                    android:textSize="32sp"
+                    android:textSize="24sp"
                     android:textStyle="bold"
                     android:textColor="#E0E0E0" />
 
@@ -96,8 +96,8 @@
                     android:id="@+id/widget_hours_label"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Stunden"
-                    android:textSize="11sp"
+                    android:text="Std"
+                    android:textSize="10sp"
                     android:textColor="#B0B0B0"
                     android:textStyle="bold" />
             </LinearLayout>
@@ -115,7 +115,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="30"
-                    android:textSize="32sp"
+                    android:textSize="24sp"
                     android:textStyle="bold"
                     android:textColor="#C0C0C0" />
 
@@ -123,71 +123,42 @@
                     android:id="@+id/widget_minutes_label"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Minuten"
-                    android:textSize="11sp"
-                    android:textColor="#B0B0B0"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <!-- Sekunden (optional) -->
-            <LinearLayout
-                android:id="@+id/widget_seconds_container"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="0.8"
-                android:orientation="vertical"
-                android:gravity="center"
-                android:visibility="gone">
-
-                <TextView
-                    android:id="@+id/widget_seconds"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="45"
-                    android:textSize="24sp"
-                    android:textStyle="bold"
-                    android:textColor="#A0A0A0" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Sek"
+                    android:text="Min"
                     android:textSize="10sp"
                     android:textColor="#B0B0B0"
                     android:textStyle="bold" />
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Datum und Zeit -->
+        <!-- Datum -->
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center">
 
-            <!-- Kalender Icon -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="📅"
-                android:textSize="14sp" />
+                android:textSize="12sp" />
 
             <TextView
                 android:id="@+id/widget_date"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text=" 24.12.2025"
-                android:textSize="12sp"
+                android:textSize="11sp"
                 android:textColor="#B0B0B0"
                 android:layout_marginStart="4dp" />
 
-            <!-- Uhr Icon und Zeit -->
+            <!-- Zeit (optional) -->
             <TextView
                 android:id="@+id/widget_time_with_icon"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text=" 🕐 18:00"
-                android:textSize="12sp"
+                android:textSize="11sp"
                 android:textColor="#B0B0B0"
                 android:layout_marginStart="12dp"
                 android:visibility="gone" />

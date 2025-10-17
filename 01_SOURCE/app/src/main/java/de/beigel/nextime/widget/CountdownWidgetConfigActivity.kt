@@ -1,10 +1,10 @@
 package de.beigel.nextime.widget
 
-import android.app.Activity
 import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.clickable
@@ -12,8 +12,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -36,26 +34,31 @@ class CountdownWidgetConfigActivity : ComponentActivity() {
 
     private var appWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
     private lateinit var database: CountdownDatabase
+    private val TAG = "WidgetConfig"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Ergebnis auf CANCELED setzen - wird auf OK gesetzt, wenn Countdown gewählt wird
         setResult(RESULT_CANCELED)
 
-        // Widget-ID aus Intent holen
         appWidgetId = intent?.extras?.getInt(
             AppWidgetManager.EXTRA_APPWIDGET_ID,
             AppWidgetManager.INVALID_APPWIDGET_ID
         ) ?: AppWidgetManager.INVALID_APPWIDGET_ID
 
-        // Bei ungültiger ID beenden
+        Log.d(TAG, "Widget Config Activity started with appWidgetId: $appWidgetId")
+
         if (appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID) {
+            Log.e(TAG, "Invalid widget ID, finishing")
             finish()
             return
         }
 
         database = CountdownDatabase.getDatabase(this)
+
+        // WICHTIG: Bestimme die Widget-Größe basierend auf gespeicherten Daten oder Standardwert
+        val widgetSize = getWidgetSizeFromPrefs()
+        Log.d(TAG, "Determined widget size: $widgetSize")
 
         setContent {
             NexTimeTheme {
@@ -65,8 +68,7 @@ class CountdownWidgetConfigActivity : ComponentActivity() {
                 ) {
                     WidgetConfigScreen(
                         onCountdownSelected = { countdown ->
-                            saveCountdownPref(countdown.id)
-                            updateWidgetAndFinish()
+                            saveAndFinish(countdown.id, widgetSize)
                         },
                         onCancel = {
                             finish()
@@ -74,6 +76,24 @@ class CountdownWidgetConfigActivity : ComponentActivity() {
                     )
                 }
             }
+        }
+    }
+
+    /**
+     * Hole die Widget-Größe aus den Preferences
+     * Falls noch nicht gespeichert, nutze MEDIUM als Standard
+     */
+    private fun getWidgetSizeFromPrefs(): WidgetSize {
+        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val sizeOrdinal = prefs.getInt("widget_size_$appWidgetId", -1)
+
+        Log.d(TAG, "Widget size from prefs: ordinal=$sizeOrdinal")
+
+        return if (sizeOrdinal != -1) {
+            WidgetSize.values().getOrNull(sizeOrdinal) ?: WidgetSize.MEDIUM
+        } else {
+            // Neu hinzugefügtes Widget - nutze Standard
+            WidgetSize.MEDIUM
         }
     }
 
@@ -93,10 +113,26 @@ class CountdownWidgetConfigActivity : ComponentActivity() {
             }
         }
 
+        CountdownSelectionScreen(
+            countdowns = countdowns,
+            isLoading = isLoading,
+            onCountdownSelected = onCountdownSelected,
+            onCancel = onCancel
+        )
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    private fun CountdownSelectionScreen(
+        countdowns: List<Countdown>,
+        isLoading: Boolean,
+        onCountdownSelected: (Countdown) -> Unit,
+        onCancel: () -> Unit
+    ) {
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("Widget einrichten") },
+                    title = { Text("Countdown auswählen") },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = MaterialTheme.colorScheme.surface
                     )
@@ -116,7 +152,6 @@ class CountdownWidgetConfigActivity : ComponentActivity() {
                         CircularProgressIndicator()
                     }
                 } else if (countdowns.isEmpty()) {
-                    // Keine Countdowns vorhanden
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
@@ -148,24 +183,9 @@ class CountdownWidgetConfigActivity : ComponentActivity() {
                         }
                     }
                 } else {
-                    // Countdowns anzeigen
                     Column(
                         modifier = Modifier.fillMaxSize()
                     ) {
-                        // Header
-                        Surface(
-                            modifier = Modifier.fillMaxWidth(),
-                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                        ) {
-                            Text(
-                                text = "Wähle einen Countdown für dein Widget",
-                                modifier = Modifier.padding(16.dp),
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-
-                        // Liste der Countdowns
                         LazyColumn(
                             modifier = Modifier.weight(1f),
                             contentPadding = PaddingValues(16.dp),
@@ -179,14 +199,20 @@ class CountdownWidgetConfigActivity : ComponentActivity() {
                             }
                         }
 
-                        // Abbrechen-Button
-                        TextButton(
-                            onClick = onCancel,
+                        Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp)
+                                .padding(16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Text("Abbrechen")
+                            TextButton(
+                                onClick = onCancel,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp)
+                            ) {
+                                Text("Abbrechen")
+                            }
                         }
                     }
                 }
@@ -200,11 +226,8 @@ class CountdownWidgetConfigActivity : ComponentActivity() {
         onClick: () -> Unit
     ) {
         val timeInfo = countdown.calculateTimeRemaining()
-        val cardColor = try {
-            Color(android.graphics.Color.parseColor(countdown.color))
-        } catch (e: Exception) {
-            MaterialTheme.colorScheme.primary
-        }
+        val baseColor = runCatching { Color(android.graphics.Color.parseColor(countdown.color)) }
+            .getOrElse { MaterialTheme.colorScheme.primary }
 
         Card(
             modifier = Modifier
@@ -212,25 +235,22 @@ class CountdownWidgetConfigActivity : ComponentActivity() {
                 .clickable(onClick = onClick),
             shape = RoundedCornerShape(DesignSystem.CornerRadius.large),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                containerColor = baseColor.copy(alpha = 0.08f)
+            )
         ) {
             Column(
                 modifier = Modifier.padding(16.dp)
             ) {
-                // Farbbalken
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(4.dp),
-                    color = cardColor,
+                    color = baseColor,
                     shape = RoundedCornerShape(2.dp)
                 ) {}
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Titel
                 Text(
                     text = countdown.title,
                     style = MaterialTheme.typography.titleLarge,
@@ -240,18 +260,16 @@ class CountdownWidgetConfigActivity : ComponentActivity() {
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Countdown-Info
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    // Tage
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
                             text = "${timeInfo.days}",
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold,
-                            color = cardColor
+                            color = baseColor
                         )
                         Text(
                             text = "Tage",
@@ -260,67 +278,69 @@ class CountdownWidgetConfigActivity : ComponentActivity() {
                         )
                     }
 
-                    // Stunden
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = String.format("%02d", timeInfo.hours),
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = cardColor.copy(alpha = 0.8f)
-                        )
-                        Text(
-                            text = "Std",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    if (countdown.includeTime) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = String.format("%02d", timeInfo.hours),
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = baseColor.copy(alpha = 0.8f)
+                            )
+                            Text(
+                                text = "Std",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
 
-                    // Minuten
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = String.format("%02d", timeInfo.minutes),
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = cardColor.copy(alpha = 0.6f)
-                        )
-                        Text(
-                            text = "Min",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = String.format("%02d", timeInfo.minutes),
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = baseColor.copy(alpha = 0.6f)
+                            )
+                            Text(
+                                text = "Min",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
-
-                // Datum
-                Text(
-                    text = "📅 ${countdown.targetDateTime.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                if (countdown.includeTime) {
-                    Text(
-                        text = "🕐 ${countdown.targetDateTime.format(DateTimeFormatter.ofPattern("HH:mm"))} Uhr",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(4.dp),
+                    color = baseColor,
+                    shape = RoundedCornerShape(2.dp)
+                ) {}
             }
         }
     }
 
-    private fun saveCountdownPref(countdownId: Long) {
+    /**
+     * Speichere die Countdown-ID und Widget-Größe, dann schließe die Activity
+     */
+    private fun saveAndFinish(countdownId: Long, widgetSize: WidgetSize) {
+        Log.d(TAG, "Saving widget config: widgetId=$appWidgetId, countdownId=$countdownId, size=${widgetSize.name} (ordinal=${widgetSize.ordinal})")
+
+        // Speichere BEIDE Werte
         val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        prefs.edit().putLong(PREF_KEY_COUNTDOWN_ID + appWidgetId, countdownId).apply()
-    }
+        prefs.edit().apply {
+            putLong("countdown_id_$appWidgetId", countdownId)
+            putInt("widget_size_$appWidgetId", widgetSize.ordinal)
+            apply()
+        }
 
-    private fun updateWidgetAndFinish() {
+        Log.d(TAG, "Preferences saved successfully")
+
+        // Aktualisiere das Widget sofort
         val appWidgetManager = AppWidgetManager.getInstance(this)
-        CountdownWidget.updateAppWidget(this, appWidgetManager, appWidgetId)
+        CountdownWidget.updateAppWidget(this, appWidgetManager, appWidgetId, widgetSize.layoutResId)
 
-        // Ergebnis auf OK setzen
         val resultValue = Intent().apply {
             putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
         }
@@ -328,18 +348,17 @@ class CountdownWidgetConfigActivity : ComponentActivity() {
         finish()
     }
 
+    enum class WidgetSize(val displayName: String, val cellHeight: Int, val layoutResId: Int) {
+        SMALL("Kompakt (4×1)", 1, de.beigel.nextime.R.layout.widget_countdown_small),
+        MEDIUM("Mittel (4×2)", 2, de.beigel.nextime.R.layout.widget_countdown_medium),
+        LARGE("Groß (4×3)", 3, de.beigel.nextime.R.layout.widget_countdown_large);
+
+        companion object {
+            fun fromOrdinal(ordinal: Int): WidgetSize = values().getOrNull(ordinal) ?: MEDIUM
+        }
+    }
+
     companion object {
         const val PREFS_NAME = "de.beigel.nextime.widget.CountdownWidget"
-        const val PREF_KEY_COUNTDOWN_ID = "countdown_id_"
-
-        fun getCountdownId(context: Context, appWidgetId: Int): Long {
-            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            return prefs.getLong(PREF_KEY_COUNTDOWN_ID + appWidgetId, -1L)
-        }
-
-        fun deleteCountdownPref(context: Context, appWidgetId: Int) {
-            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            prefs.edit().remove(PREF_KEY_COUNTDOWN_ID + appWidgetId).apply()
-        }
     }
 }

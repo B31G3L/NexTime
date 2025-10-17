@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">NexTime</string>
+
+    <!-- Main Screen -->
+    <string name="add_countdown">Countdown hinzufügen</string>
+    <string name="no_countdowns">Noch keine Countdowns</string>
+    <string name="no_countdowns_hint">Tippe auf +, um deinen ersten Countdown zu erstellen</string>
+
+    <!-- Navigation & Common -->
+    <string name="back">Zurück</string>
+    <string name="close">Schließen</string>
+    <string name="save">Speichern</string>
+    <string name="cancel">Abbrechen</string>
+    <string name="delete">Löschen</string>
+    <string name="edit">Bearbeiten</string>
+    <string name="share">Teilen</string>
+    <string name="settings">Einstellungen</string>
+    <string name="info">Info &amp; Support</string>
+    <string name="ok">OK</string>
+
+    <!-- Add/Edit Dialog -->
+    <string name="create_countdown">Countdown erstellen</string>
+    <string name="edit_countdown">Countdown bearbeiten</string>
+    <string name="title">Titel</string>
+    <string name="title_hint">z.B. Geburtstag, Urlaub...</string>
+    <string name="date">Datum</string>
+    <string name="time">Uhrzeit</string>
+    <string name="include_time">Uhrzeit einbeziehen</string>
+    <string name="show_nights">Nächte anzeigen</string>
+
+    <!-- Display Formats -->
+    <string name="display_format">Anzeigeformat</string>
+    <string name="format_full_detailed">Detailliert</string>
+    <string name="format_full_detailed_example">1J 2M 15T 05:30:45</string>
+    <string name="format_days_only">Nur Tage</string>
+    <string name="format_days_only_example">42 Tage</string>
+    <string name="format_days_hours">Tage + Stunden</string>
+    <string name="format_days_hours_example">42 Tage, 5h 30m</string>
+    <string name="format_hours_minutes">Nur Stunden</string>
+    <string name="format_hours_minutes_example">1020h 30m</string>
+    <string name="format_full_time">Vollständig</string>
+    <string name="format_full_time_example">42 Tage, 5h 30m 45s</string>
+    <string name="format_weeks_days">Wochen + Tage</string>
+    <string name="format_weeks_days_example">6 Wochen, 0 Tage</string>
+    <string name="format_months_days">Monate + Tage</string>
+    <string name="format_months_days_example">1 Monat, 12 Tage</string>
+
+    <!-- Color -->
+    <string name="color">Farbe</string>
+    <string name="custom_color">Eigene Farbe</string>
+    <string name="hex_color_code">Hex-Farbcode eingeben</string>
+    <string name="hex_color_hint">#FF5733</string>
+    <string name="color_preview">Vorschau</string>
+
+    <!-- Notifications -->
+    <string name="notifications">Benachrichtigungen</string>
+    <string name="notifications_enable">Aktivieren</string>
+    <string name="reminders">Erinnerungen</string>
+
+    <!-- Reminder Options -->
+    <string name="reminder_none">Keine</string>
+    <string name="reminder_at_time">Zum Zeitpunkt</string>
+    <string name="reminder_5_minutes">5 Minuten vorher</string>
+    <string name="reminder_15_minutes">15 Minuten vorher</string>
+    <string name="reminder_30_minutes">30 Minuten vorher</string>
+    <string name="reminder_1_hour">1 Stunde vorher</string>
+    <string name="reminder_3_hours">3 Stunden vorher</string>
+    <string name="reminder_6_hours">6 Stunden vorher</string>
+    <string name="reminder_12_hours">12 Stunden vorher</string>
+    <string name="reminder_1_day">1 Tag vorher</string>
+    <string name="reminder_2_days">2 Tage vorher</string>
+    <string name="reminder_3_days">3 Tage vorher</string>
+    <string name="reminder_1_week">1 Woche vorher</string>
+    <string name="reminder_2_weeks">2 Wochen vorher</string>
+    <string name="reminder_1_month">1 Monat vorher</string>
+
+    <!-- Countdown Display -->
+    <string name="day">Tag</string>
+    <string name="days">Tage</string>
+    <string name="hour">Stunde</string>
+    <string name="hours">Stunden</string>
+    <string name="minute">Minute</string>
+    <string name="minutes">Minuten</string>
+    <string name="second">Sekunde</string>
+    <string name="seconds">Sekunden</string>
+    <string name="week">Woche</string>
+    <string name="weeks">Wochen</string>
+    <string name="month">Monat</string>
+    <string name="months">Monate</string>
+    <string name="year">Jahr</string>
+    <string name="years">Jahre</string>
+    <string name="night">Nacht</string>
+    <string name="nights">Nächte</string>
+    <string name="today">Heute</string>
+    <string name="ago">vor</string>
+
+    <!-- Detail Screen -->
+    <string name="details">Details</string>
+    <string name="start_date">Startdatum</string>
+    <string name="target_date">Zieldatum</string>
+    <string name="statistics">Statistiken</string>
+    <string name="total_duration">Gesamtdauer</string>
+    <string name="remaining">Verbleibend</string>
+    <string name="created_at">Erstellt am</string>
+    <string name="delete_confirmation">Countdown löschen?</string>
+    <string name="delete_confirmation_message">Möchtest du \"%s\" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.</string>
+
+    <!-- Swipe Actions -->
+    <string name="swipe_edit">Bearbeiten</string>
+    <string name="swipe_delete">Löschen</string>
+
+    <!-- Empty State -->
+    <string name="welcome_title">Willkommen bei NexTime</string>
+    <string name="welcome_subtitle">Behalte die wichtigen Momente im Blick</string>
+    <string name="welcome_hint">Tippe auf +, um zu starten</string>
+    <string name="idea_suggestions">Ideen für deinen ersten Countdown</string>
+    <string name="idea_birthday">Geburtstag</string>
+    <string name="idea_birthday_desc">Vergiss nie wieder</string>
+    <string name="idea_holiday">Urlaub</string>
+    <string name="idea_holiday_desc">Vorfreude pur</string>
+    <string name="idea_exam">Prüfungen</string>
+    <string name="idea_exam_desc">Gut vorbereitet</string>
+    <string name="idea_event">Events</string>
+    <string name="idea_event_desc">Besondere Tage</string>
+
+    <!-- Features List -->
+    <string name="feature_colors">Individuelle Farben für jeden Countdown</string>
+    <string name="feature_notifications">Erinnerungen zum perfekten Zeitpunkt</string>
+    <string name="feature_widget">Widget für deinen Homescreen</string>
+    <string name="feature_formats">Verschiedene Anzeigeformate</string>
+
+    <!-- Settings Dialog -->
+    <string name="settings_title">Einstellungen</string>
+    <string name="design">Design</string>
+    <string name="design_system">Systemeinstellung</string>
+    <string name="design_light">Hell</string>
+    <string name="design_dark">Dunkel</string>
+    <string name="default_time">Standard-Uhrzeit</string>
+    <string name="default_time_desc">Wird verwendet wenn keine Uhrzeit angegeben ist</string>
+    <string name="default_time_hint">🕐 %s Uhr</string>
+
+    <!-- About Dialog -->
+    <string name="about">Über</string>
+    <string name="version">v%s</string>
+    <string name="build">Build %s</string>
+    <string name="developed_with">Entwickelt mit ❤️ und ☕</string>
+    <string name="developed_by">von einem leidenschaftlichen Solo-Entwickler</string>
+    <string name="app_motto">\"Zeit ist kostbar - behalte sie im Blick\"</string>
+
+    <!-- About Tabs -->
+    <string name="tab_info">Info</string>
+    <string name="tab_support">Support</string>
+    <string name="tab_details">Details</string>
+
+    <!-- Support Actions -->
+    <string name="support_rate">App bewerten</string>
+    <string name="support_rate_desc">Unterstütze die Weiterentwicklung mit einer Bewertung</string>
+    <string name="support_rate_action">Zum Play Store</string>
+    <string name="support_coffee">Buy me a Coffee</string>
+    <string name="support_coffee_desc">Unterstütze die Entwicklung mit einer kleinen Spende</string>
+    <string name="support_coffee_action">Zu Ko-fi</string>
+    <string name="support_bug">Fehler melden</string>
+    <string name="support_bug_desc">Hilf dabei, die App noch besser zu machen</string>
+    <string name="support_bug_action">E-Mail senden</string>
+    <string name="support_feature">Feature vorschlagen</string>
+    <string name="support_feature_desc">Hast du eine Idee für eine neue Funktion?</string>
+    <string name="support_feature_action">Idee teilen</string>
+
+    <!-- Technical Details -->
+    <string name="technical_details">Technische Details</string>
+    <string name="app_version">App-Version</string>
+    <string name="build_number">Build-Nummer</string>
+
+    <!-- Permissions -->
+    <string name="permissions">Berechtigungen</string>
+    <string name="permission_notifications">Benachrichtigungen</string>
+    <string name="permission_notifications_desc">Für Countdown-Erinnerungen</string>
+    <string name="permission_vibration">Vibration</string>
+    <string name="permission_vibration_desc">Für haptisches Feedback</string>
+    <string name="permission_widget">Widget-Aktualisierung</string>
+    <string name="permission_widget_desc">Für Homescreen-Widgets</string>
+
+    <!-- Credits -->
+    <string name="credits">Credits &amp; Danksagung</string>
+    <string name="thanks_to">Ein herzliches Dankeschön an:</string>
+    <string name="credit_supporters">Alle Unterstützer</string>
+    <string name="credit_supporters_desc">Die diese App möglich machen</string>
+    <string name="credit_community">Die Community</string>
+    <string name="credit_community_desc">Für Feedback und Ideen</string>
+    <string name="thanks_message">Danke, dass du NexTime verwendest! 🙏\nJeder Countdown zählt.</string>
+
+    <!-- Widget -->
+    <string name="widget_description">Zeigt deine Countdowns auf dem Homescreen</string>
+    <string name="widget_small_description">Kompakter Countdown (2×2)</string>
+    <string name="widget_medium_description">Detaillierter Countdown (4×2)</string>
+    <string name="widget_large_description">Countdown mit allen Details (4×3)</string>
+    <string name="widget_config_title">Widget einrichten</string>
+    <string name="widget_select_countdown">Countdown auswählen</string>
+    <string name="widget_select_size">Widget-Größe wählen</string>
+    <string name="widget_size_small">Klein (2×2)</string>
+    <string name="widget_size_medium">Mittel (4×2)</string>
+    <string name="widget_size_large">Groß (4×3)</string>
+    <string name="widget_no_countdowns">Noch keine Countdowns</string>
+    <string name="widget_no_countdowns_hint">Erstelle zuerst einen Countdown in der App</string>
+    <string name="widget_choose">Auswählen</string>
+
+    <!-- Bug Report Email -->
+    <string name="bug_report_subject">NexTime Fehler-Bericht - v%s</string>
+    <string name="bug_report_body">Hallo,\n\nich möchte einen Bug in NexTime melden:\n\nApp-Version: %s (%s)\nAndroid-Version: %s (SDK %s)\nGerät: %s %s\n\nBeschreibung des Problems:\n[Bitte beschreibe den Fehler]\n\nSchritte zur Reproduktion:\n1. \n2. \n3. \n\nErwartetes Verhalten:\n[Was sollte passieren?]\n\nTatsächliches Verhalten:\n[Was passiert stattdessen?]\n\nZusätzliche Informationen:\n[Screenshots, weitere Details...]\n\nVielen Dank!</string>
+
+    <!-- Feature Request Email -->
+    <string name="feature_request_subject">NexTime Feature-Idee</string>
+    <string name="feature_request_body">Hallo,\n\nich habe eine Idee für NexTime:\n\nFeature-Beschreibung:\n[Beschreibe deine Idee]\n\nWarum wäre das nützlich?\n[Erkläre den Nutzen]\n\nWie stellst du dir die Umsetzung vor?\n[Optional: Deine Vorstellung der Implementierung]\n\nApp-Version: %s\n\nVielen Dank für die tolle App!</string>
+
+    <!-- Share Message -->
+    <string name="share_title">Countdown: %s</string>
+    <string name="share_text">⏰ %s\n\n%s\n\n📅 %s\n%s\n\nErstellt mit NexTime</string>
+    <string name="share_time">um %s Uhr</string>
+    <string name="share_days_remaining">Noch %s Tage</string>
+    <string name="share_days_remaining_with_time">und %s Stunden</string>
+    <string name="share_days_ago">War vor %s Tagen</string>
+
+    <!-- Errors & Warnings -->
+    <string name="error">Fehler</string>
+    <string name="error_invalid_title">Bitte gib einen gültigen Titel ein</string>
+    <string name="error_invalid_date">Bitte wähle ein gültiges Datum</string>
+    <string name="error_invalid_color">Ungültiger Farbcode</string>
+    <string name="error_database">Datenbankfehler</string>
+    <string name="error_database_message">Fehler beim Zugriff auf die Datenbank. Bitte versuche es erneut.</string>
+    <string name="error_notification">Benachrichtigungsfehler</string>
+    <string name="error_notification_message">Fehler beim Einrichten der Benachrichtigung. Bitte überprüfe deine Berechtigungen.</string>
+    <string name="error_widget">Widget-Fehler</string>
+    <string name="error_widget_message">Fehler beim Aktualisieren des Widgets. Bitte versuche es erneut.</string>
+    <string name="error_permission_denied">Berechtigung verweigert</string>
+    <string name="error_permission_notifications">Benachrichtigungsberechtigung erforderlich für Erinnerungen.</string>
+    <string name="error_unknown">Unbekannter Fehler</string>
+    <string name="error_unknown_message">Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es erneut.</string>
+    <string name="error_retry">Erneut versuchen</string>
+    <string name="error_dismiss">Schließen</string>
+
+    <!-- Success Messages -->
+    <string name="success_created">Countdown erstellt ✅</string>
+    <string name="success_updated">Countdown aktualisiert ✅</string>
+    <string name="success_deleted">Countdown gelöscht ✅</string>
+    <string name="success_shared">Countdown geteilt ✅</string>
+    <string name="test_data_created">✅ %d Test-Countdowns erstellt!</string>
+
+    <!-- Loading & Status -->
+    <string name="loading">Wird geladen...</string>
+    <string name="saving">Wird gespeichert...</string>
+    <string name="deleting">Wird gelöscht...</string>
+
+    <!-- Time Units (for display) -->
+    <string name="time_unit_year">J</string>
+    <string name="time_unit_month">M</string>
+    <string name="time_unit_day">T</string>
+    <string name="time_unit_hour">h</string>
+    <string name="time_unit_minute">m</string>
+    <string name="time_unit_second">s</string>
+    <string name="time_unit_week">w</string>
+    <string name="time_separator">:</string>
+
+</resources>
