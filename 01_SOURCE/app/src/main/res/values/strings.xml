@@ -3,41 +3,262 @@
     <string name="app_name">NexTime</string>
 
     <!-- Main Screen -->
-    <string name="add_countdown">Countdown hinzufügen</string>
-    <string name="no_countdowns">Noch keine Countdowns</string>
-    <string name="no_countdowns_hint">Tippe auf +, um deinen ersten Countdown zu erstellen</string>
+    <string name="add_countdown">Add Countdown</string>
+    <string name="no_countdowns">No Countdowns Yet</string>
+    <string name="no_countdowns_hint">Tap + to create your first countdown</string>
 
-    <!-- Dialog -->
-    <string name="create_countdown">Countdown erstellen</string>
-    <string name="edit_countdown">Countdown bearbeiten</string>
-    <string name="title">Titel</string>
-    <string name="title_hint">z.B. Urlaub, Geburtstag...</string>
-    <string name="date">Datum</string>
-    <string name="time">Uhrzeit</string>
-    <string name="include_time">Uhrzeit einbeziehen</string>
-    <string name="show_nights">Nächte anzeigen</string>
-    <string name="save">Speichern</string>
-    <string name="cancel">Abbrechen</string>
-    <string name="delete">Löschen</string>
-    <string name="edit">Bearbeiten</string>
+    <!-- Navigation & Common -->
+    <string name="back">Back</string>
+    <string name="close">Close</string>
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+    <string name="delete">Delete</string>
+    <string name="edit">Edit</string>
+    <string name="share">Share</string>
+    <string name="settings">Settings</string>
+    <string name="info">Info &amp; Support</string>
+    <string name="ok">OK</string>
+
+    <!-- Add/Edit Dialog -->
+    <string name="create_countdown">Create Countdown</string>
+    <string name="edit_countdown">Edit Countdown</string>
+    <string name="title">Title</string>
+    <string name="title_hint">e.g. Birthday, Holiday...</string>
+    <string name="date">Date</string>
+    <string name="time">Time</string>
+    <string name="include_time">Include Time</string>
+    <string name="show_nights">Show Nights</string>
+
+    <!-- Display Formats -->
+    <string name="display_format">Display Format</string>
+    <string name="format_full_detailed">Full Detailed</string>
+    <string name="format_full_detailed_example">1y 2m 15d 05:30:45</string>
+    <string name="format_days_only">Days Only</string>
+    <string name="format_days_only_example">42 Days</string>
+    <string name="format_days_hours">Days + Hours</string>
+    <string name="format_days_hours_example">42 Days, 5h 30m</string>
+    <string name="format_hours_minutes">Hours + Minutes</string>
+    <string name="format_hours_minutes_example">1020h 30m</string>
+    <string name="format_full_time">Full Time</string>
+    <string name="format_full_time_example">42 Days, 5h 30m 45s</string>
+    <string name="format_weeks_days">Weeks + Days</string>
+    <string name="format_weeks_days_example">6 Weeks, 0 Days</string>
+    <string name="format_months_days">Months + Days</string>
+    <string name="format_months_days_example">1 Month, 12 Days</string>
+
+    <!-- Color -->
+    <string name="color">Color</string>
+    <string name="custom_color">Custom Color</string>
+    <string name="hex_color_code">Enter Hex Color Code</string>
+    <string name="hex_color_hint">#FF5733</string>
+    <string name="color_preview">Preview</string>
+
+    <!-- Notifications -->
+    <string name="notifications">Notifications</string>
+    <string name="notifications_enable">Enable</string>
+    <string name="reminders">Reminders</string>
+
+    <!-- Reminder Options -->
+    <string name="reminder_none">None</string>
+    <string name="reminder_at_time">At Time</string>
+    <string name="reminder_5_minutes">5 Minutes Before</string>
+    <string name="reminder_15_minutes">15 Minutes Before</string>
+    <string name="reminder_30_minutes">30 Minutes Before</string>
+    <string name="reminder_1_hour">1 Hour Before</string>
+    <string name="reminder_3_hours">3 Hours Before</string>
+    <string name="reminder_6_hours">6 Hours Before</string>
+    <string name="reminder_12_hours">12 Hours Before</string>
+    <string name="reminder_1_day">1 Day Before</string>
+    <string name="reminder_2_days">2 Days Before</string>
+    <string name="reminder_3_days">3 Days Before</string>
+    <string name="reminder_1_week">1 Week Before</string>
+    <string name="reminder_2_weeks">2 Weeks Before</string>
+    <string name="reminder_1_month">1 Month Before</string>
 
     <!-- Countdown Display -->
-    <string name="day">Tag</string>
-    <string name="days">Tage</string>
-    <string name="night">Nacht</string>
-    <string name="nights">Nächte</string>
-    <string name="today">Heute</string>
-    <string name="ago">vor</string>
+    <string name="day">Day</string>
+    <string name="days">Days</string>
+    <string name="hour">Hour</string>
+    <string name="hours">Hours</string>
+    <string name="minute">Minute</string>
+    <string name="minutes">Minutes</string>
+    <string name="second">Second</string>
+    <string name="seconds">Seconds</string>
+    <string name="week">Week</string>
+    <string name="weeks">Weeks</string>
+    <string name="month">Month</string>
+    <string name="months">Months</string>
+    <string name="year">Year</string>
+    <string name="years">Years</string>
+    <string name="night">Night</string>
+    <string name="nights">Nights</string>
+    <string name="today">Today</string>
+    <string name="ago">ago</string>
+
+    <!-- Detail Screen -->
+    <string name="details">Details</string>
+    <string name="start_date">Start Date</string>
+    <string name="target_date">Target Date</string>
+    <string name="statistics">Statistics</string>
+    <string name="total_duration">Total Duration</string>
+    <string name="remaining">Remaining</string>
+    <string name="created_at">Created</string>
+    <string name="delete_confirmation">Delete Countdown?</string>
+    <string name="delete_confirmation_message">Do you really want to delete \"%s\"? This action cannot be undone.</string>
+
+    <!-- Swipe Actions -->
+    <string name="swipe_edit">Edit</string>
+    <string name="swipe_delete">Delete</string>
+
+    <!-- Empty State -->
+    <string name="welcome_title">Welcome to NexTime</string>
+    <string name="welcome_subtitle">Keep track of the important moments</string>
+    <string name="welcome_hint">Tap + to get started</string>
+    <string name="idea_suggestions">Ideas for your first countdown</string>
+    <string name="idea_birthday">Birthday</string>
+    <string name="idea_birthday_desc">Never forget</string>
+    <string name="idea_holiday">Holiday</string>
+    <string name="idea_holiday_desc">Pure anticipation</string>
+    <string name="idea_exam">Exams</string>
+    <string name="idea_exam_desc">Well prepared</string>
+    <string name="idea_event">Events</string>
+    <string name="idea_event_desc">Special days</string>
+
+    <!-- Features List -->
+    <string name="feature_colors">Individual colors for each countdown</string>
+    <string name="feature_notifications">Reminders at the perfect time</string>
+    <string name="feature_widget">Widget for your homescreen</string>
+    <string name="feature_formats">Multiple display formats</string>
+
+    <!-- Settings Dialog -->
+    <string name="settings_title">Settings</string>
+    <string name="design">Design</string>
+    <string name="design_system">System Setting</string>
+    <string name="design_light">Light</string>
+    <string name="design_dark">Dark</string>
+    <string name="default_time">Default Time</string>
+    <string name="default_time_desc">Used when no time is specified</string>
+    <string name="default_time_hint">🕐 %s Uhr</string>
+
+    <!-- About Dialog -->
+    <string name="about">About</string>
+    <string name="version">v%s</string>
+    <string name="build">Build %s</string>
+    <string name="developed_with">Developed with ❤️ and ☕</string>
+    <string name="developed_by">by a passionate solo developer</string>
+    <string name="app_motto">\"Time is precious - keep it in sight\"</string>
+
+    <!-- About Tabs -->
+    <string name="tab_info">Info</string>
+    <string name="tab_support">Support</string>
+    <string name="tab_details">Details</string>
+
+    <!-- Support Actions -->
+    <string name="support_rate">Rate App</string>
+    <string name="support_rate_desc">Support development with a rating</string>
+    <string name="support_rate_action">Go to Play Store</string>
+    <string name="support_coffee">Buy me a Coffee</string>
+    <string name="support_coffee_desc">Support development with a small donation</string>
+    <string name="support_coffee_action">Go to Ko-fi</string>
+    <string name="support_bug">Report Bug</string>
+    <string name="support_bug_desc">Help make the app even better</string>
+    <string name="support_bug_action">Send Email</string>
+    <string name="support_feature">Suggest Feature</string>
+    <string name="support_feature_desc">Have an idea for a new feature?</string>
+    <string name="support_feature_action">Share Idea</string>
+
+    <!-- Technical Details -->
+    <string name="technical_details">Technical Details</string>
+    <string name="app_version">App Version</string>
+    <string name="build_number">Build Number</string>
+
+    <!-- Permissions -->
+    <string name="permissions">Permissions</string>
+    <string name="permission_notifications">Notifications</string>
+    <string name="permission_notifications_desc">For countdown reminders</string>
+    <string name="permission_vibration">Vibration</string>
+    <string name="permission_vibration_desc">For haptic feedback</string>
+    <string name="permission_widget">Widget Update</string>
+    <string name="permission_widget_desc">For homescreen widgets</string>
+
+    <!-- Credits -->
+    <string name="credits">Credits &amp; Thanks</string>
+    <string name="thanks_to">A heartfelt thank you to:</string>
+    <string name="credit_supporters">All Supporters</string>
+    <string name="credit_supporters_desc">Who make this app possible</string>
+    <string name="credit_community">The Community</string>
+    <string name="credit_community_desc">For feedback and ideas</string>
+    <string name="thanks_message">Thank you for using NexTime! 🙏\nEvery countdown counts.</string>
 
     <!-- Widget -->
-    <string name="widget_description">Zeigt deine Countdowns auf dem Homescreen</string>
-    <string name="widget_small_description">Kompakter Countdown (2×2)</string>
-    <string name="widget_medium_description">Detaillierter Countdown (4×2)</string>
-    <string name="widget_large_description">Countdown mit allen Details (4×3)</string>
-    <string name="widget_config_title">Widget einrichten</string>
-    <string name="widget_select_countdown">Countdown auswählen</string>
-    <string name="widget_select_size">Widget-Größe wählen</string>
-    <string name="widget_size_small">Klein (2×2)</string>
-    <string name="widget_size_medium">Mittel (4×2)</string>
-    <string name="widget_size_large">Groß (4×3)</string>
+    <string name="widget_description">Shows your countdowns on the homescreen</string>
+    <string name="widget_small_description">Compact countdown (2×2)</string>
+    <string name="widget_medium_description">Detailed countdown (4×2)</string>
+    <string name="widget_large_description">Countdown with all details (4×3)</string>
+    <string name="widget_config_title">Set Up Widget</string>
+    <string name="widget_select_countdown">Select Countdown</string>
+    <string name="widget_select_size">Choose Widget Size</string>
+    <string name="widget_size_small">Small (2×2)</string>
+    <string name="widget_size_medium">Medium (4×2)</string>
+    <string name="widget_size_large">Large (4×3)</string>
+    <string name="widget_no_countdowns">No Countdowns Yet</string>
+    <string name="widget_no_countdowns_hint">Create one first in the app</string>
+    <string name="widget_choose">Choose</string>
+
+    <!-- Bug Report Email -->
+    <string name="bug_report_subject">NexTime Bug Report - v%s</string>
+    <string name="bug_report_body">Hello,\n\nI want to report a bug in NexTime:\n\nApp Version: %s (%s)\nAndroid Version: %s (SDK %s)\nDevice: %s %s\n\nDescription of the problem:\n[Please describe the error]\n\nSteps to reproduce:\n1. \n2. \n3. \n\nExpected behavior:\n[What should happen?]\n\nActual behavior:\n[What happens instead?]\n\nAdditional information:\n[Screenshots, more details...]\n\nThank you!</string>
+
+    <!-- Feature Request Email -->
+    <string name="feature_request_subject">NexTime Feature Idea</string>
+    <string name="feature_request_body">Hello,\n\nI have an idea for NexTime:\n\nFeature Description:\n[Describe your idea]\n\nWhy would this be useful?\n[Explain the benefit]\n\nHow do you imagine the implementation?\n[Optional: Your implementation idea]\n\nApp Version: %s\n\nThank you for the great app!</string>
+
+    <!-- Share Message -->
+    <string name="share_title">Countdown: %s</string>
+    <string name="share_text">⏰ %s\n\n%s\n\n📅 %s\n%s\n\nCreated with NexTime</string>
+    <string name="share_time">at %s</string>
+    <string name="share_days_remaining">Still %s days</string>
+    <string name="share_days_remaining_with_time">and %s hours</string>
+    <string name="share_days_ago">Was %s days ago</string>
+
+    <!-- Errors & Warnings -->
+    <string name="error">Error</string>
+    <string name="error_invalid_title">Please enter a valid title</string>
+    <string name="error_invalid_date">Please select a valid date</string>
+    <string name="error_invalid_color">Invalid color code</string>
+    <string name="error_database">Database Error</string>
+    <string name="error_database_message">Error accessing database. Please try again.</string>
+    <string name="error_notification">Notification Error</string>
+    <string name="error_notification_message">Error setting up notification. Please check your permissions.</string>
+    <string name="error_widget">Widget Error</string>
+    <string name="error_widget_message">Error updating widget. Please try again.</string>
+    <string name="error_permission_denied">Permission Denied</string>
+    <string name="error_permission_notifications">Notification permission required for reminders.</string>
+    <string name="error_unknown">Unknown Error</string>
+    <string name="error_unknown_message">An unexpected error occurred. Please try again.</string>
+    <string name="error_retry">Retry</string>
+    <string name="error_dismiss">Dismiss</string>
+
+    <!-- Success Messages -->
+    <string name="success_created">Countdown created ✅</string>
+    <string name="success_updated">Countdown updated ✅</string>
+    <string name="success_deleted">Countdown deleted ✅</string>
+    <string name="success_shared">Countdown shared ✅</string>
+    <string name="test_data_created">✅ %d test countdowns created!</string>
+
+    <!-- Loading & Status -->
+    <string name="loading">Loading...</string>
+    <string name="saving">Saving...</string>
+    <string name="deleting">Deleting...</string>
+
+    <!-- Time Units (for display) -->
+    <string name="time_unit_year">y</string>
+    <string name="time_unit_month">m</string>
+    <string name="time_unit_day">d</string>
+    <string name="time_unit_hour">h</string>
+    <string name="time_unit_minute">m</string>
+    <string name="time_unit_second">s</string>
+    <string name="time_unit_week">w</string>
+    <string name="time_separator">:</string>
+
 </resources>
