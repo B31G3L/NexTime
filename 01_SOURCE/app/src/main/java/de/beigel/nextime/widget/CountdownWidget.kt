@@ -119,12 +119,21 @@ class CountdownWidget : AppWidgetProvider() {
                 // Titel
                 views.setTextViewText(R.id.widget_title, countdown.title)
 
-                // Countdown-Werte
+                // Anzeigeformat des Countdowns auslesen
+                val displayFormat = try {
+                    de.beigel.nextime.data.model.CountdownDisplayFormat.valueOf(countdown.displayFormat)
+                } catch (e: Exception) {
+                    de.beigel.nextime.data.model.CountdownDisplayFormat.FULL_DETAILED
+                }
+
+                // === SETZE SICHTBARKEIT UND INHALTE BASIEREND AUF COUNTDOWN-FORMAT ===
+
+                // Standardmäßig zeige immer Tage, Stunden, Minuten
                 views.setTextViewText(R.id.widget_days, "${timeInfo.days}")
                 views.setTextViewText(R.id.widget_hours, String.format("%02d", timeInfo.hours))
                 views.setTextViewText(R.id.widget_minutes, String.format("%02d", timeInfo.minutes))
 
-                // Labels anpassen (Singular/Plural)
+                // Labels
                 views.setTextViewText(
                     R.id.widget_days_label,
                     if (timeInfo.days == 1L) "Tag" else "Tage"
@@ -138,32 +147,33 @@ class CountdownWidget : AppWidgetProvider() {
                     if (timeInfo.minutes == 1L) "Minute" else "Minuten"
                 )
 
-                // Sekunden anzeigen wenn includeTime gesetzt ist (nur bei LARGE Widget)
-                if (countdown.includeTime && layoutResId == R.layout.widget_countdown_large) {
+                // Sekunden nur bei LARGE Widget und wenn Uhrzeit einbezogen
+                if (layoutResId == R.layout.widget_countdown_large && countdown.includeTime) {
                     views.setViewVisibility(R.id.widget_seconds_container, View.VISIBLE)
                     views.setTextViewText(R.id.widget_seconds, String.format("%02d", timeInfo.seconds))
                 } else if (layoutResId == R.layout.widget_countdown_large) {
                     views.setViewVisibility(R.id.widget_seconds_container, View.GONE)
                 }
 
-                // Datum
+                // === DATUM ANZEIGEN ===
                 val dateText = countdown.targetDateTime.format(
-                    DateTimeFormatter.ofPattern("dd.MM.yyyy")
+                    java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy")
                 )
                 views.setTextViewText(R.id.widget_date, " $dateText")
 
-                // Zeit anzeigen wenn includeTime gesetzt ist
+                // === UHRZEIT ANZEIGEN - NUR WENN COUNTDOWN includeTime=true UND Format nicht nur Tage ===
                 if (countdown.includeTime) {
                     val timeText = countdown.targetDateTime.format(
-                        DateTimeFormatter.ofPattern("HH:mm")
+                        java.time.format.DateTimeFormatter.ofPattern("HH:mm")
                     )
                     views.setTextViewText(R.id.widget_time_with_icon, " 🕐 $timeText Uhr")
                     views.setViewVisibility(R.id.widget_time_with_icon, View.VISIBLE)
                 } else {
+                    // Verstecke die Uhrzeit, wenn Countdown keine Zeit hat
                     views.setViewVisibility(R.id.widget_time_with_icon, View.GONE)
                 }
 
-                // Farbe setzen für Farbbalken
+                // === FARBEN SETZEN ===
                 try {
                     val color = android.graphics.Color.parseColor(countdown.color)
 
@@ -193,7 +203,7 @@ class CountdownWidget : AppWidgetProvider() {
                     )
 
                     // Sekunden mit Transparenz (wenn sichtbar)
-                    if (countdown.includeTime && layoutResId == R.layout.widget_countdown_large) {
+                    if (layoutResId == R.layout.widget_countdown_large && countdown.includeTime) {
                         views.setTextColor(R.id.widget_seconds,
                             android.graphics.Color.argb(140, // 55% alpha
                                 android.graphics.Color.red(color),
@@ -210,6 +220,8 @@ class CountdownWidget : AppWidgetProvider() {
                 Log.e(TAG, "Error updating widget views", e)
             }
         }
+
+        // In der CountdownWidget.kt - updateAllWidgets() Methode ERSETZEN:
 
         fun updateAllWidgets(context: Context) {
             try {
@@ -235,17 +247,29 @@ class CountdownWidget : AppWidgetProvider() {
                 val appWidgetIds = appWidgetManager.getAppWidgetIds(componentName)
                 Log.d(TAG, "Updating ${appWidgetIds.size} widgets from $providerName")
 
-                val layoutResId = when (providerName) {
-                    "de.beigel.nextime.widget.CountdownWidgetSmall" -> R.layout.widget_countdown_small
-                    "de.beigel.nextime.widget.CountdownWidgetLarge" -> R.layout.widget_countdown_large
-                    else -> R.layout.widget_countdown_medium
-                }
-
                 for (appWidgetId in appWidgetIds) {
+                    // Lade die gespeicherte Größe für dieses Widget
+                    val layoutResId = getLayoutForWidget(context, appWidgetId)
                     updateAppWidget(context, appWidgetManager, appWidgetId, layoutResId)
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error updating widgets from provider $providerName", e)
+            }
+        }
+
+        private fun getLayoutForWidget(context: Context, appWidgetId: Int): Int {
+            // Abrufen der gespeicherten Widget-Größe aus SharedPreferences (0=SMALL, 1=MEDIUM, 2=LARGE)
+            val prefs = context.getSharedPreferences(
+                "de.beigel.nextime.widget.CountdownWidget",
+                Context.MODE_PRIVATE
+            )
+            val sizeOrdinal = prefs.getInt("widget_size_$appWidgetId", 1)  // Default: MEDIUM (1)
+
+            return when (sizeOrdinal) {
+                0 -> R.layout.widget_countdown_small
+                1 -> R.layout.widget_countdown_medium
+                2 -> R.layout.widget_countdown_large
+                else -> R.layout.widget_countdown_medium  // Default
             }
         }
     }
