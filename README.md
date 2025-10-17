@@ -33,7 +33,7 @@ Eine moderne Android-App zum Erstellen und Verwalten von Countdowns für wichtig
 
 ### ⏳ In Entwicklung / Geplant
 
-- [ ] **Erweiterte Widgets**: Größere Widget-Varianten (2x4, 4x4)
+- [x] **Erweiterte Widgets**: Größere Widget-Varianten (2x4, 4x4)
 - [ ] **Kategorien/Tags**: Countdowns gruppieren und filtern
 - [ ] **Suche & Filter**: Nach Titel, Datum oder Status suchen
 - [ ] **Statistiken & Analytics**: Wieviele Countdowns, abgelaufen, etc.
@@ -41,8 +41,9 @@ Eine moderne Android-App zum Erstellen und Verwalten von Countdowns für wichtig
 - [ ] **Favoriten**: Wichtige Countdowns markieren
 - [ ] **Sortierung**: Nach Datum, Titel oder Kategorie
 - [ ] **Export/Import**: CSV/JSON Export und Import
-- [ ] **Cloud-Synchronisation**: iCloud oder Google Drive Sync
-- [ ] **Mehrsprachigkeit**: English, Français, Español, etc.
+- [x] **Cloud-Synchronisation**: iCloud oder Google Drive Sync
+    -   nicht notwenig!!!
+- [x] **Mehrsprachigkeit**: English, Français, Español, etc.
 - [ ] **Responsive UI**: Bessere Anpassung an größere Bildschirme
 - [ ] **Material You**: Dynamic Color Support (Android 12+)
 - [ ] **Accessibility**: Verbesserte Screen-Reader-Unterstützung
@@ -452,6 +453,7 @@ Falls dir NexTime gefällt:
 
 | Version | Datum | Highlights |
 |---------|-------|-----------|
+| 1.0.2 | 17.10.2025 | Multi Language |
 | 1.0.1 | 17.10.2025 | Beta Release: Widget, Notifications, 7 Display Formats |
 | 1.0.0 | TBD | Initial Release (geplant) |
 
