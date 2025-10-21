@@ -1,16 +1,21 @@
 package de.beigel.nextime.ui.screens
 
 import android.content.Intent
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,19 +28,23 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import de.beigel.nextime.data.model.Countdown
 import de.beigel.nextime.data.model.calculateTimeRemaining
 import de.beigel.nextime.ui.components.*
+import de.beigel.nextime.ui.theme.CustomTheme
 import de.beigel.nextime.ui.theme.DesignSystem
 import de.beigel.nextime.ui.theme.ThemeMode
 import de.beigel.nextime.ui.theme.ThemePreferences
+import de.beigel.nextime.ui.theme.getThemeConfig
 import de.beigel.nextime.ui.viewmodel.CountdownViewModel
 import de.beigel.nextime.utils.HapticFeedback
 import kotlinx.coroutines.launch
+import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
     viewModel: CountdownViewModel = viewModel(),
     isDarkTheme: Boolean,
-    onThemeToggle: () -> Unit
+    onThemeToggle: () -> Unit,
+    currentCustomTheme: CustomTheme = CustomTheme.NEXTIME
 ) {
     val context = LocalContext.current
     val haptic = remember { HapticFeedback(context) }
@@ -48,6 +57,8 @@ fun MainScreen(
     var countdownToDelete by remember { mutableStateOf<Countdown?>(null) }
     var showSettingsDialog by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
+    var showThemeDialog by remember { mutableStateOf(false) }
+    var selectedCustomTheme by remember { mutableStateOf(currentCustomTheme) }
 
     // Screen State Management
     val currentScreen = when {
@@ -61,7 +72,6 @@ fun MainScreen(
         targetState = currentScreen,
         transitionSpec = {
             if (targetState != "main") {
-                // Öffnen: Slide von rechts
                 slideInHorizontally(
                     initialOffsetX = { it },
                     animationSpec = tween(400, easing = FastOutSlowInEasing)
@@ -71,7 +81,6 @@ fun MainScreen(
                             animationSpec = tween(400, easing = FastOutSlowInEasing)
                         ) + fadeOut(animationSpec = tween(300))
             } else {
-                // Schließen: Slide nach rechts
                 slideInHorizontally(
                     initialOffsetX = { -it / 3 },
                     animationSpec = tween(400, easing = FastOutSlowInEasing)
@@ -110,13 +119,8 @@ fun MainScreen(
             }
 
             "detail" -> {
-                // Sicherheitsprüfung
                 val currentCountdown = selectedCountdown
                 if (currentCountdown == null) {
-                    // Fallback zur Hauptansicht wenn kein Countdown ausgewählt
-                    LaunchedEffect(Unit) {
-                        // Diese wird ausgelöst und führt zurück zur Hauptansicht
-                    }
                     return@AnimatedContent
                 }
 
@@ -142,7 +146,6 @@ fun MainScreen(
             }
 
             else -> {
-                // Hauptansicht
                 MainScreenContent(
                     countdowns = countdowns,
                     onCountdownClick = { countdown ->
@@ -194,7 +197,7 @@ fun MainScreen(
                 },
                 icon = {
                     Icon(
-                        imageVector = androidx.compose.material.icons.Icons.Default.Delete,
+                        imageVector = Icons.Default.Delete,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.error
                     )
@@ -235,7 +238,7 @@ fun MainScreen(
         }
     }
 
-    // Settings Dialog
+    // Settings Dialog mit Theme Integration
     if (showSettingsDialog) {
         val scope = rememberCoroutineScope()
         val themeMode by ThemePreferences.getThemeMode(context).collectAsState(initial = ThemeMode.SYSTEM)
@@ -247,24 +250,65 @@ fun MainScreen(
                 haptic.tick()
                 showSettingsDialog = false
             },
-            title = { Text("Einstellungen") },
+            title = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Text("Einstellungen")
+                }
+            },
             text = {
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(DesignSystem.Spacing.medium)
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
                 ) {
-                    // Theme-Auswahl
+                    // === THEME SECTION ===
                     Column(modifier = Modifier.fillMaxWidth()) {
                         Text(
-                            "Design",
+                            "Design & Theme",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Medium
                         )
-                        Spacer(modifier = Modifier.height(DesignSystem.Spacing.small))
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Theme Selector Button
+                        OutlinedButton(
+                            onClick = {
+                                haptic.tick()
+                                showThemeDialog = true
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Palette,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text("🎨 Theme: ${getThemeConfig(selectedCustomTheme).name}")
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Text(
+                            "Helles/Dunkles Design",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
 
                         // System
                         Surface(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = androidx.compose.foundation.shape.RoundedCornerShape(DesignSystem.CornerRadius.medium),
+                            modifier = Modifier
+                                .fillMaxWidth(),
+                            shape = RoundedCornerShape(8.dp),
                             color = if (themeMode == ThemeMode.SYSTEM)
                                 MaterialTheme.colorScheme.primaryContainer
                             else
@@ -273,11 +317,11 @@ fun MainScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(DesignSystem.Spacing.medium),
+                                    .padding(12.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("Systemeinstellung")
+                                Text("⚙️ Systemeinstellung")
                                 RadioButton(
                                     selected = themeMode == ThemeMode.SYSTEM,
                                     onClick = {
@@ -290,12 +334,13 @@ fun MainScreen(
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(DesignSystem.Spacing.xSmall))
+                        Spacer(modifier = Modifier.height(8.dp))
 
-                        // Hell
+                        // Light
                         Surface(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = androidx.compose.foundation.shape.RoundedCornerShape(DesignSystem.CornerRadius.medium),
+                            modifier = Modifier
+                                .fillMaxWidth(),
+                            shape = RoundedCornerShape(8.dp),
                             color = if (themeMode == ThemeMode.LIGHT)
                                 MaterialTheme.colorScheme.primaryContainer
                             else
@@ -304,11 +349,11 @@ fun MainScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(DesignSystem.Spacing.medium),
+                                    .padding(12.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("Hell")
+                                Text("🌞 Hell")
                                 RadioButton(
                                     selected = themeMode == ThemeMode.LIGHT,
                                     onClick = {
@@ -321,12 +366,13 @@ fun MainScreen(
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(DesignSystem.Spacing.xSmall))
+                        Spacer(modifier = Modifier.height(8.dp))
 
-                        // Dunkel
+                        // Dark
                         Surface(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = androidx.compose.foundation.shape.RoundedCornerShape(DesignSystem.CornerRadius.medium),
+                            modifier = Modifier
+                                .fillMaxWidth(),
+                            shape = RoundedCornerShape(8.dp),
                             color = if (themeMode == ThemeMode.DARK)
                                 MaterialTheme.colorScheme.primaryContainer
                             else
@@ -335,11 +381,11 @@ fun MainScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(DesignSystem.Spacing.medium),
+                                    .padding(12.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("Dunkel")
+                                Text("🌙 Dunkel")
                                 RadioButton(
                                     selected = themeMode == ThemeMode.DARK,
                                     onClick = {
@@ -355,7 +401,7 @@ fun MainScreen(
 
                     Divider()
 
-                    // Standard-Uhrzeit
+                    // === DEFAULT TIME SECTION ===
                     Column(modifier = Modifier.fillMaxWidth()) {
                         Text(
                             "Standard-Uhrzeit",
@@ -367,7 +413,7 @@ fun MainScreen(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        Spacer(modifier = Modifier.height(DesignSystem.Spacing.small))
+                        Spacer(modifier = Modifier.height(8.dp))
                         OutlinedButton(
                             onClick = {
                                 haptic.tick()
@@ -393,7 +439,7 @@ fun MainScreen(
 
         // TimePicker für Standard-Uhrzeit
         if (showTimePickerSettings) {
-            val timePickerState = androidx.compose.material3.rememberTimePickerState(
+            val timePickerState = rememberTimePickerState(
                 initialHour = defaultTime.hour,
                 initialMinute = defaultTime.minute,
                 is24Hour = true
@@ -425,11 +471,28 @@ fun MainScreen(
                     }
                 },
                 text = {
-                    androidx.compose.material3.TimePicker(state = timePickerState)
+                    TimePicker(state = timePickerState)
                 },
                 containerColor = MaterialTheme.colorScheme.surface
             )
         }
+    }
+
+    // Theme Dialog
+    if (showThemeDialog) {
+        ThemeSettingsDialog(
+            onDismiss = { showThemeDialog = false },
+            currentTheme = selectedCustomTheme,
+            onThemeChanged = { newTheme ->
+                haptic.success()
+                selectedCustomTheme = newTheme  // ← State wird SOFORT aktualisiert
+                Toast.makeText(
+                    context,
+                    "Theme geändert zu ${getThemeConfig(newTheme).name}",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        )
     }
 
     // About Dialog
@@ -546,9 +609,9 @@ private fun shareCountdown(context: android.content.Context, countdown: Countdow
                 append(" und ${timeInfo.hours}:${timeInfo.minutes} Stunden")
             }
         }
-        append("\n\n📅 ${countdown.targetDateTime.format(java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy"))}")
+        append("\n\n📅 ${countdown.targetDateTime.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))}")
         if (countdown.includeTime) {
-            append(" um ${countdown.targetDateTime.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))} Uhr")
+            append(" um ${countdown.targetDateTime.format(DateTimeFormatter.ofPattern("HH:mm"))} Uhr")
         }
         append("\n\nErstellt mit NexTime")
     }

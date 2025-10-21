@@ -1,9 +1,8 @@
 package de.beigel.nextime
 
 import android.Manifest
-import android.appwidget.AppWidgetManager
-import android.content.ComponentName
 import android.content.pm.PackageManager
+import de.beigel.nextime.ui.theme.CustomThemePreferences
 import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
@@ -27,6 +26,7 @@ import de.beigel.nextime.ui.theme.NexTimeTheme
 import de.beigel.nextime.ui.theme.ThemeMode
 import de.beigel.nextime.ui.theme.ThemePreferences
 import de.beigel.nextime.ui.screens.MainScreen
+import de.beigel.nextime.ui.theme.CustomTheme
 import de.beigel.nextime.widget.CountdownWidget
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -68,6 +68,9 @@ class MainActivity : ComponentActivity() {
                 ThemeMode.LIGHT -> false
                 ThemeMode.DARK -> true
             }
+
+            val customTheme by CustomThemePreferences.getCustomTheme(context).collectAsState(initial = CustomTheme.NEXTIME)
+
 
             NexTimeTheme(darkTheme = isDarkTheme) {
                 Surface(
