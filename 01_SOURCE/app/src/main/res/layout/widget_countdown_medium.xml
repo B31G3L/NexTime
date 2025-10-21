@@ -40,8 +40,9 @@
             android:gravity="center_horizontal"
             android:layout_marginBottom="8dp" />
 
-        <!-- Countdown-Anzeige: Tage Stunden Minuten -->
+        <!-- Countdown-Anzeige: Format-abhängig -->
         <LinearLayout
+            android:id="@+id/widget_countdown_container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
@@ -75,55 +76,59 @@
                     android:textStyle="bold" />
             </LinearLayout>
 
-            <!-- Stunden -->
+            <!-- Wochen (optional) -->
             <LinearLayout
+                android:id="@+id/widget_weeks_container"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:orientation="vertical"
-                android:gravity="center">
+                android:gravity="center"
+                android:visibility="gone">
 
                 <TextView
-                    android:id="@+id/widget_hours"
+                    android:id="@+id/widget_weeks"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="05"
+                    android:text="6"
                     android:textSize="24sp"
                     android:textStyle="bold"
                     android:textColor="#E0E0E0" />
 
                 <TextView
-                    android:id="@+id/widget_hours_label"
+                    android:id="@+id/widget_weeks_label"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Std"
+                    android:text="Wochen"
                     android:textSize="10sp"
                     android:textColor="#B0B0B0"
                     android:textStyle="bold" />
             </LinearLayout>
 
-            <!-- Minuten -->
+            <!-- Monate (optional) -->
             <LinearLayout
+                android:id="@+id/widget_months_container"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:orientation="vertical"
-                android:gravity="center">
+                android:gravity="center"
+                android:visibility="gone">
 
                 <TextView
-                    android:id="@+id/widget_minutes"
+                    android:id="@+id/widget_months"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="30"
+                    android:text="2"
                     android:textSize="24sp"
                     android:textStyle="bold"
                     android:textColor="#C0C0C0" />
 
                 <TextView
-                    android:id="@+id/widget_minutes_label"
+                    android:id="@+id/widget_months_label"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Min"
+                    android:text="Monate"
                     android:textSize="10sp"
                     android:textColor="#B0B0B0"
                     android:textStyle="bold" />
@@ -151,17 +156,6 @@
                 android:textSize="11sp"
                 android:textColor="#B0B0B0"
                 android:layout_marginStart="4dp" />
-
-            <!-- Zeit (optional) -->
-            <TextView
-                android:id="@+id/widget_time_with_icon"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text=" 🕐 18:00"
-                android:textSize="11sp"
-                android:textColor="#B0B0B0"
-                android:layout_marginStart="12dp"
-                android:visibility="gone" />
         </LinearLayout>
     </LinearLayout>
 

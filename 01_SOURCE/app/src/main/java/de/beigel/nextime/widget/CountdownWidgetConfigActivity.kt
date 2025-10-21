@@ -7,11 +7,14 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -20,6 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
 import de.beigel.nextime.data.database.CountdownDatabase
 import de.beigel.nextime.data.model.Countdown
@@ -56,7 +60,7 @@ class CountdownWidgetConfigActivity : ComponentActivity() {
 
         database = CountdownDatabase.getDatabase(this)
 
-        // WICHTIG: Bestimme die Widget-Größe basierend auf gespeicherten Daten oder Standardwert
+        // Bestimme die Widget-Größe basierend auf gespeicherten Daten oder Standardwert
         val widgetSize = getWidgetSizeFromPrefs()
         Log.d(TAG, "Determined widget size: $widgetSize")
 
@@ -229,94 +233,230 @@ class CountdownWidgetConfigActivity : ComponentActivity() {
         val baseColor = runCatching { Color(android.graphics.Color.parseColor(countdown.color)) }
             .getOrElse { MaterialTheme.colorScheme.primary }
 
+        val format = try {
+            de.beigel.nextime.data.model.CountdownDisplayFormat.valueOf(countdown.displayFormat)
+        } catch (e: Exception) {
+            de.beigel.nextime.data.model.CountdownDisplayFormat.DAYS_ONLY
+        }
+
         Card(
             modifier = Modifier
                 .fillMaxWidth()
+                .height(180.dp)
                 .clickable(onClick = onClick),
-            shape = RoundedCornerShape(DesignSystem.CornerRadius.large),
+            shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(
                 containerColor = baseColor.copy(alpha = 0.08f)
-            )
+            ),
         ) {
             Column(
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.fillMaxSize()
             ) {
-                Surface(
+                // Farbbalken oben
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(4.dp),
-                    color = baseColor,
-                    shape = RoundedCornerShape(2.dp)
-                ) {}
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Text(
-                    text = countdown.title,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
+                        .height(4.dp)
+                        .background(baseColor)
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .weight(1f)
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    // Titel
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Top
+                    ) {
                         Text(
-                            text = "${timeInfo.days}",
-                            style = MaterialTheme.typography.headlineMedium,
+                            text = countdown.title,
+                            style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = baseColor
+                            modifier = Modifier.weight(1f),
+                            maxLines = 1
                         )
+                    }
+
+                    // Hauptanzeige - Format-abhängig
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        when (format) {
+                            de.beigel.nextime.data.model.CountdownDisplayFormat.DAYS_ONLY -> {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(
+                                        text = "${timeInfo.days}",
+                                        fontSize = 48.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = baseColor
+                                    )
+                                    Text(
+                                        text = if (timeInfo.days == 1L) "Tag" else "Tage",
+                                        fontSize = 16.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                            de.beigel.nextime.data.model.CountdownDisplayFormat.WEEKS_DAYS -> {
+                                val remainingDays = timeInfo.days % 7
+                                Row(
+                                    horizontalArrangement = Arrangement.Center,
+                                    verticalAlignment = Alignment.Bottom
+                                ) {
+                                    Text(
+                                        text = "${timeInfo.weeks}",
+                                        fontSize = 40.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = baseColor
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = if (timeInfo.weeks == 1L) "Woche" else "Wochen",
+                                        fontSize = 16.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(bottom = 4.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Text(
+                                        text = "$remainingDays",
+                                        fontSize = 32.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = baseColor.copy(alpha = 0.7f)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = if (remainingDays == 1L) "Tag" else "Tage",
+                                        fontSize = 14.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(bottom = 2.dp)
+                                    )
+                                }
+                            }
+                            de.beigel.nextime.data.model.CountdownDisplayFormat.MONTHS_DAYS -> {
+                                val remainingDays = timeInfo.days % 30
+                                Row(
+                                    horizontalArrangement = Arrangement.Center,
+                                    verticalAlignment = Alignment.Bottom
+                                ) {
+                                    Text(
+                                        text = "${timeInfo.months}",
+                                        fontSize = 40.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = baseColor
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = if (timeInfo.months == 1L) "Monat" else "Monate",
+                                        fontSize = 16.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(bottom = 4.dp)
+                                    )
+                                    if (remainingDays > 0) {
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Text(
+                                            text = "$remainingDays",
+                                            fontSize = 32.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = baseColor.copy(alpha = 0.7f)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            text = if (remainingDays == 1L) "Tag" else "Tage",
+                                            fontSize = 14.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.padding(bottom = 2.dp)
+                                        )
+                                    }
+                                }
+                            }
+                            de.beigel.nextime.data.model.CountdownDisplayFormat.YEARS_MONTHS_DAYS -> {
+                                Row(
+                                    horizontalArrangement = Arrangement.Center,
+                                    verticalAlignment = Alignment.Bottom
+                                ) {
+                                    if (timeInfo.years > 0) {
+                                        Text(
+                                            text = "${timeInfo.years}",
+                                            fontSize = 32.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = baseColor
+                                        )
+                                        Text(
+                                            text = "J ",
+                                            fontSize = 14.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.padding(bottom = 2.dp)
+                                        )
+                                    }
+                                    if (timeInfo.months > 0 || timeInfo.years > 0) {
+                                        val remainingMonths = timeInfo.months % 12
+                                        if (remainingMonths > 0) {
+                                            Text(
+                                                text = "$remainingMonths",
+                                                fontSize = 32.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = baseColor
+                                            )
+                                            Text(
+                                                text = "M ",
+                                                fontSize = 14.sp,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                modifier = Modifier.padding(bottom = 2.dp)
+                                            )
+                                        }
+                                    }
+                                    val remainingDays = timeInfo.days % 30
+                                    Text(
+                                        text = "$remainingDays",
+                                        fontSize = 32.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = baseColor
+                                    )
+                                    Text(
+                                        text = "T",
+                                        fontSize = 14.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(bottom = 2.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    // Datum
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Outlined.CalendarToday,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(Modifier.width(4.dp))
                         Text(
-                            text = "Tage",
+                            text = countdown.targetDateTime.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-
-                    if (countdown.includeTime) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = String.format("%02d", timeInfo.hours),
-                                style = MaterialTheme.typography.headlineMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = baseColor.copy(alpha = 0.8f)
-                            )
-                            Text(
-                                text = "Std",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = String.format("%02d", timeInfo.minutes),
-                                style = MaterialTheme.typography.headlineMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = baseColor.copy(alpha = 0.6f)
-                            )
-                            Text(
-                                text = "Min",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
-                Surface(
+                // Farbbalken unten
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(4.dp),
-                    color = baseColor,
-                    shape = RoundedCornerShape(2.dp)
-                ) {}
+                        .height(4.dp)
+                        .background(baseColor)
+                )
             }
         }
     }

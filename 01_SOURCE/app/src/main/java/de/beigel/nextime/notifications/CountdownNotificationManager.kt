@@ -63,8 +63,7 @@ object CountdownNotificationManager {
             val timeInfo = countdown.calculateTimeRemaining()
             when {
                 timeInfo.days > 0 -> "Noch ${timeInfo.days} ${if (timeInfo.days == 1L) "Tag" else "Tage"}"
-                timeInfo.hours > 0 -> "Noch ${timeInfo.hours} ${if (timeInfo.hours == 1L) "Stunde" else "Stunden"}"
-                else -> "Noch ${timeInfo.minutes} ${if (timeInfo.minutes == 1L) "Minute" else "Minuten"}"
+                else -> "Heute oder morgen!"
             }
         }
 

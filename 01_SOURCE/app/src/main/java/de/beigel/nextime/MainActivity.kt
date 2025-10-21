@@ -36,7 +36,7 @@ class MainActivity : ComponentActivity() {
 
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
+    ) { _ ->
         // Optional: Feedback an den User
     }
 
@@ -58,12 +58,10 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val context = LocalContext.current
-            val scope = rememberCoroutineScope()
 
             val themeMode by ThemePreferences.getThemeMode(context).collectAsState(initial = ThemeMode.SYSTEM)
             val systemDarkTheme = isSystemInDarkTheme()
 
-            // WICHTIG: customTheme auslesen
             val customTheme by CustomThemePreferences.getCustomTheme(context).collectAsState(initial = CustomTheme.NEXTIME)
 
             val isDarkTheme = when (themeMode) {
@@ -72,10 +70,9 @@ class MainActivity : ComponentActivity() {
                 ThemeMode.DARK -> true
             }
 
-            // WICHTIG: customTheme Parameter hinzufügen
             NexTimeTheme(
                 darkTheme = isDarkTheme,
-                customTheme = customTheme  // ← NEU
+                customTheme = customTheme
             ) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
@@ -88,6 +85,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+        insertTestData()
     }
 
     private fun insertTestData() {
@@ -99,95 +97,53 @@ class MainActivity : ComponentActivity() {
             if (existing.isNotEmpty()) return@launch
 
             val testCountdowns = listOf(
-                // 1. FULL_DETAILED Format
+                // 1. DAYS_ONLY Format
                 Countdown(
-                    title = "🎂 Geburtstag (FULL_DETAILED)",
-                    targetDateTime = LocalDateTime.now().plusDays(7).withHour(18).withMinute(0),
-                    includeTime = true,
-                    displayFormat = CountdownDisplayFormat.FULL_DETAILED.name,
+                    title = "🎂 Geburtstag",
+                    targetDateTime = LocalDateTime.now().plusDays(7),
+                    displayFormat = CountdownDisplayFormat.DAYS_ONLY.name,
                     color = "#FF7043",
                     notificationEnabled = true,
-                    reminderOptions = "DAY_1,HOUR_1"
+                    reminderOptions = "DAY_1"
                 ),
 
-                // 2. DAYS_ONLY Format
+                // 2. WEEKS_DAYS Format
                 Countdown(
-                    title = "🎄 Weihnachten (DAYS_ONLY)",
+                    title = "🎄 Weihnachten",
                     targetDateTime = LocalDateTime.of(2025, 12, 24, 0, 0),
-                    includeTime = false,
-                    displayFormat = CountdownDisplayFormat.DAYS_ONLY.name,
+                    displayFormat = CountdownDisplayFormat.WEEKS_DAYS.name,
                     color = "#66BB6A"
                 ),
 
-                // 3. DAYS_HOURS Format
+                // 3. MONTHS_DAYS Format
                 Countdown(
-                    title = "🎆 Silvester (DAYS_HOURS)",
-                    targetDateTime = LocalDateTime.of(2025, 12, 31, 23, 59),
-                    includeTime = true,
-                    displayFormat = CountdownDisplayFormat.DAYS_HOURS.name,
+                    title = "🎆 Silvester",
+                    targetDateTime = LocalDateTime.of(2025, 12, 31, 0, 0),
+                    displayFormat = CountdownDisplayFormat.MONTHS_DAYS.name,
                     color = "#5C6BC0"
                 ),
 
-                // 4. HOURS_MINUTES Format
+                // 4. YEARS_MONTHS_DAYS Format
                 Countdown(
-                    title = "⚽ Fußballspiel (HOURS_MINUTES)",
-                    targetDateTime = LocalDateTime.now().plusHours(5).plusMinutes(30),
-                    includeTime = true,
-                    displayFormat = CountdownDisplayFormat.HOURS_MINUTES.name,
-                    color = "#EF5350"
-                ),
-
-                // 5. FULL_TIME Format
-                Countdown(
-                    title = "🍕 Pizza-Abend (FULL_TIME)",
-                    targetDateTime = LocalDateTime.now().withHour(19).withMinute(30),
-                    includeTime = true,
-                    displayFormat = CountdownDisplayFormat.FULL_TIME.name,
-                    color = "#26A69A"
-                ),
-
-                // 6. WEEKS_DAYS Format
-                Countdown(
-                    title = "🎓 Prüfung (WEEKS_DAYS)",
-                    targetDateTime = LocalDateTime.now().plusWeeks(3),
-                    includeTime = false,
-                    displayFormat = CountdownDisplayFormat.WEEKS_DAYS.name,
-                    color = "#AB47BC"
-                ),
-
-                // 7. MONTHS_DAYS Format
-                Countdown(
-                    title = "🏠 Umzug (MONTHS_DAYS)",
-                    targetDateTime = LocalDateTime.now().plusMonths(2).plusDays(5),
-                    includeTime = false,
-                    displayFormat = CountdownDisplayFormat.MONTHS_DAYS.name,
-                    color = "#FFA726"
-                ),
-
-                // 8. Count-up Beispiel
-                Countdown(
-                    title = "💍 Hochzeitstag (FULL_DETAILED)",
-                    targetDateTime = LocalDateTime.now().minusYears(2).minusMonths(3),
-                    includeTime = false,
-                    displayFormat = CountdownDisplayFormat.FULL_DETAILED.name,
-                    color = "#EC407A"
-                ),
-
-                // 9. Langfristig
-                Countdown(
-                    title = "🏖️ Sommerurlaub (FULL_DETAILED)",
-                    targetDateTime = LocalDateTime.of(2026, 7, 15, 10, 0),
-                    includeTime = true,
-                    displayFormat = CountdownDisplayFormat.FULL_DETAILED.name,
+                    title = "🏖️ Sommerurlaub",
+                    targetDateTime = LocalDateTime.of(2026, 7, 15, 0, 0),
+                    displayFormat = CountdownDisplayFormat.YEARS_MONTHS_DAYS.name,
                     color = "#42A5F5"
                 ),
 
-                // 10. Sehr langfristig
+                // 5. Count-up Beispiel
                 Countdown(
-                    title = "🚀 Mars Mission (MONTHS_DAYS)",
+                    title = "💍 Hochzeitstag",
+                    targetDateTime = LocalDateTime.now().minusYears(2).minusMonths(3),
+                    displayFormat = CountdownDisplayFormat.DAYS_ONLY.name,
+                    color = "#EC407A"
+                ),
+
+                // 6. Weiteres Beispiel
+                Countdown(
+                    title = "🚀 Mars Mission",
                     targetDateTime = LocalDateTime.of(2030, 1, 1, 0, 0),
-                    includeTime = false,
-                    displayFormat = CountdownDisplayFormat.MONTHS_DAYS.name,
+                    displayFormat = CountdownDisplayFormat.YEARS_MONTHS_DAYS.name,
                     color = "#8D6E63"
                 )
             )

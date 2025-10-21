@@ -26,7 +26,6 @@ import de.beigel.nextime.ui.theme.DesignSystem
 import de.beigel.nextime.utils.HapticFeedback
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -40,18 +39,8 @@ fun AddEditCountdownScreen(
     val haptic = remember { HapticFeedback(context) }
     val scrollState = rememberScrollState()
 
-    val defaultTime by de.beigel.nextime.ui.theme.ThemePreferences.getDefaultTime(context)
-        .collectAsState(initial = LocalTime.of(0, 0))
-
     var title by remember { mutableStateOf(countdown?.title ?: "") }
     var selectedDate by remember { mutableStateOf(countdown?.targetDateTime?.toLocalDate() ?: LocalDate.now().plusDays(1)) }
-    var selectedTime by remember {
-        mutableStateOf(
-            countdown?.targetDateTime?.toLocalTime() ?: defaultTime
-        )
-    }
-    var includeTime by remember { mutableStateOf(countdown?.includeTime ?: false) }
-    var selectedColor by remember { mutableStateOf(countdown?.color ?: "#FF7043") }
     var selectedFormat by remember {
         mutableStateOf(
             try {
@@ -82,70 +71,31 @@ fun AddEditCountdownScreen(
     }
 
     var showDatePicker by remember { mutableStateOf(false) }
-    var showTimePicker by remember { mutableStateOf(false) }
     var showCustomColorPicker by remember { mutableStateOf(false) }
     var customColorInput by remember { mutableStateOf("") }
+    var selectedColor by remember { mutableStateOf(countdown?.color ?: "#FF7043") }
 
     val colorOptions = listOf(
         "#FF7043", "#EF5350", "#EC407A", "#AB47BC", "#5C6BC0",
         "#42A5F5", "#26A69A", "#66BB6A", "#FFA726", "#8D6E63"
     )
 
-    val availableFormats = if (includeTime) {
-        listOf(
-            CountdownDisplayFormat.DAYS_ONLY to "Nur Tage",
-            CountdownDisplayFormat.FULL_DETAILED to "Detailliert",
-            CountdownDisplayFormat.DAYS_HOURS to "Tage + Stunden",
-            CountdownDisplayFormat.HOURS_MINUTES to "Nur Stunden",
-            CountdownDisplayFormat.FULL_TIME to "Vollständig",
-            CountdownDisplayFormat.WEEKS_DAYS to "Wochen + Tage",
-            CountdownDisplayFormat.MONTHS_DAYS to "Monate + Tage"
-        )
-    } else {
-        listOf(
-            CountdownDisplayFormat.DAYS_ONLY to "Nur Tage",
-            CountdownDisplayFormat.WEEKS_DAYS to "Wochen + Tage",
-            CountdownDisplayFormat.MONTHS_DAYS to "Monate + Tage"
-        )
-    }
+    val availableFormats = listOf(
+        CountdownDisplayFormat.DAYS_ONLY to "Nur Tage",
+        CountdownDisplayFormat.WEEKS_DAYS to "Wochen + Tage",
+        CountdownDisplayFormat.MONTHS_DAYS to "Monate + Tage",
+        CountdownDisplayFormat.YEARS_MONTHS_DAYS to "Jahre + Monate + Tage"
+    )
 
-    val availableReminders = remember(includeTime) {
-        if (includeTime) {
-            listOf(
-                ReminderOption.AT_TIME,
-                ReminderOption.MINUTES_5,
-                ReminderOption.MINUTES_15,
-                ReminderOption.MINUTES_30,
-                ReminderOption.HOUR_1,
-                ReminderOption.HOURS_3,
-                ReminderOption.HOURS_6,
-                ReminderOption.HOURS_12,
-                ReminderOption.DAY_1,
-                ReminderOption.DAYS_2,
-                ReminderOption.DAYS_3,
-                ReminderOption.WEEK_1,
-                ReminderOption.WEEKS_2,
-                ReminderOption.MONTH_1
-            )
-        } else {
-            listOf(
-                ReminderOption.AT_TIME,
-                ReminderOption.DAY_1,
-                ReminderOption.DAYS_2,
-                ReminderOption.DAYS_3,
-                ReminderOption.WEEK_1,
-                ReminderOption.WEEKS_2,
-                ReminderOption.MONTH_1
-            )
-        }
-    }
-
-    LaunchedEffect(includeTime) {
-        if (!availableFormats.map { it.first }.contains(selectedFormat)) {
-            selectedFormat = CountdownDisplayFormat.DAYS_ONLY
-        }
-        selectedReminders.removeAll { !availableReminders.contains(it) }
-    }
+    val availableReminders = listOf(
+        ReminderOption.AT_TIME,
+        ReminderOption.DAY_1,
+        ReminderOption.DAYS_2,
+        ReminderOption.DAYS_3,
+        ReminderOption.WEEK_1,
+        ReminderOption.WEEKS_2,
+        ReminderOption.MONTH_1
+    )
 
     Scaffold(
         topBar = {
@@ -165,17 +115,11 @@ fun AddEditCountdownScreen(
                             if (title.isNotBlank()) {
                                 haptic.success()
 
-                                val targetDateTime = if (includeTime) {
-                                    LocalDateTime.of(selectedDate, selectedTime)
-                                } else {
-                                    LocalDateTime.of(selectedDate, defaultTime)
-                                }
+                                val targetDateTime = LocalDateTime.of(selectedDate, LocalDateTime.now().toLocalTime())
 
                                 val newCountdown = countdown?.copy(
                                     title = title,
                                     targetDateTime = targetDateTime,
-                                    includeTime = includeTime,
-                                    showNights = false,
                                     displayFormat = selectedFormat.name,
                                     color = selectedColor,
                                     notificationEnabled = notificationEnabled,
@@ -183,8 +127,6 @@ fun AddEditCountdownScreen(
                                 ) ?: Countdown(
                                     title = title,
                                     targetDateTime = targetDateTime,
-                                    includeTime = includeTime,
-                                    showNights = false,
                                     displayFormat = selectedFormat.name,
                                     color = selectedColor,
                                     notificationEnabled = notificationEnabled,
@@ -230,63 +172,22 @@ fun AddEditCountdownScreen(
                 )
             }
 
-            // 2. DATUM & ZEIT SECTION
-            SectionCard(title = "Datum & Zeit") {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    // Datum Button
-                    OutlinedButton(
-                        onClick = {
-                            haptic.tick()
-                            showDatePicker = true
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.CalendarToday,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text(selectedDate.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")))
-                    }
-
-                    // Uhrzeit Switch
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            "Uhrzeit einbeziehen",
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                        Switch(
-                            checked = includeTime,
-                            onCheckedChange = {
-                                haptic.tick()
-                                includeTime = it
-                            }
-                        )
-                    }
-
-                    // Zeit Button (nur wenn includeTime)
-                    if (includeTime) {
-                        OutlinedButton(
-                            onClick = {
-                                haptic.tick()
-                                showTimePicker = true
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Schedule,
-                                contentDescription = null,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            Text("${selectedTime.format(DateTimeFormatter.ofPattern("HH:mm"))} Uhr")
-                        }
-                    }
+            // 2. DATUM SECTION
+            SectionCard(title = "Datum") {
+                OutlinedButton(
+                    onClick = {
+                        haptic.tick()
+                        showDatePicker = true
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CalendarToday,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(selectedDate.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")))
                 }
             }
 
@@ -418,7 +319,7 @@ fun AddEditCountdownScreen(
 
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             availableReminders.forEach { option ->
-                                ReminderOption(
+                                ReminderOptionRow(
                                     option = option,
                                     isSelected = selectedReminders.contains(option),
                                     onClick = {
@@ -557,43 +458,6 @@ fun AddEditCountdownScreen(
             DatePicker(state = datePickerState)
         }
     }
-
-    // TimePicker Dialog
-    if (showTimePicker) {
-        val timePickerState = rememberTimePickerState(
-            initialHour = selectedTime.hour,
-            initialMinute = selectedTime.minute,
-            is24Hour = true
-        )
-
-        AlertDialog(
-            onDismissRequest = {
-                haptic.tick()
-                showTimePicker = false
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    haptic.click()
-                    selectedTime = LocalTime.of(timePickerState.hour, timePickerState.minute)
-                    showTimePicker = false
-                }) {
-                    Text("OK")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    haptic.tick()
-                    showTimePicker = false
-                }) {
-                    Text("Abbrechen")
-                }
-            },
-            text = {
-                TimePicker(state = timePickerState)
-            },
-            containerColor = MaterialTheme.colorScheme.surface
-        )
-    }
 }
 
 @Composable
@@ -672,7 +536,7 @@ private fun FormatOption(
 }
 
 @Composable
-private fun ReminderOption(
+private fun ReminderOptionRow(
     option: ReminderOption,
     isSelected: Boolean,
     onClick: () -> Unit
@@ -755,12 +619,9 @@ private fun ColorCircle(
 
 private fun getFormatExample(format: CountdownDisplayFormat): String {
     return when (format) {
-        CountdownDisplayFormat.FULL_DETAILED -> "1J 2M 15T 05:30:45"
         CountdownDisplayFormat.DAYS_ONLY -> "42 Tage"
-        CountdownDisplayFormat.DAYS_HOURS -> "42 Tage, 5h 30m"
-        CountdownDisplayFormat.HOURS_MINUTES -> "1020h 30m"
-        CountdownDisplayFormat.FULL_TIME -> "42 Tage, 5h 30m 45s"
         CountdownDisplayFormat.WEEKS_DAYS -> "6 Wochen, 0 Tage"
         CountdownDisplayFormat.MONTHS_DAYS -> "1 Monat, 12 Tage"
+        CountdownDisplayFormat.YEARS_MONTHS_DAYS -> "2 Jahre, 1 Monat, 3 Tage"
     }
 }

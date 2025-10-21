@@ -86,8 +86,6 @@ class CountdownWidget : AppWidgetProvider() {
 
                     views.setTextViewText(R.id.widget_title, "NexTime")
                     views.setTextViewText(R.id.widget_days, "--")
-                    views.setTextViewText(R.id.widget_hours, "--")
-                    views.setTextViewText(R.id.widget_minutes, "--")
                     views.setTextViewText(R.id.widget_date, "Lade...")
 
                     val countdown = withContext(Dispatchers.IO) {
@@ -171,29 +169,81 @@ class CountdownWidget : AppWidgetProvider() {
 
                 val timeInfo = countdown.calculateTimeRemaining()
 
-                views.setTextViewText(R.id.widget_title, countdown.title)
-                views.setTextViewText(R.id.widget_days, "${timeInfo.days}")
-                views.setTextViewText(R.id.widget_hours, String.format("%02d", timeInfo.hours))
-                views.setTextViewText(R.id.widget_minutes, String.format("%02d", timeInfo.minutes))
+                val format = try {
+                    de.beigel.nextime.data.model.CountdownDisplayFormat.valueOf(countdown.displayFormat)
+                } catch (e: Exception) {
+                    de.beigel.nextime.data.model.CountdownDisplayFormat.DAYS_ONLY
+                }
 
+                views.setTextViewText(R.id.widget_title, countdown.title)
+
+                // Setze immer die Tage
+                views.setTextViewText(R.id.widget_days, "${timeInfo.days}")
                 views.setTextViewText(
                     R.id.widget_days_label,
                     if (timeInfo.days == 1L) "Tag" else "Tage"
                 )
-                views.setTextViewText(
-                    R.id.widget_hours_label,
-                    if (timeInfo.hours == 1L) "Stunde" else "Stunden"
-                )
-                views.setTextViewText(
-                    R.id.widget_minutes_label,
-                    if (timeInfo.minutes == 1L) "Minute" else "Minuten"
-                )
 
-                if (layoutResId == R.layout.widget_countdown_large && countdown.includeTime) {
-                    views.setViewVisibility(R.id.widget_seconds_container, View.VISIBLE)
-                    views.setTextViewText(R.id.widget_seconds, String.format("%02d", timeInfo.seconds))
-                } else if (layoutResId == R.layout.widget_countdown_large) {
-                    views.setViewVisibility(R.id.widget_seconds_container, View.GONE)
+                // Verstecke alle optional Container zuerst
+                views.setViewVisibility(R.id.widget_weeks_container, View.GONE)
+                views.setViewVisibility(R.id.widget_months_container, View.GONE)
+                views.setViewVisibility(R.id.widget_years_container, View.GONE)
+
+                // Zeige basierend auf Format
+                when (format) {
+                    de.beigel.nextime.data.model.CountdownDisplayFormat.DAYS_ONLY -> {
+                        // Nur Tage - Standard
+                    }
+
+                    de.beigel.nextime.data.model.CountdownDisplayFormat.WEEKS_DAYS -> {
+                        views.setViewVisibility(R.id.widget_weeks_container, View.VISIBLE)
+                        views.setTextViewText(R.id.widget_weeks, "${timeInfo.weeks}")
+                        views.setTextViewText(
+                            R.id.widget_weeks_label,
+                            if (timeInfo.weeks == 1L) "Woche" else "Wochen"
+                        )
+                    }
+
+                    de.beigel.nextime.data.model.CountdownDisplayFormat.MONTHS_DAYS -> {
+                        views.setViewVisibility(R.id.widget_months_container, View.VISIBLE)
+                        views.setTextViewText(R.id.widget_months, "${timeInfo.months}")
+                        views.setTextViewText(
+                            R.id.widget_months_label,
+                            if (timeInfo.months == 1L) "Monat" else "Monate"
+                        )
+                    }
+
+                    de.beigel.nextime.data.model.CountdownDisplayFormat.YEARS_MONTHS_DAYS -> {
+                        if (layoutResId == R.layout.widget_countdown_large) {
+                            // Für großes Widget: zeige Jahre, Monate und Tage
+                            if (timeInfo.years > 0) {
+                                views.setViewVisibility(R.id.widget_years_container, View.VISIBLE)
+                                views.setTextViewText(R.id.widget_years, "${timeInfo.years}")
+                                views.setTextViewText(
+                                    R.id.widget_years_label,
+                                    if (timeInfo.years == 1L) "Jahr" else "Jahre"
+                                )
+                            }
+
+                            val remainingMonths = timeInfo.months % 12
+                            if (remainingMonths > 0) {
+                                views.setViewVisibility(R.id.widget_months_container, View.VISIBLE)
+                                views.setTextViewText(R.id.widget_months, "$remainingMonths")
+                                views.setTextViewText(
+                                    R.id.widget_months_label,
+                                    if (remainingMonths == 1L) "Monat" else "Monate"
+                                )
+                            }
+                        } else {
+                            // Für kleinere Widgets: nur Monate anzeigen
+                            views.setViewVisibility(R.id.widget_months_container, View.VISIBLE)
+                            views.setTextViewText(R.id.widget_months, "${timeInfo.months}")
+                            views.setTextViewText(
+                                R.id.widget_months_label,
+                                if (timeInfo.months == 1L) "Monat" else "Monate"
+                            )
+                        }
+                    }
                 }
 
                 val dateText = countdown.targetDateTime.format(
@@ -201,49 +251,13 @@ class CountdownWidget : AppWidgetProvider() {
                 )
                 views.setTextViewText(R.id.widget_date, " $dateText")
 
-                if (countdown.includeTime) {
-                    val timeText = countdown.targetDateTime.format(
-                        java.time.format.DateTimeFormatter.ofPattern("HH:mm")
-                    )
-                    views.setTextViewText(R.id.widget_time_with_icon, " 🕐 $timeText Uhr")
-                    views.setViewVisibility(R.id.widget_time_with_icon, View.VISIBLE)
-                } else {
-                    views.setViewVisibility(R.id.widget_time_with_icon, View.GONE)
-                }
-
                 try {
                     val color = android.graphics.Color.parseColor(countdown.color)
 
                     views.setInt(R.id.widget_color_bar_top, "setBackgroundColor", color)
                     views.setInt(R.id.widget_color_bar_bottom, "setBackgroundColor", color)
-
                     views.setTextColor(R.id.widget_days, color)
 
-                    views.setTextColor(R.id.widget_hours,
-                        android.graphics.Color.argb(217,
-                            android.graphics.Color.red(color),
-                            android.graphics.Color.green(color),
-                            android.graphics.Color.blue(color)
-                        )
-                    )
-
-                    views.setTextColor(R.id.widget_minutes,
-                        android.graphics.Color.argb(178,
-                            android.graphics.Color.red(color),
-                            android.graphics.Color.green(color),
-                            android.graphics.Color.blue(color)
-                        )
-                    )
-
-                    if (layoutResId == R.layout.widget_countdown_large && countdown.includeTime) {
-                        views.setTextColor(R.id.widget_seconds,
-                            android.graphics.Color.argb(140,
-                                android.graphics.Color.red(color),
-                                android.graphics.Color.green(color),
-                                android.graphics.Color.blue(color)
-                            )
-                        )
-                    }
                 } catch (e: Exception) {
                     Log.e(TAG, "Error parsing color", e)
                 }

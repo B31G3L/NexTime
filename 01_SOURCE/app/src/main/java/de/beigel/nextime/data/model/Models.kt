@@ -8,12 +8,11 @@ import java.time.temporal.ChronoUnit
 enum class CountdownDisplayFormat {
     DAYS_ONLY,           // "42 Tage"
     WEEKS_DAYS,          // "6 Wochen, 0 Tage"
-    MONTHS_DAYS,          // "1 Monat, 12 Tage"
-
-    YEARS_MONTHS_DAYS     // "2 Jahre, 1 Monat, 3 Tage"
+    MONTHS_DAYS,         // "1 Monat, 12 Tage"
+    YEARS_MONTHS_DAYS    // "2 Jahre, 1 Monat, 3 Tage"
 }
 
-// Erinnerungsoptionen
+// Erinnerungsoptionen (vorerst ohne zeitbasierte Erinnerungen)
 enum class ReminderOption(val displayName: String, val minutes: Long) {
     NONE("Keine", 0),
     AT_TIME("Zum Zeitpunkt", 0),
@@ -30,9 +29,7 @@ data class Countdown(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     val title: String,
-    val targetDateTime: LocalDateTime,
-    val includeTime: Boolean = false,
-    val showNights: Boolean = false,
+    val targetDateTime: LocalDateTime,  // DB-Feld bleibt, wird aber OHNE Zeit verwendet
     val displayFormat: String = CountdownDisplayFormat.DAYS_ONLY.name,
     val createdAt: LocalDateTime = LocalDateTime.now(),
     val color: String = "#FF7043",
@@ -40,70 +37,41 @@ data class Countdown(
     // Notifikationen
     val notificationEnabled: Boolean = false,
     val reminderOptions: String = "",
-    val lastNotificationSent: String? = null
+    val lastNotificationSent: String? = null,
+
+    // Zukünftige Felder (noch nicht genutzt, aber in DB reserviert)
+    val includeTime: Boolean = false,
+    val showNights: Boolean = false
 )
 
 // Hilfsfunktionen für Countdown-Berechnungen
 data class CountdownInfo(
     val days: Long,
-    val hours: Long,
-    val minutes: Long,
-    val seconds: Long,
     val weeks: Long,
     val months: Long,
     val years: Long,
-    val nights: Long,
     val isPast: Boolean
 )
 
 fun Countdown.calculateTimeRemaining(): CountdownInfo {
-    val now = LocalDateTime.now()
-    val isPast = targetDateTime.isBefore(now)
+    val now = LocalDateTime.now().toLocalDate().atStartOfDay()
+    val targetDate = targetDateTime.toLocalDate().atStartOfDay()
+    val isPast = targetDate.isBefore(now)
 
-    val start = if (isPast) {
-        if (!includeTime) targetDateTime.toLocalDate().atStartOfDay()
-        else targetDateTime
-    } else {
-        now
-    }
+    val start = if (isPast) targetDate else now
+    val end = if (isPast) now else targetDate
 
-    val end = if (isPast) {
-        now
-    } else {
-        if (!includeTime) targetDateTime.toLocalDate().atStartOfDay()
-        else targetDateTime
-    }
-
-    // Basis-Berechnungen
+    // Basis-Berechnungen (nur Tage, keine Uhrzeiten)
     val totalDays = ChronoUnit.DAYS.between(start.toLocalDate(), end.toLocalDate())
     val years = ChronoUnit.YEARS.between(start.toLocalDate(), end.toLocalDate())
     val months = ChronoUnit.MONTHS.between(start.toLocalDate(), end.toLocalDate())
     val weeks = totalDays / 7
 
-    // Zeit-Komponenten (Stunden, Minuten, Sekunden)
-    val totalSeconds = ChronoUnit.SECONDS.between(start, end)
-    val daysInSeconds = totalDays * 86400L
-    val remainingSeconds = totalSeconds - daysInSeconds
-
-    val hours = remainingSeconds / 3600
-    val minutes = (remainingSeconds % 3600) / 60
-    val seconds = remainingSeconds % 60
-
-    val nights = if (showNights) {
-        totalDays
-    } else {
-        0L
-    }
-
     return CountdownInfo(
         days = totalDays,
-        hours = hours,
-        minutes = minutes,
-        seconds = seconds,
         weeks = weeks,
         months = months,
         years = years,
-        nights = nights,
         isPast = isPast,
     )
 }
@@ -117,37 +85,23 @@ fun Countdown.getFormattedTime(timeInfo: CountdownInfo): String {
 
     return when (format) {
         CountdownDisplayFormat.DAYS_ONLY -> {
-            buildString {
-                if (timeInfo.years > 0) {
-                    append("${timeInfo.years}J ")
-                }
-                if (timeInfo.months > 0 || timeInfo.years > 0) {
-                    val remainingMonths = timeInfo.months % 12
-                    if (remainingMonths > 0) {
-                        append("${remainingMonths}M ")
-                    }
-                }
-                val remainingDays = timeInfo.days % 30
-                if (remainingDays > 0 || (timeInfo.years == 0L && timeInfo.months == 0L)) {
-                    append("${remainingDays}T ")
-                }
-                append(String.format("%02d:%02d:%02d", timeInfo.hours, timeInfo.minutes, timeInfo.seconds))
-            }.trim()
-        }
-        CountdownDisplayFormat.DAYS_ONLY -> {
             "${timeInfo.days}"
         }
+
         CountdownDisplayFormat.WEEKS_DAYS -> {
             val remainingDays = timeInfo.days % 7
             "${timeInfo.weeks} Wochen, $remainingDays Tage"
         }
+
         CountdownDisplayFormat.MONTHS_DAYS -> {
-            val remainingDays = timeInfo.days - (timeInfo.months * 30)
+            val remainingDays = timeInfo.days % 30
             "${timeInfo.months} Monate, $remainingDays Tage"
         }
+
         CountdownDisplayFormat.YEARS_MONTHS_DAYS -> {
-            val remainingDays = timeInfo.days - (timeInfo.months * 30)
-            "${timeInfo.months} Monate, $remainingDays Tage"
+            val remainingMonths = timeInfo.months % 12
+            val remainingDays = timeInfo.days % 30
+            "${timeInfo.years} Jahre, $remainingMonths Monate, $remainingDays Tage"
         }
     }
 }
@@ -165,28 +119,17 @@ fun Countdown.getFormattedTimeLabel(timeInfo: CountdownInfo): String {
         }
         CountdownDisplayFormat.WEEKS_DAYS -> ""
         CountdownDisplayFormat.MONTHS_DAYS -> ""
-        CountdownDisplayFormat.YEARS_MONTHS_DAYS -> TODO()
+        CountdownDisplayFormat.YEARS_MONTHS_DAYS -> ""
     }
 }
 
-fun CountdownInfo.toDisplayString(includeTime: Boolean, showNights: Boolean): String {
+fun CountdownInfo.toDisplayString(): String {
     return buildString {
         if (isPast) append("vor ")
 
         if (days > 0) {
             append("$days Tag")
             if (days > 1) append("e")
-        }
-
-        if (includeTime) {
-            if (days > 0) append(", ")
-            append("${hours}h ${minutes}m")
-        }
-
-        if (showNights && nights > 0) {
-            append(" (${nights} Nacht")
-            if (nights > 1) append("e")
-            append(")")
         }
     }
 }

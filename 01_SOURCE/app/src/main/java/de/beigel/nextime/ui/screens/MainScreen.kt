@@ -60,7 +60,6 @@ fun MainScreen(
     var showAboutDialog by remember { mutableStateOf(false) }
     var showThemeDialog by remember { mutableStateOf(false) }
 
-    // WICHTIG: Lokalen State für selectedCustomTheme
     var selectedCustomTheme by remember {
         mutableStateOf(CustomTheme.NEXTIME)
     }
@@ -253,8 +252,6 @@ fun MainScreen(
     // Settings Dialog
     if (showSettingsDialog) {
         val themeMode by ThemePreferences.getThemeMode(context).collectAsState(initial = ThemeMode.SYSTEM)
-        val defaultTime by ThemePreferences.getDefaultTime(context).collectAsState(initial = java.time.LocalTime.of(0, 0))
-        var showTimePickerSettings by remember { mutableStateOf(false) }
 
         AlertDialog(
             onDismissRequest = {
@@ -406,32 +403,6 @@ fun MainScreen(
                             }
                         }
                     }
-
-                    Divider()
-
-                    // === DEFAULT TIME SECTION ===
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            "Standard-Uhrzeit",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Text(
-                            "Wird verwendet wenn keine Uhrzeit angegeben ist",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedButton(
-                            onClick = {
-                                haptic.tick()
-                                showTimePickerSettings = true
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("🕐 ${defaultTime.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))} Uhr")
-                        }
-                    }
                 }
             },
             confirmButton = {
@@ -444,46 +415,6 @@ fun MainScreen(
             },
             containerColor = MaterialTheme.colorScheme.surface
         )
-
-        // TimePicker für Standard-Uhrzeit
-        if (showTimePickerSettings) {
-            val timePickerState = rememberTimePickerState(
-                initialHour = defaultTime.hour,
-                initialMinute = defaultTime.minute,
-                is24Hour = true
-            )
-
-            AlertDialog(
-                onDismissRequest = {
-                    haptic.tick()
-                    showTimePickerSettings = false
-                },
-                confirmButton = {
-                    TextButton(onClick = {
-                        haptic.click()
-                        val newTime = java.time.LocalTime.of(timePickerState.hour, timePickerState.minute)
-                        scope.launch {
-                            ThemePreferences.setDefaultTime(context, newTime)
-                        }
-                        showTimePickerSettings = false
-                    }) {
-                        Text("OK")
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = {
-                        haptic.tick()
-                        showTimePickerSettings = false
-                    }) {
-                        Text("Abbrechen")
-                    }
-                },
-                text = {
-                    TimePicker(state = timePickerState)
-                },
-                containerColor = MaterialTheme.colorScheme.surface
-            )
-        }
     }
 
     // Theme Dialog
@@ -616,14 +547,8 @@ private fun shareCountdown(context: android.content.Context, countdown: Countdow
             append("Ist vor ${timeInfo.days} Tagen vergangen")
         } else {
             append("Noch ${timeInfo.days} Tage")
-            if (countdown.includeTime) {
-                append(" und ${timeInfo.hours}:${timeInfo.minutes} Stunden")
-            }
         }
         append("\n\n📅 ${countdown.targetDateTime.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))}")
-        if (countdown.includeTime) {
-            append(" um ${countdown.targetDateTime.format(DateTimeFormatter.ofPattern("HH:mm"))} Uhr")
-        }
         append("\n\nErstellt mit NexTime")
     }
 
