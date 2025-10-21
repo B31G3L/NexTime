@@ -521,11 +521,11 @@ private fun MainScreenContent(
                                 animationSpec = tween(200)
                             )
                         ) {
-                            SwipeableCountdownCard(
+                            CountdownCardWithActions(
                                 countdown = countdown,
+                                onClick = { onCountdownClick(countdown) },
                                 onEdit = { onCountdownEdit(countdown) },
-                                onDelete = { onCountdownDelete(countdown) },
-                                onClick = { onCountdownClick(countdown) }
+                                onDelete = { onCountdownDelete(countdown) }
                             )
                         }
                     }
