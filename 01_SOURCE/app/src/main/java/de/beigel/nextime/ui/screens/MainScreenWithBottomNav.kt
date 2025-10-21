@@ -5,6 +5,7 @@ import android.widget.Toast
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -18,13 +19,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.AvTimer
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -318,9 +322,10 @@ private fun BottomNavigationBar(
             selected = selectedPage == 1,
             onClick = { onPageSelected(1) },
             icon = {
-                Text(
-                    text = "⏰",
-                    style = MaterialTheme.typography.headlineSmall
+                Icon(
+                    imageVector = Icons.Outlined.AvTimer,
+                    contentDescription = "Liste",
+                    modifier = Modifier.size(26.dp)
                 )
             },
             label = null,
@@ -416,25 +421,6 @@ private fun AboutPageContent() {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // App Logo
-                Surface(
-                    modifier = Modifier.size(80.dp),
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primaryContainer
-                ) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.mipmap.ic_launcher_round),
-                            contentDescription = "NexTime Logo",
-                            modifier = Modifier.size(60.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
-
                 Text(
                     "NexTime",
                     style = MaterialTheme.typography.headlineLarge,
