@@ -11,7 +11,7 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun NexTimeTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    customTheme: CustomTheme = CustomTheme.PLANIT,
+    customTheme: CustomTheme = CustomTheme.NEXTIME,  // ← WICHTIG: Parameter hinzufügen
     content: @Composable () -> Unit
 ) {
     // Hole Theme-Konfiguration basierend auf ausgewähltem Theme

@@ -29,6 +29,7 @@ import de.beigel.nextime.data.model.Countdown
 import de.beigel.nextime.data.model.calculateTimeRemaining
 import de.beigel.nextime.ui.components.*
 import de.beigel.nextime.ui.theme.CustomTheme
+import de.beigel.nextime.ui.theme.CustomThemePreferences
 import de.beigel.nextime.ui.theme.DesignSystem
 import de.beigel.nextime.ui.theme.ThemeMode
 import de.beigel.nextime.ui.theme.ThemePreferences
@@ -43,11 +44,11 @@ import java.time.format.DateTimeFormatter
 fun MainScreen(
     viewModel: CountdownViewModel = viewModel(),
     isDarkTheme: Boolean,
-    onThemeToggle: () -> Unit,
-    currentCustomTheme: CustomTheme = CustomTheme.NEXTIME
+    onThemeToggle: () -> Unit
 ) {
     val context = LocalContext.current
     val haptic = remember { HapticFeedback(context) }
+    val scope = rememberCoroutineScope()
 
     val countdowns by viewModel.countdowns.collectAsState()
     val selectedCountdown by viewModel.selectedCountdown.collectAsState()
@@ -58,7 +59,18 @@ fun MainScreen(
     var showSettingsDialog by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
     var showThemeDialog by remember { mutableStateOf(false) }
-    var selectedCustomTheme by remember { mutableStateOf(currentCustomTheme) }
+
+    // WICHTIG: Lokalen State für selectedCustomTheme
+    var selectedCustomTheme by remember {
+        mutableStateOf(CustomTheme.NEXTIME)
+    }
+
+    // Lese aktuelles Theme vom DataStore
+    LaunchedEffect(Unit) {
+        CustomThemePreferences.getCustomTheme(context).collect { theme ->
+            selectedCustomTheme = theme
+        }
+    }
 
     // Screen State Management
     val currentScreen = when {
@@ -238,9 +250,8 @@ fun MainScreen(
         }
     }
 
-    // Settings Dialog mit Theme Integration
+    // Settings Dialog
     if (showSettingsDialog) {
-        val scope = rememberCoroutineScope()
         val themeMode by ThemePreferences.getThemeMode(context).collectAsState(initial = ThemeMode.SYSTEM)
         val defaultTime by ThemePreferences.getDefaultTime(context).collectAsState(initial = java.time.LocalTime.of(0, 0))
         var showTimePickerSettings by remember { mutableStateOf(false) }
@@ -306,8 +317,7 @@ fun MainScreen(
 
                         // System
                         Surface(
-                            modifier = Modifier
-                                .fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(8.dp),
                             color = if (themeMode == ThemeMode.SYSTEM)
                                 MaterialTheme.colorScheme.primaryContainer
@@ -338,8 +348,7 @@ fun MainScreen(
 
                         // Light
                         Surface(
-                            modifier = Modifier
-                                .fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(8.dp),
                             color = if (themeMode == ThemeMode.LIGHT)
                                 MaterialTheme.colorScheme.primaryContainer
@@ -370,8 +379,7 @@ fun MainScreen(
 
                         // Dark
                         Surface(
-                            modifier = Modifier
-                                .fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(8.dp),
                             color = if (themeMode == ThemeMode.DARK)
                                 MaterialTheme.colorScheme.primaryContainer
@@ -485,7 +493,10 @@ fun MainScreen(
             currentTheme = selectedCustomTheme,
             onThemeChanged = { newTheme ->
                 haptic.success()
-                selectedCustomTheme = newTheme  // ← State wird SOFORT aktualisiert
+                selectedCustomTheme = newTheme
+                scope.launch {
+                    CustomThemePreferences.setCustomTheme(context, newTheme)
+                }
                 Toast.makeText(
                     context,
                     "Theme geändert zu ${getThemeConfig(newTheme).name}",

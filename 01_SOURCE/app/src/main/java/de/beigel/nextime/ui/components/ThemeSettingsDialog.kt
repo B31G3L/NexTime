@@ -257,36 +257,6 @@ private fun ThemeOptionCard(
                     color = themeConfig.lightColorScheme.secondary
                 ) {}
             }
-
-            // Emoji Icon für Theme
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = when (theme) {
-                        CustomTheme.PLANIT -> "🌊"
-                        CustomTheme.NEXTIME -> "🔥"
-                        CustomTheme.LEETSPEAK -> "💜"
-                        CustomTheme.DAILYLIST -> "🌿"
-                        CustomTheme.UNKNOWN -> "❓"
-                    },
-                    style = MaterialTheme.typography.headlineSmall
-                )
-
-                Text(
-                    text = when (theme) {
-                        CustomTheme.PLANIT -> "Ozean & Wasser"
-                        CustomTheme.NEXTIME -> "Sonne & Wärme"
-                        CustomTheme.LEETSPEAK -> "Magie & Geheimnis"
-                        CustomTheme.DAILYLIST -> "Natur & Wachstum"
-                        CustomTheme.UNKNOWN -> "Abenteuer & Rätsel"
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
         }
     }
 }

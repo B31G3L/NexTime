@@ -63,16 +63,20 @@ class MainActivity : ComponentActivity() {
             val themeMode by ThemePreferences.getThemeMode(context).collectAsState(initial = ThemeMode.SYSTEM)
             val systemDarkTheme = isSystemInDarkTheme()
 
+            // WICHTIG: customTheme auslesen
+            val customTheme by CustomThemePreferences.getCustomTheme(context).collectAsState(initial = CustomTheme.NEXTIME)
+
             val isDarkTheme = when (themeMode) {
                 ThemeMode.SYSTEM -> systemDarkTheme
                 ThemeMode.LIGHT -> false
                 ThemeMode.DARK -> true
             }
 
-            val customTheme by CustomThemePreferences.getCustomTheme(context).collectAsState(initial = CustomTheme.NEXTIME)
-
-
-            NexTimeTheme(darkTheme = isDarkTheme) {
+            // WICHTIG: customTheme Parameter hinzufügen
+            NexTimeTheme(
+                darkTheme = isDarkTheme,
+                customTheme = customTheme  // ← NEU
+            ) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
@@ -84,7 +88,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-        //insertTestData()
     }
 
     private fun insertTestData() {
