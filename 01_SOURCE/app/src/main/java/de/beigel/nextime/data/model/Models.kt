@@ -5,28 +5,18 @@ import androidx.room.PrimaryKey
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 
-// Anzeigeformate für Countdowns
 enum class CountdownDisplayFormat {
-    FULL_DETAILED,       // "1 Jahr, 2 Monate, 15 Tage, 5h 30m 45s" (NEU - Standard)
     DAYS_ONLY,           // "42 Tage"
-    DAYS_HOURS,          // "42 Tage, 5h 30m"
-    HOURS_MINUTES,       // "1020h 30m"
-    FULL_TIME,           // "42 Tage, 5h 30m 45s"
     WEEKS_DAYS,          // "6 Wochen, 0 Tage"
-    MONTHS_DAYS          // "1 Monat, 12 Tage"
+    MONTHS_DAYS,          // "1 Monat, 12 Tage"
+
+    YEARS_MONTHS_DAYS     // "2 Jahre, 1 Monat, 3 Tage"
 }
 
 // Erinnerungsoptionen
 enum class ReminderOption(val displayName: String, val minutes: Long) {
     NONE("Keine", 0),
     AT_TIME("Zum Zeitpunkt", 0),
-    MINUTES_5("5 Minuten vorher", 5),
-    MINUTES_15("15 Minuten vorher", 15),
-    MINUTES_30("30 Minuten vorher", 30),
-    HOUR_1("1 Stunde vorher", 60),
-    HOURS_3("3 Stunden vorher", 180),
-    HOURS_6("6 Stunden vorher", 360),
-    HOURS_12("12 Stunden vorher", 720),
     DAY_1("1 Tag vorher", 1440),
     DAYS_2("2 Tage vorher", 2880),
     DAYS_3("3 Tage vorher", 4320),
@@ -43,7 +33,7 @@ data class Countdown(
     val targetDateTime: LocalDateTime,
     val includeTime: Boolean = false,
     val showNights: Boolean = false,
-    val displayFormat: String = CountdownDisplayFormat.FULL_DETAILED.name,
+    val displayFormat: String = CountdownDisplayFormat.DAYS_ONLY.name,
     val createdAt: LocalDateTime = LocalDateTime.now(),
     val color: String = "#FF7043",
 
@@ -122,11 +112,11 @@ fun Countdown.getFormattedTime(timeInfo: CountdownInfo): String {
     val format = try {
         CountdownDisplayFormat.valueOf(displayFormat)
     } catch (e: Exception) {
-        CountdownDisplayFormat.FULL_DETAILED
+        CountdownDisplayFormat.DAYS_ONLY
     }
 
     return when (format) {
-        CountdownDisplayFormat.FULL_DETAILED -> {
+        CountdownDisplayFormat.DAYS_ONLY -> {
             buildString {
                 if (timeInfo.years > 0) {
                     append("${timeInfo.years}J ")
@@ -147,24 +137,15 @@ fun Countdown.getFormattedTime(timeInfo: CountdownInfo): String {
         CountdownDisplayFormat.DAYS_ONLY -> {
             "${timeInfo.days}"
         }
-        CountdownDisplayFormat.DAYS_HOURS -> {
-            if (timeInfo.days > 0) {
-                "${timeInfo.days} Tage, ${timeInfo.hours}h ${timeInfo.minutes}m"
-            } else {
-                "${timeInfo.hours}h ${timeInfo.minutes}m"
-            }
-        }
-        CountdownDisplayFormat.HOURS_MINUTES -> {
-            "${timeInfo.hours}h ${timeInfo.minutes}m"
-        }
-        CountdownDisplayFormat.FULL_TIME -> {
-            "${timeInfo.days} Tage, ${timeInfo.hours}h ${timeInfo.minutes}m ${timeInfo.seconds}s"
-        }
         CountdownDisplayFormat.WEEKS_DAYS -> {
             val remainingDays = timeInfo.days % 7
             "${timeInfo.weeks} Wochen, $remainingDays Tage"
         }
         CountdownDisplayFormat.MONTHS_DAYS -> {
+            val remainingDays = timeInfo.days - (timeInfo.months * 30)
+            "${timeInfo.months} Monate, $remainingDays Tage"
+        }
+        CountdownDisplayFormat.YEARS_MONTHS_DAYS -> {
             val remainingDays = timeInfo.days - (timeInfo.months * 30)
             "${timeInfo.months} Monate, $remainingDays Tage"
         }
@@ -175,19 +156,16 @@ fun Countdown.getFormattedTimeLabel(timeInfo: CountdownInfo): String {
     val format = try {
         CountdownDisplayFormat.valueOf(displayFormat)
     } catch (e: Exception) {
-        CountdownDisplayFormat.FULL_DETAILED
+        CountdownDisplayFormat.DAYS_ONLY
     }
 
     return when (format) {
-        CountdownDisplayFormat.FULL_DETAILED -> ""
         CountdownDisplayFormat.DAYS_ONLY -> {
             if (timeInfo.days == 1L) "Tag" else "Tage"
         }
-        CountdownDisplayFormat.DAYS_HOURS -> ""
-        CountdownDisplayFormat.HOURS_MINUTES -> ""
-        CountdownDisplayFormat.FULL_TIME -> ""
         CountdownDisplayFormat.WEEKS_DAYS -> ""
         CountdownDisplayFormat.MONTHS_DAYS -> ""
+        CountdownDisplayFormat.YEARS_MONTHS_DAYS -> TODO()
     }
 }
 

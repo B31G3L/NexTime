@@ -29,7 +29,7 @@ interface CountdownDao {
 
 @Database(
     entities = [Countdown::class],
-    version = 4,  // Version erhöht für FULL_DETAILED Format
+    version = 4,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
