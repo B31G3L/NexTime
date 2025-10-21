@@ -86,7 +86,7 @@ fun MainScreenWithBottomNav(
         else -> "main"
     }
 
-    // Animierte Screen-Navigation (wie vorher)
+    // Animierte Screen-Navigation
     AnimatedContent(
         targetState = currentScreen,
         transitionSpec = {
@@ -183,7 +183,7 @@ fun MainScreenWithBottomNav(
                         )
                     },
                     floatingActionButton = {
-                        // FAB nur auf Main List (Page 1) zeigen
+                        // FAB nur auf Main List (Page 1) zeigen - JETZT RECHTS!
                         AnimatedVisibility(
                             visible = pagerState.currentPage == 1,
                             enter = scaleIn(
@@ -213,7 +213,7 @@ fun MainScreenWithBottomNav(
                             }
                         }
                     },
-                    floatingActionButtonPosition = FabPosition.Center
+                    floatingActionButtonPosition = FabPosition.End  // ← WICHTIG: FAB nach rechts!
                 ) { paddingValues ->
                     HorizontalPager(
                         state = pagerState,
@@ -249,7 +249,7 @@ fun MainScreenWithBottomNav(
         }
     }
 
-    // Dialoge (wie vorher)
+    // Dialoge
     if (countdownToDelete != null) {
         DeleteConfirmationDialog(
             countdown = countdownToDelete!!,
@@ -292,47 +292,50 @@ private fun BottomNavigationBar(
 ) {
     NavigationBar(
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        modifier = Modifier.height(80.dp)
+        modifier = Modifier.height(70.dp)
     ) {
+        // Info Icon - Links
         NavigationBarItem(
             selected = selectedPage == 0,
             onClick = { onPageSelected(0) },
             icon = {
                 Icon(
                     imageVector = Icons.Outlined.Info,
-                    contentDescription = "Info"
+                    contentDescription = "Info",
+                    modifier = Modifier.size(26.dp)
                 )
             },
-            label = { Text("Info") }
+            label = null,
+            alwaysShowLabel = false
         )
 
-        // Spacer für FAB in der Mitte
-        Spacer(modifier = Modifier.weight(1f))
-
+        // Liste Icon - Mitte
         NavigationBarItem(
             selected = selectedPage == 1,
             onClick = { onPageSelected(1) },
             icon = {
                 Text(
                     text = "⏰",
-                    style = MaterialTheme.typography.titleLarge
+                    style = MaterialTheme.typography.headlineSmall
                 )
             },
-            label = { Text("Liste") }
+            label = null,
+            alwaysShowLabel = false
         )
 
-        Spacer(modifier = Modifier.weight(1f))
-
+        // Settings Icon - Rechts
         NavigationBarItem(
             selected = selectedPage == 2,
             onClick = { onPageSelected(2) },
             icon = {
                 Icon(
                     imageVector = Icons.Outlined.Settings,
-                    contentDescription = "Einstellungen"
+                    contentDescription = "Einstellungen",
+                    modifier = Modifier.size(26.dp)
                 )
             },
-            label = { Text("Settings") }
+            label = null,
+            alwaysShowLabel = false
         )
     }
 }
@@ -353,7 +356,7 @@ private fun MainListContent(
                 start = 16.dp,
                 end = 16.dp,
                 top = 8.dp,
-                bottom = 96.dp // Extra Space für FAB
+                bottom = 96.dp
             ),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
@@ -374,8 +377,6 @@ private fun MainListContent(
                     exit = fadeOut(animationSpec = tween(200)) +
                             shrinkVertically(animationSpec = tween(200))
                 ) {
-                    // WICHTIG: Keine SwipeableCountdownCard mehr!
-                    // Stattdessen: Simple Card mit Click und Long-Press
                     CountdownCardWithActions(
                         countdown = countdown,
                         onClick = { onCountdownClick(countdown) },
@@ -387,8 +388,6 @@ private fun MainListContent(
         }
     }
 }
-
-// In MainScreenWithBottomNav.kt - AboutPageContent ersetzen:
 
 @Composable
 private fun AboutPageContent() {
@@ -433,13 +432,8 @@ private fun AboutPageContent() {
             }
         }
 
-        // Entwickler Card
         DeveloperCard()
-
-        // Features Card
         FeaturesCard()
-
-        // Support Actions
         SupportActionsCard()
     }
 }
@@ -553,7 +547,6 @@ private fun SupportActionsCard() {
     }
 }
 
-// Hilfsfunktionen (aus AboutDialog.kt kopieren)
 private fun openPlayStore(context: android.content.Context) {
     val packageName = context.packageName
     try {
@@ -621,7 +614,6 @@ private fun SettingsPageContent(
             fontWeight = FontWeight.Bold
         )
 
-        // Theme Button
         OutlinedButton(
             onClick = onThemeDialogOpen,
             modifier = Modifier.fillMaxWidth()
@@ -637,7 +629,6 @@ private fun SettingsPageContent(
 
         Spacer(Modifier.height(8.dp))
 
-        // Theme Mode Selection
         Text(
             "Helles/Dunkles Design",
             style = MaterialTheme.typography.titleMedium

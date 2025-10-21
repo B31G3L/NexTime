@@ -20,13 +20,10 @@ import de.beigel.nextime.utils.HapticFeedback
 @Composable
 fun CountdownCardWithActions(
     countdown: Countdown,
-    onClick: () -> Unit,
-    onEdit: () -> Unit,
-    onDelete: () -> Unit
+    onClick: () -> Unit
 ) {
     val context = LocalContext.current
     val haptic = remember { HapticFeedback(context) }
-    var showMenu by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier.fillMaxWidth()
@@ -39,71 +36,11 @@ fun CountdownCardWithActions(
                     onClick = {
                         haptic.tick()
                         onClick()
-                    },
-                    onLongClick = {
-                        haptic.heavy()
-                        showMenu = true
                     }
                 )
         ) {
             CountdownCard(countdown = countdown)
         }
 
-        // Dropdown Menu für Edit/Delete
-        DropdownMenu(
-            expanded = showMenu,
-            onDismissRequest = { showMenu = false }
-        ) {
-            DropdownMenuItem(
-                text = { Text("Bearbeiten") },
-                onClick = {
-                    haptic.click()
-                    showMenu = false
-                    onEdit()
-                },
-                leadingIcon = {
-                    Icon(
-                        Icons.Default.Edit,
-                        contentDescription = "Bearbeiten",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-            )
-
-            Divider()
-
-            DropdownMenuItem(
-                text = { Text("Löschen") },
-                onClick = {
-                    haptic.heavy()
-                    showMenu = false
-                    onDelete()
-                },
-                leadingIcon = {
-                    Icon(
-                        Icons.Default.Delete,
-                        contentDescription = "Löschen",
-                        tint = MaterialTheme.colorScheme.error
-                    )
-                }
-            )
-        }
-
-        // Optional: Menu-Button in der Ecke (alternative zu Long-Press)
-        IconButton(
-            onClick = {
-                haptic.tick()
-                showMenu = true
-            },
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(8.dp)
-        ) {
-            Icon(
-                Icons.Default.MoreVert,
-                contentDescription = "Mehr Optionen",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
     }
 }
