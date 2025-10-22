@@ -1,8 +1,12 @@
-package de.beigel.nextime.ui.screens
+package de.beigel.nextime.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -16,13 +20,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.consumePositionChange
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import de.beigel.nextime.data.model.Countdown
 import de.beigel.nextime.data.model.CountdownDisplayFormat
 import de.beigel.nextime.data.model.ReminderOption
-import de.beigel.nextime.ui.theme.DesignSystem
 import de.beigel.nextime.utils.HapticFeedback
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -62,7 +67,7 @@ fun AddEditCountdownScreen(
                             val option = ReminderOption.valueOf(name.trim())
                             add(option)
                         } catch (e: Exception) {
-                            // Ignoriere ungültige Optionen
+                            // ignore
                         }
                     }
                 }
@@ -97,523 +102,275 @@ fun AddEditCountdownScreen(
         ReminderOption.MONTH_1
     )
 
+    fun buildCountdown(): Countdown {
+        val targetDateTime = LocalDateTime.of(selectedDate, LocalDateTime.now().toLocalTime())
+        return countdown?.copy(
+            title = title,
+            targetDateTime = targetDateTime,
+            displayFormat = selectedFormat.name,
+            color = selectedColor,
+            notificationEnabled = notificationEnabled,
+            reminderOptions = selectedReminders.joinToString(",") { it.name }
+        ) ?: Countdown(
+            title = title,
+            targetDateTime = targetDateTime,
+            displayFormat = selectedFormat.name,
+            color = selectedColor,
+            notificationEnabled = notificationEnabled,
+            reminderOptions = selectedReminders.joinToString(",") { it.name }
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(if (countdown == null) "Countdown erstellen" else "Countdown bearbeiten") },
                 navigationIcon = {
-                    IconButton(onClick = {
-                        haptic.tick()
-                        onBack()
-                    }) {
+                    IconButton(onClick = { haptic.tick(); onBack() }) {
                         Icon(Icons.Default.Close, contentDescription = "Schließen")
                     }
                 },
                 actions = {
-                    TextButton(
-                        onClick = {
-                            if (title.isNotBlank()) {
-                                haptic.success()
-
-                                val targetDateTime = LocalDateTime.of(selectedDate, LocalDateTime.now().toLocalTime())
-
-                                val newCountdown = countdown?.copy(
-                                    title = title,
-                                    targetDateTime = targetDateTime,
-                                    displayFormat = selectedFormat.name,
-                                    color = selectedColor,
-                                    notificationEnabled = notificationEnabled,
-                                    reminderOptions = selectedReminders.joinToString(",") { it.name }
-                                ) ?: Countdown(
-                                    title = title,
-                                    targetDateTime = targetDateTime,
-                                    displayFormat = selectedFormat.name,
-                                    color = selectedColor,
-                                    notificationEnabled = notificationEnabled,
-                                    reminderOptions = selectedReminders.joinToString(",") { it.name }
-                                )
-
-                                onSave(newCountdown)
-                            } else {
-                                haptic.error()
-                            }
-                        },
-                        enabled = title.isNotBlank()
-                    ) {
-                        Text(
-                            "SPEICHERN",
-                            fontWeight = FontWeight.Bold
-                        )
+                    TextButton(onClick = {
+                        if (title.isNotBlank()) {
+                            haptic.success(); onSave(buildCountdown())
+                        } else haptic.error()
+                    }) {
+                        Text("SPEICHERN", fontWeight = FontWeight.Bold)
                     }
                 }
             )
         }
     ) { paddingValues ->
+
+        // compact layout: weniger Padding, dichtere Elemente
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .verticalScroll(scrollState)
-                .padding(horizontal = 20.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+                .pointerInput(Unit) {
+                    // Swipe nach rechts zum Zurück — einfach gehalten
+                    detectHorizontalDragGestures { change, dragAmount ->
+                        change.consumePositionChange()
+                        if (dragAmount > 200f) { haptic.tick(); onBack() }
+                    }
+                }
         ) {
-            // 1. TITEL SECTION
-            SectionCard(title = "Titel") {
-                OutlinedTextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    placeholder = { Text("z.B. Urlaub, Geburtstag...") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.surface,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surface
-                    )
-                )
-            }
-
-            // 2. DATUM SECTION
-            SectionCard(title = "Datum") {
-                OutlinedButton(
-                    onClick = {
-                        haptic.tick()
-                        showDatePicker = true
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.CalendarToday,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text(selectedDate.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")))
-                }
-            }
-
-            // 3. ANZEIGEFORMAT SECTION
-            SectionCard(title = "Anzeigeformat") {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    availableFormats.forEach { (format, label) ->
-                        FormatOption(
-                            label = label,
-                            example = getFormatExample(format),
-                            isSelected = selectedFormat == format,
-                            onClick = {
-                                haptic.tick()
-                                selectedFormat = format
-                            }
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(scrollState)
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                SectionCardCompact(title = "Titel") {
+                    OutlinedTextField(
+                        value = title,
+                        onValueChange = { title = it },
+                        placeholder = { Text("z.B. Urlaub, Geburtstag...") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = MaterialTheme.colorScheme.surface,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surface
                         )
+                    )
+                }
+
+                SectionCardCompact(title = "Datum") {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                        OutlinedButton(onClick = { haptic.tick(); showDatePicker = true }, modifier = Modifier.weight(1f)) {
+                            Icon(Icons.Default.CalendarToday, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text(selectedDate.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")))
+                        }
+                        TextButton(onClick = { selectedDate = LocalDate.now() }) { Text("Heute") }
                     }
                 }
-            }
 
-            // 4. FARBE SECTION
-            SectionCard(title = "Farbe") {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    // Vordefinierte Farben
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        colorOptions.take(5).forEach { colorHex ->
-                            ColorCircle(
-                                color = Color(android.graphics.Color.parseColor(colorHex)),
-                                isSelected = selectedColor == colorHex,
-                                onClick = {
-                                    haptic.tick()
-                                    selectedColor = colorHex
-                                },
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-                    }
+                // ===== Anzeigeformat (ausklappbar) =====
+                SectionCardCompact(title = "Anzeigeformat") {
+                    var formatExpanded by remember { mutableStateOf(false) }
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        colorOptions.drop(5).forEach { colorHex ->
-                            ColorCircle(
-                                color = Color(android.graphics.Color.parseColor(colorHex)),
-                                isSelected = selectedColor == colorHex,
-                                onClick = {
-                                    haptic.tick()
-                                    selectedColor = colorHex
-                                },
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-                    }
-
-                    Divider()
-
-                    // Custom Color Button
-                    OutlinedButton(
-                        onClick = {
-                            haptic.tick()
-                            showCustomColorPicker = true
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(24.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    try {
-                                        Color(android.graphics.Color.parseColor(selectedColor))
-                                    } catch (e: Exception) {
-                                        MaterialTheme.colorScheme.primary
-                                    }
-                                )
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text("Eigene Farbe wählen")
-                    }
-                }
-            }
-
-            // 5. BENACHRICHTIGUNGEN SECTION
-            SectionCard(title = "Benachrichtigungen") {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    // Enable Switch
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
+                    Row(modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { formatExpanded = !formatExpanded }
+                        .padding(8.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Notifications,
-                                contentDescription = null,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Text(
-                                "Aktivieren",
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                        }
-                        Switch(
-                            checked = notificationEnabled,
-                            onCheckedChange = {
-                                haptic.tick()
-                                notificationEnabled = it
-                            }
-                        )
+                        verticalAlignment = Alignment.CenterVertically) {
+                        Text(availableFormats.first { it.first == selectedFormat }.second, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                        Icon(if (formatExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, contentDescription = null)
                     }
 
-                    // Erinnerungen (nur wenn aktiviert)
-                    if (notificationEnabled) {
-                        Divider()
-
-                        Text(
-                            "Erinnerungen",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            availableReminders.forEach { option ->
-                                ReminderOptionRow(
-                                    option = option,
-                                    isSelected = selectedReminders.contains(option),
-                                    onClick = {
-                                        haptic.tick()
-                                        if (selectedReminders.contains(option)) {
-                                            selectedReminders.remove(option)
-                                        } else {
-                                            selectedReminders.add(option)
-                                        }
+                    AnimatedVisibility(visible = formatExpanded, enter = fadeIn(), exit = fadeOut()) {
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            availableFormats.forEach { (format, label) ->
+                                Row(modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { haptic.tick(); selectedFormat = format; formatExpanded = false }
+                                    .padding(8.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically) {
+                                    Column {
+                                        Text(label, style = MaterialTheme.typography.bodyMedium, fontWeight = if (selectedFormat == format) FontWeight.Bold else FontWeight.Normal)
+                                        Text(getFormatExample(format), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
-                                )
+                                    if (selectedFormat == format) Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+                                }
                             }
                         }
                     }
                 }
+
+                SectionCardCompact(title = "Farbe") {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            colorOptions.forEach { colorHex ->
+                                ColorCircleCompact(
+                                    color = Color(android.graphics.Color.parseColor(colorHex)),
+                                    isSelected = selectedColor == colorHex,
+                                    onClick = { haptic.tick(); selectedColor = colorHex },
+                                    modifier = Modifier.size(36.dp)
+                                )
+                            }
+                        }
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedButton(onClick = { haptic.tick(); showCustomColorPicker = true }, modifier = Modifier.weight(1f)) {
+                                Box(modifier = Modifier.size(18.dp).clip(CircleShape).background(try { Color(android.graphics.Color.parseColor(selectedColor)) } catch (e: Exception) { MaterialTheme.colorScheme.primary }))
+                                Spacer(Modifier.width(8.dp))
+                                Text("Eigene Farbe")
+                            }
+                        }
+                    }
+                }
+
+                SectionCardCompact(title = "Benachrichtigungen") {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Notifications, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(8.dp))
+                                Text("Aktivieren", style = MaterialTheme.typography.bodyMedium)
+                            }
+                            Switch(checked = notificationEnabled, onCheckedChange = { haptic.tick(); notificationEnabled = it })
+                        }
+
+                        if (notificationEnabled) {
+                            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                availableReminders.forEach { option ->
+                                    Row(modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { haptic.tick(); if (selectedReminders.contains(option)) selectedReminders.remove(option) else selectedReminders.add(option) }
+                                        .padding(8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                        Text(option.displayName, style = MaterialTheme.typography.bodyMedium)
+                                        if (selectedReminders.contains(option)) Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
             }
 
-            // Bottom Spacer
-            Spacer(modifier = Modifier.height(32.dp))
+            // compact footer: Save button floating-ish
+            Row(modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp), horizontalArrangement = Arrangement.Center) {
+                Button(onClick = { if (title.isNotBlank()) { haptic.success(); onSave(buildCountdown()) } else haptic.error() }, enabled = title.isNotBlank(), modifier = Modifier.fillMaxWidth(0.6f)) {
+                    Text("SPEICHERN", fontWeight = FontWeight.Bold)
+                }
+            }
         }
     }
 
-    // Custom Color Picker Dialog
+    // Custom Color Picker Dialog (RGB Sliders)
     if (showCustomColorPicker) {
+        // initial RGB from selectedColor
+        val initialColorInt = try { android.graphics.Color.parseColor(selectedColor) } catch (e: Exception) { android.graphics.Color.parseColor("#FF7043") }
+        var r by remember { mutableStateOf(android.graphics.Color.red(initialColorInt)) }
+        var g by remember { mutableStateOf(android.graphics.Color.green(initialColorInt)) }
+        var b by remember { mutableStateOf(android.graphics.Color.blue(initialColorInt)) }
+
         AlertDialog(
-            onDismissRequest = {
-                haptic.tick()
-                showCustomColorPicker = false
-            },
+            onDismissRequest = { haptic.tick(); showCustomColorPicker = false },
             title = { Text("Eigene Farbe") },
             text = {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text(
-                        "Gib einen Hex-Farbcode ein (z.B. #FF5733)",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    OutlinedTextField(
-                        value = customColorInput,
-                        onValueChange = {
-                            customColorInput = it
-                        },
-                        label = { Text("Hex-Code") },
-                        placeholder = { Text("#FF5733") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("Wähle eine Farbe über RGB-Slider")
 
                     // Vorschau
-                    if (customColorInput.isNotEmpty()) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("Vorschau:", style = MaterialTheme.typography.bodySmall)
-                            Box(
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .clip(CircleShape)
-                                    .background(
-                                        try {
-                                            Color(android.graphics.Color.parseColor(customColorInput))
-                                        } catch (e: Exception) {
-                                            MaterialTheme.colorScheme.error.copy(alpha = 0.3f)
-                                        }
-                                    )
-                            )
-                        }
-                    }
+                    Box(modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(Color(android.graphics.Color.rgb(r, g, b))))
+
+                    // R
+                    Text("R: $r", style = MaterialTheme.typography.bodySmall)
+                    Slider(value = r.toFloat(), onValueChange = { r = it.toInt() }, valueRange = 0f..255f)
+
+                    // G
+                    Text("G: $g", style = MaterialTheme.typography.bodySmall)
+                    Slider(value = g.toFloat(), onValueChange = { g = it.toInt() }, valueRange = 0f..255f)
+
+                    // B
+                    Text("B: $b", style = MaterialTheme.typography.bodySmall)
+                    Slider(value = b.toFloat(), onValueChange = { b = it.toInt() }, valueRange = 0f..255f)
                 }
             },
             confirmButton = {
-                Button(
-                    onClick = {
-                        haptic.click()
-                        try {
-                            android.graphics.Color.parseColor(customColorInput)
-                            selectedColor = customColorInput
-                            customColorInput = ""
-                            showCustomColorPicker = false
-                        } catch (e: Exception) {
-                            haptic.error()
-                        }
-                    },
-                    enabled = customColorInput.isNotEmpty()
-                ) {
-                    Text("OK")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    haptic.tick()
-                    customColorInput = ""
+                Button(onClick = {
+                    haptic.click()
+                    selectedColor = String.format("#%02X%02X%02X", r, g, b)
                     showCustomColorPicker = false
-                }) {
-                    Text("Abbrechen")
-                }
+                }) { Text("OK") }
             },
+            dismissButton = { TextButton(onClick = { haptic.tick(); showCustomColorPicker = false }) { Text("Abbrechen") } },
             containerColor = MaterialTheme.colorScheme.surface
         )
     }
 
     // DatePicker Dialog
     if (showDatePicker) {
-        val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = selectedDate.toEpochDay() * 86400000
-        )
+        val datePickerState = rememberDatePickerState(initialSelectedDateMillis = selectedDate.toEpochDay() * 86400000)
 
-        DatePickerDialog(
-            onDismissRequest = {
-                haptic.tick()
-                showDatePicker = false
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    haptic.click()
-                    datePickerState.selectedDateMillis?.let { millis ->
-                        selectedDate = LocalDate.ofEpochDay(millis / 86400000)
-                    }
-                    showDatePicker = false
-                }) {
-                    Text("OK")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    haptic.tick()
-                    showDatePicker = false
-                }) {
-                    Text("Abbrechen")
-                }
-            }
-        ) {
+        DatePickerDialog(onDismissRequest = { haptic.tick(); showDatePicker = false }, confirmButton = {
+            TextButton(onClick = { haptic.click(); datePickerState.selectedDateMillis?.let { millis -> selectedDate = LocalDate.ofEpochDay(millis / 86400000) }; showDatePicker = false }) { Text("OK") }
+        }, dismissButton = {
+            TextButton(onClick = { haptic.tick(); showDatePicker = false }) { Text("Abbrechen") }
+        }) {
             DatePicker(state = datePickerState)
         }
     }
 }
 
 @Composable
-private fun SectionCard(
+private fun SectionCardCompact(
     title: String,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        ),
-        shape = RoundedCornerShape(16.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
+    Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)), shape = RoundedCornerShape(12.dp)) {
+        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(text = title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             content()
         }
     }
 }
 
 @Composable
-private fun FormatOption(
-    label: String,
-    example: String,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick),
-        color = if (isSelected)
-            MaterialTheme.colorScheme.primaryContainer
-        else
-            MaterialTheme.colorScheme.surface,
-        tonalElevation = if (isSelected) 3.dp else 0.dp
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                )
-                Text(
-                    text = example,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            if (isSelected) {
-                Icon(
-                    imageVector = Icons.Default.Check,
-                    contentDescription = "Ausgewählt",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun ReminderOptionRow(
-    option: ReminderOption,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick),
-        color = if (isSelected)
-            MaterialTheme.colorScheme.tertiaryContainer
-        else
-            MaterialTheme.colorScheme.surface,
-        tonalElevation = if (isSelected) 3.dp else 0.dp
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = option.displayName,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                modifier = Modifier.weight(1f)
-            )
-
-            if (isSelected) {
-                Icon(
-                    imageVector = Icons.Default.Check,
-                    contentDescription = "Ausgewählt",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun ColorCircle(
+private fun ColorCircleCompact(
     color: Color,
     isSelected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Box(
-        modifier = modifier
-            .aspectRatio(1f)
-            .clip(CircleShape)
-            .background(color)
-            .then(
-                if (isSelected) {
-                    Modifier.border(
-                        width = 4.dp,
-                        color = MaterialTheme.colorScheme.primary,
-                        shape = CircleShape
-                    )
-                } else {
-                    Modifier.border(
-                        width = 2.dp,
-                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
-                        shape = CircleShape
-                    )
-                }
-            )
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center
-    ) {
-        if (isSelected) {
-            Icon(
-                imageVector = Icons.Default.Check,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(24.dp)
-            )
-        }
+    Box(modifier = modifier
+        .clip(CircleShape)
+        .background(color)
+        .then(if (isSelected) Modifier.border(width = 3.dp, color = MaterialTheme.colorScheme.primary, shape = CircleShape) else Modifier.border(width = 1.dp, color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f), shape = CircleShape))
+        .clickable(onClick = onClick), contentAlignment = Alignment.Center) {
+        if (isSelected) Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
     }
 }
 

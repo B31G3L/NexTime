@@ -4,8 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Share
@@ -69,59 +69,42 @@ fun CountdownDetailScreen(
         calculateStatistics(countdown, timeInfo)
     }
 
-    // Swipe Handling
-    LaunchedEffect(swipeOffset) {
-        if (swipeOffset < -100) {
-            haptic.tick()
-            onBack()
-        }
-    }
-
     Box(
         modifier = Modifier
-            .fillMaxWidth()
-            .height(280.dp)
-            .pointerInput(Unit) {
-                detectHorizontalDragGestures(
-                    onHorizontalDrag = { change, dragAmount ->
-                        // Gesamtoffset aufsummieren und das Event konsumieren
-                        swipeOffset += dragAmount
-                        change.consumePositionChange()
-                    },
-                    onDragEnd = {
-                        // Schwelle in Pixeln: hier ~150px
-                        if (swipeOffset < -150f) {
-                            haptic.tick()
-                            onBack()
-                        }
-                        // Offset zurücksetzen, damit die nächste Geste sauber startet
-                        swipeOffset = 0f
-                    },
-                    onDragCancel = {
-                        swipeOffset = 0f
-                    }
-                )
-            }
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        cardColor.copy(alpha = 0.3f),
-                        cardColor.copy(alpha = 0.05f),
-                        MaterialTheme.colorScheme.background
-                    )
-                )
-            )
-    ){
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        // Haupt-Column: oben Hero (nimmt mehr Platz), unten Buttons + Info (am Boden)
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(scrollState)
+                .fillMaxSize(),
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // ===== HERO-BEREICH =====
+            // ===== HERO-BEREICH (nimmt verfügbaren Platz) =====
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(280.dp)
+                    .weight(1f)
+                    // Swipe-Geste im Hero-Bereich — rechte Wischrichtung erkennt (swipeOffset > threshold).
+                    .pointerInput(Unit) {
+                        detectHorizontalDragGestures(
+                            onHorizontalDrag = { change, dragAmount ->
+                                swipeOffset += dragAmount
+                                change.consumePositionChange()
+                            },
+                            onDragEnd = {
+                                // Schwelle prüfen: positives Offset = nach rechts gewischt
+                                if (swipeOffset > 150f) {
+                                    haptic.tick()
+                                    onBack()
+                                }
+                                swipeOffset = 0f
+                            },
+                            onDragCancel = {
+                                swipeOffset = 0f
+                            }
+                        )
+                    }
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
@@ -132,6 +115,23 @@ fun CountdownDetailScreen(
                         )
                     )
             ) {
+                // Zurück-Pfeil oben links, aber weiter nach unten gerückt
+                IconButton(
+                    onClick = {
+                        haptic.tick()
+                        onBack()
+                    },
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(start = 8.dp, top = 32.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowBack,
+                        contentDescription = "Zurück",
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -336,108 +336,90 @@ fun CountdownDetailScreen(
                 }
             }
 
-            // ===== ACTION BUTTONS =====
-            Row(
+            // ===== BOTTOM-BEREICH: Buttons + Info-Karten (am Boden) =====
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                // Teilen
-                ActionButtonCompact(
-                    icon = Icons.Default.Share,
-                    label = "Teilen",
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.weight(1f),
-                    onClick = {
-                        haptic.click()
-                        onShare()
-                    }
-                )
-
-                // Bearbeiten
-                ActionButtonCompact(
-                    icon = Icons.Default.Edit,
-                    label = "Bearbeiten",
-                    color = MaterialTheme.colorScheme.secondary,
-                    modifier = Modifier.weight(1f),
-                    onClick = {
-                        haptic.click()
-                        onEdit()
-                    }
-                )
-
-                // Löschen
-                ActionButtonCompact(
-                    icon = Icons.Default.Delete,
-                    label = "Löschen",
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.weight(1f),
-                    onClick = {
-                        haptic.tick()
-                        showDeleteDialog = true
-                    }
-                )
-            }
-
-            // ===== INFO KARTEN =====
-            Column(
-                modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Datum Card
-                InfoCard(
-                    title = "Zieldatum",
-                    icon = Icons.Outlined.CalendarToday
-                ) {
-                    Text(
-                        text = countdown.targetDateTime.format(DateTimeFormatter.ofPattern("dd. MMMM yyyy")),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
 
-                // Statistiken Card
-                InfoCard(
-                    title = "Statistiken",
-                    icon = Icons.Outlined.Event
+                // ===== INFO KARTEN =====
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        if (timeInfo.isPast) {
-                            StatRow("Vergangene Zeit", stats.status)
-                            StatRow("Erstellt am", stats.createdDate)
-                        } else {
-                            StatRow("Gesamtdauer", stats.duration)
-                            StatRow("Verbleibend", stats.status)
-                            StatRow("Erstellt am", stats.createdDate)
-                        }
-                    }
-                }
-
-                // Swipe Hint
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f),
-                    shape = MaterialTheme.shapes.medium
-                ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
+                    // Datum Card
+                    InfoCard(
+                        title = "Zieldatum",
+                        icon = Icons.Outlined.CalendarToday
                     ) {
                         Text(
-                            text = "← Wische nach links zum Zurückgehen",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onTertiaryContainer,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth()
+                            text = countdown.targetDateTime.format(DateTimeFormatter.ofPattern("dd. MMMM yyyy")),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+
+                    // Statistiken Card
+                    InfoCard(
+                        title = "Statistiken",
+                        icon = Icons.Outlined.Event
+                    ) {
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            if (timeInfo.isPast) {
+                                StatRow("Vergangene Zeit", stats.status)
+                                StatRow("Erstellt am", stats.createdDate)
+                            } else {
+                                StatRow("Gesamtdauer", stats.duration)
+                                StatRow("Verbleibend", stats.status)
+                                StatRow("Erstellt am", stats.createdDate)
+                            }
+                        }
+                    }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        // Teilen
+                        ActionButtonCompact(
+                            icon = Icons.Default.Share,
+                            label = "Teilen",
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.weight(1f),
+                            onClick = {
+                                haptic.click()
+                                onShare()
+                            }
+                        )
+
+                        // Bearbeiten
+                        ActionButtonCompact(
+                            icon = Icons.Default.Edit,
+                            label = "Bearbeiten",
+                            color = MaterialTheme.colorScheme.secondary,
+                            modifier = Modifier.weight(1f),
+                            onClick = {
+                                haptic.click()
+                                onEdit()
+                            }
+                        )
+
+                        // Löschen
+                        ActionButtonCompact(
+                            icon = Icons.Default.Delete,
+                            label = "Löschen",
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.weight(1f),
+                            onClick = {
+                                haptic.tick()
+                                showDeleteDialog = true
+                            }
                         )
                     }
                 }
-
-                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }
