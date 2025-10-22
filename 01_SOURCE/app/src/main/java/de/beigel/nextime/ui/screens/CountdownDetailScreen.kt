@@ -1,11 +1,11 @@
 package de.beigel.nextime.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Share
@@ -17,6 +17,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.consumePositionChange
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -25,14 +27,12 @@ import androidx.compose.ui.unit.sp
 import de.beigel.nextime.data.model.Countdown
 import de.beigel.nextime.data.model.CountdownInfo
 import de.beigel.nextime.data.model.calculateTimeRemaining
-import de.beigel.nextime.ui.theme.DesignSystem
 import de.beigel.nextime.utils.HapticFeedback
 import kotlinx.coroutines.delay
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CountdownDetailScreen(
     countdown: Countdown,
@@ -46,6 +46,7 @@ fun CountdownDetailScreen(
     val scrollState = rememberScrollState()
 
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var swipeOffset by remember { mutableStateOf(0f) }
 
     // Live-Update
     var timeInfo by remember { mutableStateOf(countdown.calculateTimeRemaining()) }
@@ -68,64 +69,65 @@ fun CountdownDetailScreen(
         calculateStatistics(countdown, timeInfo)
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Details") },
-                navigationIcon = {
-                    IconButton(onClick = {
-                        haptic.tick()
-                        onBack()
-                    }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Zurück")
+    // Swipe Handling
+    LaunchedEffect(swipeOffset) {
+        if (swipeOffset < -100) {
+            haptic.tick()
+            onBack()
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(280.dp)
+            .pointerInput(Unit) {
+                detectHorizontalDragGestures(
+                    onHorizontalDrag = { change, dragAmount ->
+                        // Gesamtoffset aufsummieren und das Event konsumieren
+                        swipeOffset += dragAmount
+                        change.consumePositionChange()
+                    },
+                    onDragEnd = {
+                        // Schwelle in Pixeln: hier ~150px
+                        if (swipeOffset < -150f) {
+                            haptic.tick()
+                            onBack()
+                        }
+                        // Offset zurücksetzen, damit die nächste Geste sauber startet
+                        swipeOffset = 0f
+                    },
+                    onDragCancel = {
+                        swipeOffset = 0f
                     }
-                },
-                actions = {
-                    IconButton(onClick = {
-                        haptic.tick()
-                        onShare()
-                    }) {
-                        Icon(Icons.Default.Share, contentDescription = "Teilen")
-                    }
-                    IconButton(onClick = {
-                        haptic.tick()
-                        onEdit()
-                    }) {
-                        Icon(Icons.Default.Edit, contentDescription = "Bearbeiten")
-                    }
-                    IconButton(onClick = {
-                        haptic.tick()
-                        showDeleteDialog = true
-                    }) {
-                        Icon(
-                            Icons.Default.Delete,
-                            contentDescription = "Löschen",
-                            tint = MaterialTheme.colorScheme.error
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent
+                )
+            }
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        cardColor.copy(alpha = 0.3f),
+                        cardColor.copy(alpha = 0.05f),
+                        MaterialTheme.colorScheme.background
+                    )
                 )
             )
-        }
-    ) { paddingValues ->
+    ){
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
                 .verticalScroll(scrollState)
         ) {
-            // Hero-Bereich mit Gradient
+            // ===== HERO-BEREICH =====
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(320.dp)
+                    .height(280.dp)
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
                                 cardColor.copy(alpha = 0.3f),
-                                cardColor.copy(alpha = 0.05f)
+                                cardColor.copy(alpha = 0.05f),
+                                MaterialTheme.colorScheme.background
                             )
                         )
                     )
@@ -143,12 +145,13 @@ fun CountdownDetailScreen(
                         style = MaterialTheme.typography.displaySmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Center,
+                        maxLines = 2
                     )
 
-                    Spacer(modifier = Modifier.height(32.dp))
+                    Spacer(modifier = Modifier.height(24.dp))
 
-                    // Hauptzähler - format-abhängig
+                    // Hauptzähler - Format-abhängig
                     val format = try {
                         de.beigel.nextime.data.model.CountdownDisplayFormat.valueOf(countdown.displayFormat)
                     } catch (e: Exception) {
@@ -160,14 +163,14 @@ fun CountdownDetailScreen(
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(
                                     text = "${timeInfo.days}",
-                                    fontSize = 96.sp,
+                                    fontSize = 72.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = cardColor,
                                     letterSpacing = (-2).sp
                                 )
                                 Text(
                                     text = if (timeInfo.days == 1L) "Tag" else "Tage",
-                                    fontSize = 28.sp,
+                                    fontSize = 24.sp,
                                     fontWeight = FontWeight.Medium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -177,39 +180,45 @@ fun CountdownDetailScreen(
                         de.beigel.nextime.data.model.CountdownDisplayFormat.WEEKS_DAYS -> {
                             val remainingDays = timeInfo.days % 7
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.Center) {
+                                Row(
+                                    verticalAlignment = Alignment.Bottom,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
                                     Text(
                                         text = "${timeInfo.weeks}",
-                                        fontSize = 72.sp,
+                                        fontSize = 56.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = cardColor,
-                                        letterSpacing = (-1.5).sp
+                                        letterSpacing = (-1).sp
                                     )
-                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
                                     Text(
                                         text = if (timeInfo.weeks == 1L) "Woche" else "Wochen",
-                                        fontSize = 24.sp,
+                                        fontSize = 18.sp,
                                         fontWeight = FontWeight.Medium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.padding(bottom = 8.dp)
+                                        modifier = Modifier.padding(bottom = 6.dp)
                                     )
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
-                                Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.Center) {
+                                Row(
+                                    verticalAlignment = Alignment.Bottom,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
                                     Text(
                                         text = "$remainingDays",
-                                        fontSize = 48.sp,
+                                        fontSize = 36.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = cardColor.copy(alpha = 0.7f),
-                                        letterSpacing = (-1).sp
+                                        letterSpacing = (-0.5).sp
                                     )
-                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
                                     Text(
                                         text = if (remainingDays == 1L) "Tag" else "Tage",
-                                        fontSize = 20.sp,
+                                        fontSize = 16.sp,
                                         fontWeight = FontWeight.Medium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.padding(bottom = 4.dp)
+                                        modifier = Modifier.padding(bottom = 2.dp)
                                     )
                                 }
                             }
@@ -218,40 +227,46 @@ fun CountdownDetailScreen(
                         de.beigel.nextime.data.model.CountdownDisplayFormat.MONTHS_DAYS -> {
                             val remainingDays = timeInfo.days % 30
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.Center) {
+                                Row(
+                                    verticalAlignment = Alignment.Bottom,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
                                     Text(
                                         text = "${timeInfo.months}",
-                                        fontSize = 72.sp,
+                                        fontSize = 56.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = cardColor,
-                                        letterSpacing = (-1.5).sp
+                                        letterSpacing = (-1).sp
                                     )
-                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
                                     Text(
                                         text = if (timeInfo.months == 1L) "Monat" else "Monate",
-                                        fontSize = 24.sp,
+                                        fontSize = 18.sp,
                                         fontWeight = FontWeight.Medium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.padding(bottom = 8.dp)
+                                        modifier = Modifier.padding(bottom = 6.dp)
                                     )
                                 }
                                 if (remainingDays > 0) {
                                     Spacer(modifier = Modifier.height(8.dp))
-                                    Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.Center) {
+                                    Row(
+                                        verticalAlignment = Alignment.Bottom,
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
                                         Text(
                                             text = "$remainingDays",
-                                            fontSize = 48.sp,
+                                            fontSize = 36.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = cardColor.copy(alpha = 0.7f),
-                                            letterSpacing = (-1).sp
+                                            letterSpacing = (-0.5).sp
                                         )
-                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Spacer(modifier = Modifier.width(6.dp))
                                         Text(
                                             text = if (remainingDays == 1L) "Tag" else "Tage",
-                                            fontSize = 20.sp,
+                                            fontSize = 16.sp,
                                             fontWeight = FontWeight.Medium,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.padding(bottom = 4.dp)
+                                            modifier = Modifier.padding(bottom = 2.dp)
                                         )
                                     }
                                 }
@@ -267,17 +282,17 @@ fun CountdownDetailScreen(
                                     if (timeInfo.years > 0) {
                                         Text(
                                             text = "${timeInfo.years}",
-                                            fontSize = 64.sp,
+                                            fontSize = 48.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = cardColor,
                                             letterSpacing = (-1).sp
                                         )
                                         Text(
                                             text = "J ",
-                                            fontSize = 24.sp,
+                                            fontSize = 20.sp,
                                             fontWeight = FontWeight.Medium,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.padding(bottom = 8.dp)
+                                            modifier = Modifier.padding(bottom = 6.dp)
                                         )
                                     }
                                     if (timeInfo.months > 0 || timeInfo.years > 0) {
@@ -285,34 +300,34 @@ fun CountdownDetailScreen(
                                         if (remainingMonths > 0) {
                                             Text(
                                                 text = "$remainingMonths",
-                                                fontSize = 64.sp,
+                                                fontSize = 48.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 color = cardColor,
                                                 letterSpacing = (-1).sp
                                             )
                                             Text(
                                                 text = "M ",
-                                                fontSize = 24.sp,
+                                                fontSize = 20.sp,
                                                 fontWeight = FontWeight.Medium,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                modifier = Modifier.padding(bottom = 8.dp)
+                                                modifier = Modifier.padding(bottom = 6.dp)
                                             )
                                         }
                                     }
                                     val remainingDays = timeInfo.days % 30
                                     Text(
                                         text = "$remainingDays",
-                                        fontSize = 64.sp,
+                                        fontSize = 48.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = cardColor,
                                         letterSpacing = (-1).sp
                                     )
                                     Text(
                                         text = "T",
-                                        fontSize = 24.sp,
+                                        fontSize = 20.sp,
                                         fontWeight = FontWeight.Medium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.padding(bottom = 8.dp)
+                                        modifier = Modifier.padding(bottom = 6.dp)
                                     )
                                 }
                             }
@@ -321,7 +336,51 @@ fun CountdownDetailScreen(
                 }
             }
 
-            // Info-Karten
+            // ===== ACTION BUTTONS =====
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Teilen
+                ActionButtonCompact(
+                    icon = Icons.Default.Share,
+                    label = "Teilen",
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.weight(1f),
+                    onClick = {
+                        haptic.click()
+                        onShare()
+                    }
+                )
+
+                // Bearbeiten
+                ActionButtonCompact(
+                    icon = Icons.Default.Edit,
+                    label = "Bearbeiten",
+                    color = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier.weight(1f),
+                    onClick = {
+                        haptic.click()
+                        onEdit()
+                    }
+                )
+
+                // Löschen
+                ActionButtonCompact(
+                    icon = Icons.Default.Delete,
+                    label = "Löschen",
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.weight(1f),
+                    onClick = {
+                        haptic.tick()
+                        showDeleteDialog = true
+                    }
+                )
+            }
+
+            // ===== INFO KARTEN =====
             Column(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -356,9 +415,30 @@ fun CountdownDetailScreen(
                         }
                     }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(32.dp))
+                // Swipe Hint
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f),
+                    shape = MaterialTheme.shapes.medium
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "← Wische nach links zum Zurückgehen",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onTertiaryContainer,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+            }
         }
     }
 
@@ -412,6 +492,44 @@ fun CountdownDetailScreen(
 }
 
 @Composable
+private fun ActionButtonCompact(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    color: Color,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = modifier
+            .height(56.dp),
+        shape = MaterialTheme.shapes.medium,
+        color = color.copy(alpha = 0.1f),
+        tonalElevation = 0.dp,
+        onClick = onClick
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = color,
+                modifier = Modifier.size(24.dp)
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = color,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 9.sp
+            )
+        }
+    }
+}
+
+@Composable
 private fun InfoCard(
     title: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
@@ -420,11 +538,11 @@ private fun InfoCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
         )
     ) {
         Column(
-            modifier = Modifier.padding(20.dp),
+            modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Row(
