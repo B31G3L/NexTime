@@ -479,7 +479,7 @@ class CountdownWidgetConfigActivity : ComponentActivity() {
 
         // Aktualisiere das Widget sofort
         val appWidgetManager = AppWidgetManager.getInstance(this)
-        CountdownWidget.updateAppWidget(this, appWidgetManager, appWidgetId, widgetSize.layoutResId)
+        CountdownWidget.updateAppWidget(this, appWidgetManager, appWidgetId)
 
         val resultValue = Intent().apply {
             putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
