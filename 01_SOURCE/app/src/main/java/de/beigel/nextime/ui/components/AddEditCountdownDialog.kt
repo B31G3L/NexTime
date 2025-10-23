@@ -77,7 +77,6 @@ fun AddEditCountdownScreen(
 
     var showDatePicker by remember { mutableStateOf(false) }
     var showCustomColorPicker by remember { mutableStateOf(false) }
-    var customColorInput by remember { mutableStateOf("") }
     var selectedColor by remember { mutableStateOf(countdown?.color ?: "#FF7043") }
 
     val colorOptions = listOf(
@@ -129,36 +128,41 @@ fun AddEditCountdownScreen(
                     IconButton(onClick = { haptic.tick(); onBack() }) {
                         Icon(Icons.Default.Close, contentDescription = "Schließen")
                     }
-                },
-                actions = {
-                    TextButton(onClick = {
-                        if (title.isNotBlank()) {
-                            haptic.success(); onSave(buildCountdown())
-                        } else haptic.error()
-                    }) {
-                        Text("SPEICHERN", fontWeight = FontWeight.Bold)
-                    }
                 }
             )
         }
     ) { paddingValues ->
+        // local swipe offset to accumulate horizontal drag and evaluate on end -> avoids conflicts with verticalScroll
+        var swipeOffset by remember { mutableStateOf(0f) }
+        val swipeThreshold = 150f
 
-        // compact layout: weniger Padding, dichtere Elemente
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                // pointerInput here accumulates horizontal movement and consumes it so the vertical scroll isn't stolen
                 .pointerInput(Unit) {
-                    // Swipe nach rechts zum Zurück — einfach gehalten
-                    detectHorizontalDragGestures { change, dragAmount ->
-                        change.consumePositionChange()
-                        if (dragAmount > 200f) { haptic.tick(); onBack() }
-                    }
+                    detectHorizontalDragGestures(
+                        onHorizontalDrag = { change, dragAmount ->
+                            swipeOffset += dragAmount
+                            change.consumePositionChange()
+                        },
+                        onDragEnd = {
+                            if (swipeOffset > swipeThreshold) {
+                                haptic.tick()
+                                onBack()
+                            }
+                            swipeOffset = 0f
+                        },
+                        onDragCancel = { swipeOffset = 0f }
+                    )
                 }
         ) {
+            // ===== SCROLLABLE CONTENT AREA =====
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
+                    .fillMaxWidth()
+                    .weight(1f)
                     .verticalScroll(scrollState)
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -178,13 +182,21 @@ fun AddEditCountdownScreen(
                 }
 
                 SectionCardCompact(title = "Datum") {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                        OutlinedButton(onClick = { haptic.tick(); showDatePicker = true }, modifier = Modifier.weight(1f)) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        OutlinedButton(
+                            onClick = { haptic.tick(); showDatePicker = true },
+                            modifier = Modifier.weight(1f)
+                        ) {
                             Icon(Icons.Default.CalendarToday, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(8.dp))
                             Text(selectedDate.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")))
                         }
-                        TextButton(onClick = { selectedDate = LocalDate.now() }) { Text("Heute") }
+                        TextButton(onClick = { selectedDate = LocalDate.now() }) {
+                            Text("Heute")
+                        }
                     }
                 }
 
@@ -192,30 +204,56 @@ fun AddEditCountdownScreen(
                 SectionCardCompact(title = "Anzeigeformat") {
                     var formatExpanded by remember { mutableStateOf(false) }
 
-                    Row(modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { formatExpanded = !formatExpanded }
-                        .padding(8.dp),
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { formatExpanded = !formatExpanded }
+                            .padding(8.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically) {
-                        Text(availableFormats.first { it.first == selectedFormat }.second, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-                        Icon(if (formatExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, contentDescription = null)
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            availableFormats.first { it.first == selectedFormat }.second,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Icon(
+                            if (formatExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                            contentDescription = null
+                        )
                     }
 
                     AnimatedVisibility(visible = formatExpanded, enter = fadeIn(), exit = fadeOut()) {
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             availableFormats.forEach { (format, label) ->
-                                Row(modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { haptic.tick(); selectedFormat = format; formatExpanded = false }
-                                    .padding(8.dp),
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { haptic.tick(); selectedFormat = format; formatExpanded = false }
+                                        .padding(8.dp),
                                     horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically) {
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
                                     Column {
-                                        Text(label, style = MaterialTheme.typography.bodyMedium, fontWeight = if (selectedFormat == format) FontWeight.Bold else FontWeight.Normal)
-                                        Text(getFormatExample(format), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text(
+                                            label,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = if (selectedFormat == format) FontWeight.Bold else FontWeight.Normal
+                                        )
+                                        Text(
+                                            getFormatExample(format),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
                                     }
-                                    if (selectedFormat == format) Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+                                    if (selectedFormat == format) {
+                                        Icon(
+                                            Icons.Default.Check,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp),
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -224,7 +262,10 @@ fun AddEditCountdownScreen(
 
                 SectionCardCompact(title = "Farbe") {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
                             colorOptions.forEach { colorHex ->
                                 ColorCircleCompact(
                                     color = Color(android.graphics.Color.parseColor(colorHex)),
@@ -234,9 +275,26 @@ fun AddEditCountdownScreen(
                                 )
                             }
                         }
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            OutlinedButton(onClick = { haptic.tick(); showCustomColorPicker = true }, modifier = Modifier.weight(1f)) {
-                                Box(modifier = Modifier.size(18.dp).clip(CircleShape).background(try { Color(android.graphics.Color.parseColor(selectedColor)) } catch (e: Exception) { MaterialTheme.colorScheme.primary }))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedButton(
+                                onClick = { haptic.tick(); showCustomColorPicker = true },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(18.dp)
+                                        .clip(CircleShape)
+                                        .background(
+                                            try {
+                                                Color(android.graphics.Color.parseColor(selectedColor))
+                                            } catch (e: Exception) {
+                                                MaterialTheme.colorScheme.primary
+                                            }
+                                        )
+                                )
                                 Spacer(Modifier.width(8.dp))
                                 Text("Eigene Farbe")
                             }
@@ -246,24 +304,49 @@ fun AddEditCountdownScreen(
 
                 SectionCardCompact(title = "Benachrichtigungen") {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(Icons.Default.Notifications, contentDescription = null, modifier = Modifier.size(18.dp))
                                 Spacer(Modifier.width(8.dp))
                                 Text("Aktivieren", style = MaterialTheme.typography.bodyMedium)
                             }
-                            Switch(checked = notificationEnabled, onCheckedChange = { haptic.tick(); notificationEnabled = it })
+                            Switch(
+                                checked = notificationEnabled,
+                                onCheckedChange = { haptic.tick(); notificationEnabled = it }
+                            )
                         }
 
                         if (notificationEnabled) {
                             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                 availableReminders.forEach { option ->
-                                    Row(modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable { haptic.tick(); if (selectedReminders.contains(option)) selectedReminders.remove(option) else selectedReminders.add(option) }
-                                        .padding(8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable {
+                                                haptic.tick()
+                                                if (selectedReminders.contains(option)) {
+                                                    selectedReminders.remove(option)
+                                                } else {
+                                                    selectedReminders.add(option)
+                                                }
+                                            }
+                                            .padding(8.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
                                         Text(option.displayName, style = MaterialTheme.typography.bodyMedium)
-                                        if (selectedReminders.contains(option)) Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+                                        if (selectedReminders.contains(option)) {
+                                            Icon(
+                                                Icons.Default.Check,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(18.dp),
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -274,11 +357,35 @@ fun AddEditCountdownScreen(
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
-            // compact footer: Save button floating-ish
-            Row(modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp), horizontalArrangement = Arrangement.Center) {
-                Button(onClick = { if (title.isNotBlank()) { haptic.success(); onSave(buildCountdown()) } else haptic.error() }, enabled = title.isNotBlank(), modifier = Modifier.fillMaxWidth(0.6f)) {
+            // ===== BOTTOM BUTTONS AREA (wie im DetailScreen) =====
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                TextButton(
+                    onClick = {
+                        haptic.tick()
+                        onBack()
+                    },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("Abbrechen")
+                }
+
+                Button(
+                    onClick = {
+                        if (title.isNotBlank()) {
+                            haptic.success()
+                            onSave(buildCountdown())
+                        } else {
+                            haptic.error()
+                        }
+                    },
+                    enabled = title.isNotBlank(),
+                    modifier = Modifier.weight(1f)
+                ) {
                     Text("SPEICHERN", fontWeight = FontWeight.Bold)
                 }
             }
