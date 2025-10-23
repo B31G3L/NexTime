@@ -55,8 +55,9 @@
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/countdown_widget_universal" />
+                android:resource="@xml/countdown_widget_universal" />  <!-- ✅ NEU -->
         </receiver>
+
 
     </application>
 

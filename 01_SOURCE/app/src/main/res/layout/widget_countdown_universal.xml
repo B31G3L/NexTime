@@ -1,0 +1,305 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- UNIVERSELLES WIDGET LAYOUT - Passt sich automatisch an alle Größen an (1×1 bis 4×4) -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background">
+
+    <!-- ===== FARBBALKEN OBEN ===== -->
+    <View
+        android:id="@+id/widget_color_bar_top"
+        android:layout_width="match_parent"
+        android:layout_height="2dp"
+        android:background="#FF7043" />
+
+    <!-- ===== HAUPTINHALT (Flex Layout) ===== -->
+    <LinearLayout
+        android:id="@+id/widget_content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="4dp"
+        android:layout_marginTop="2dp"
+        android:layout_marginBottom="2dp">
+
+        <!-- Für 1×1 (nur komplett zentriert) -->
+        <LinearLayout
+            android:id="@+id/widget_ultracompact_container"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:visibility="gone"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/widget_days_ultracompact"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="42"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF" />
+        </LinearLayout>
+
+        <!-- Für 2×1 oder 2×2 (Nummer + Label) -->
+        <LinearLayout
+            android:id="@+id/widget_compact_container"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/widget_days_compact"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="42"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF" />
+
+            <TextView
+                android:id="@+id/widget_days_label_compact"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Tage"
+                android:textSize="9sp"
+                android:textColor="#B0B0B0"
+                android:textStyle="bold"
+                android:layout_marginTop="2dp" />
+        </LinearLayout>
+
+        <!-- Für 2×2, 3×2, 4×2 (Titel + Nummer + Datum) -->
+        <LinearLayout
+            android:id="@+id/widget_small_container"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:visibility="gone"
+            android:padding="6dp">
+
+            <TextView
+                android:id="@+id/widget_title_small"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Countdown"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:gravity="center_horizontal"
+                android:layout_marginBottom="4dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:layout_marginBottom="4dp">
+
+                <TextView
+                    android:id="@+id/widget_days_small"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="42"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:textColor="#FFFFFF" />
+
+                <TextView
+                    android:id="@+id/widget_days_label_small"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text=" Tage"
+                    android:textSize="11sp"
+                    android:textColor="#B0B0B0"
+                    android:layout_marginStart="4dp" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/widget_date_small"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="📅 24.12.2025"
+                android:textSize="10sp"
+                android:textColor="#B0B0B0"
+                android:gravity="center_horizontal" />
+        </LinearLayout>
+
+        <!-- Für 4×2, 4×3, 4×4 (Vollständige Ansicht) -->
+        <LinearLayout
+            android:id="@+id/widget_large_container"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:visibility="gone"
+            android:padding="8dp">
+
+            <!-- Titel -->
+            <TextView
+                android:id="@+id/widget_title_large"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Countdown"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:gravity="center_horizontal"
+                android:layout_marginBottom="6dp" />
+
+            <!-- Countdown Anzeige (flex) -->
+            <LinearLayout
+                android:id="@+id/widget_countdown_container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:layout_marginBottom="6dp">
+
+                <!-- Tage -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:layout_margin="2dp">
+
+                    <TextView
+                        android:id="@+id/widget_days_large"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="42"
+                        android:textSize="28sp"
+                        android:textStyle="bold"
+                        android:textColor="#FFFFFF" />
+
+                    <TextView
+                        android:id="@+id/widget_days_label_large"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Tage"
+                        android:textSize="10sp"
+                        android:textColor="#B0B0B0"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <!-- Wochen (optional) -->
+                <LinearLayout
+                    android:id="@+id/widget_weeks_container"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:layout_margin="2dp"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:id="@+id/widget_weeks_large"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="6"
+                        android:textSize="24sp"
+                        android:textStyle="bold"
+                        android:textColor="#E0E0E0" />
+
+                    <TextView
+                        android:id="@+id/widget_weeks_label_large"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Wochen"
+                        android:textSize="10sp"
+                        android:textColor="#B0B0B0"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <!-- Monate (optional) -->
+                <LinearLayout
+                    android:id="@+id/widget_months_container"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:layout_margin="2dp"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:id="@+id/widget_months_large"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="2"
+                        android:textSize="24sp"
+                        android:textStyle="bold"
+                        android:textColor="#C0C0C0" />
+
+                    <TextView
+                        android:id="@+id/widget_months_label_large"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Monate"
+                        android:textSize="10sp"
+                        android:textColor="#B0B0B0"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <!-- Jahre (optional) -->
+                <LinearLayout
+                    android:id="@+id/widget_years_container"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:layout_margin="2dp"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:id="@+id/widget_years_large"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="1"
+                        android:textSize="24sp"
+                        android:textStyle="bold"
+                        android:textColor="#A0A0A0" />
+
+                    <TextView
+                        android:id="@+id/widget_years_label_large"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Jahre"
+                        android:textSize="10sp"
+                        android:textColor="#B0B0B0"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Datum -->
+            <TextView
+                android:id="@+id/widget_date_large"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="📅 24.12.2025"
+                android:textSize="11sp"
+                android:textColor="#B0B0B0"
+                android:gravity="center_horizontal" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- ===== FARBBALKEN UNTEN ===== -->
+    <View
+        android:id="@+id/widget_color_bar_bottom"
+        android:layout_width="match_parent"
+        android:layout_height="2dp"
+        android:layout_gravity="bottom"
+        android:background="#FF7043" />
+</FrameLayout>

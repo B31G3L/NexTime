@@ -1,28 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- ========= UNIVERSAL COUNTDOWN WIDGET ==========
      Ein einziges Widget das sich automatisch an alle Größen anpasst!
-
-     Der Android-System ruft onAppWidgetOptionsChanged() auf wenn der
-     Benutzer die Widget-Größe verändert. Wir nutzen das um automatisch
-     das beste Layout zu wählen.
-
-     Größenbereiche:
-     - Ultra-kompakt (4×1): Nur Tage
-     - Klein (4×1.5): Tage + Label
-     - Mittel (4×2): Titel + Tage + Datum
-     - Groß (4×3): Titel + Tage + Monat/Jahre + Datum
+     
+     Unterstützte Größen:
+     - 1×1 (70×70dp):     Ultra-kompakt - nur Nummer
+     - 2×1 (150×70dp):    Mini - Nummer + Label
+     - 2×2 (150×150dp):   Klein - Titel + Nummer + Datum
+     - 3×2 (220×150dp):   Mittel - Titel + Nummer + Format + Datum
+     - 4×2 (290×150dp):   Groß - Wie oben, etwas breiter
+     - 4×3 (290×220dp):   Sehr groß - Vollständige Info
+     - 4×4 (290×290dp):   Maximal - Alle Details
 -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
-    android:minWidth="250dp"
-    android:minHeight="60dp"
-    android:maxResizeWidth="500dp"
-    android:maxResizeHeight="500dp"
+    android:minWidth="70dp"
+    android:minHeight="70dp"
+    android:maxResizeWidth="290dp"
+    android:maxResizeHeight="290dp"
     android:updatePeriodMillis="900000"
-    android:initialLayout="@layout/widget_countdown_medium"
+    android:initialLayout="@layout/widget_countdown_universal"
     android:configure="de.beigel.nextime.widget.CountdownWidgetConfigActivity"
     android:description="@string/widget_description"
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen"
     android:previewImage="@drawable/ic_launcher_foreground"
-    android:targetCellWidth="4"
-    android:targetCellHeight="1" />
+    android:targetCellWidth="2"
+    android:targetCellHeight="2" />

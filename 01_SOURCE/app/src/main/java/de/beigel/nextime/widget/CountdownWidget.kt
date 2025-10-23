@@ -7,6 +7,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
+import android.os.Build
 import android.util.Log
 import android.view.View
 import android.widget.RemoteViews
@@ -23,8 +24,7 @@ import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
 
 // ================== UNIVERSAL COUNTDOWN WIDGET ==================
-// Ein Widget das sich automatisch an alle Größen anpasst
-// Ersetzt die 3 separaten Widget-Klassen
+// Vollständig dynamisch - unterstützt alle Größen von 1×1 bis 4×4
 class CountdownWidget : AppWidgetProvider() {
 
     private val TAG = "CountdownWidget"
@@ -40,8 +40,18 @@ class CountdownWidget : AppWidgetProvider() {
             updateAppWidget(context, appWidgetManager, appWidgetId)
         }
 
-        // Plane nächsten Midnight-Update
         WidgetUpdateWorker.scheduleMidnightUpdate(context)
+    }
+
+    override fun onAppWidgetOptionsChanged(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetId: Int,
+        newOptions: android.os.Bundle
+    ) {
+        Log.d(TAG, "=== onAppWidgetOptionsChanged for widget $appWidgetId ===")
+        updateAppWidget(context, appWidgetManager, appWidgetId)
+        super.onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions)
     }
 
     override fun onEnabled(context: Context) {
@@ -61,6 +71,23 @@ class CountdownWidget : AppWidgetProvider() {
     companion object {
         private const val TAG = "CountdownWidget"
 
+        /**
+         * Widget-Größen für dynamische Anpassung
+         */
+        enum class WidgetSize(
+            val minWidth: Int,
+            val minHeight: Int,
+            val name: String
+        ) {
+            ULTRA_COMPACT(70, 70, "1×1"),           // Nur Nummer
+            MINI(150, 70, "2×1"),                    // Nummer + Label
+            SMALL(150, 150, "2×2"),                  // Titel + Nummer + Datum
+            MEDIUM_H(220, 150, "3×2"),              // Erweitert
+            MEDIUM(290, 150, "4×2"),                // Groß
+            LARGE(290, 220, "4×3"),                 // Sehr groß
+            EXTRA_LARGE(290, 290, "4×4")            // Maximal
+        }
+
         fun updateAppWidget(
             context: Context,
             appWidgetManager: AppWidgetManager,
@@ -70,31 +97,32 @@ class CountdownWidget : AppWidgetProvider() {
 
             CoroutineScope(Dispatchers.Main).launch {
                 try {
-                    // Stelle fest welches Layout basierend auf Größe
-                    val layoutResId = getLayoutForWidgetSize(appWidgetManager, appWidgetId)
-                    Log.d(TAG, "updateAppWidget: Using layout $layoutResId for widget size")
+                    // Bestimme Größe basierend auf Optionen
+                    val size = getWidgetSize(appWidgetManager, appWidgetId)
+                    Log.d(TAG, "updateAppWidget: Widget size = ${size.name} (${size.minWidth}×${size.minHeight}dp)")
 
-                    val views = RemoteViews(context.packageName, layoutResId)
+                    val views = RemoteViews(context.packageName, R.layout.widget_countdown_universal)
 
-                    views.setTextViewText(R.id.widget_title, "NexTime")
-                    views.setTextViewText(R.id.widget_days, "--")
-                    views.setTextViewText(R.id.widget_date, "Lade...")
+                    // Alle Container zunächst verstecken
+                    views.setViewVisibility(R.id.widget_ultracompact_container, View.GONE)
+                    views.setViewVisibility(R.id.widget_compact_container, View.GONE)
+                    views.setViewVisibility(R.id.widget_small_container, View.GONE)
+                    views.setViewVisibility(R.id.widget_large_container, View.GONE)
 
+                    // Lade Countdown
                     val countdown = withContext(Dispatchers.IO) {
                         loadCountdownForWidget(context, appWidgetId)
                     }
 
                     if (countdown != null) {
                         Log.d(TAG, "updateAppWidget: Found countdown: ${countdown.title}")
-                        updateWidgetViews(views, countdown, layoutResId)
+                        updateWidgetViews(context, views, countdown, size)
                     } else {
                         Log.w(TAG, "updateAppWidget: No countdown found for widget $appWidgetId")
-                        views.setTextViewText(R.id.widget_title, "Kein Countdown")
-                        views.setTextViewText(R.id.widget_date, "Bitte einen auswählen")
-                        // Setze Fallback-Farbe (dunkles Grau)
-                        views.setInt(R.id.widget_container, "setBackgroundColor", 0xFF1E1E1E.toInt())
+                        showPlaceholder(views, size)
                     }
 
+                    // Click-Listener
                     val intent = Intent(context, MainActivity::class.java)
                     val pendingIntent = PendingIntent.getActivity(
                         context,
@@ -115,39 +143,74 @@ class CountdownWidget : AppWidgetProvider() {
         }
 
         /**
-         * Bestimme das richtige Layout basierend auf der Widget-Größe
-         * Das Widget passt sich automatisch an verfügbaren Platz an
+         * Bestimme die Widget-Größe basierend auf den App Widget Manager Optionen
          */
-        private fun getLayoutForWidgetSize(appWidgetManager: AppWidgetManager, appWidgetId: Int): Int {
+        private fun getWidgetSize(appWidgetManager: AppWidgetManager, appWidgetId: Int): WidgetSize {
             return try {
-                val options = appWidgetManager.getAppWidgetOptions(appWidgetId)
-                val minHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    val options = appWidgetManager.getAppWidgetOptions(appWidgetId)
+                    val minWidth = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH)
+                    val minHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT)
 
-                Log.d(TAG, "getLayoutForWidgetSize: Widget $appWidgetId min height = ${minHeight}dp")
+                    Log.d(TAG, "getWidgetSize: Widget size = ${minWidth}×${minHeight}dp")
 
-                // Adaptive Layout-Auswahl basierend auf Höhe
-                // Je nach verfügbarem Platz wird automatisch das beste Layout gewählt
-                when {
-                    minHeight < 100 -> {
-                        Log.d(TAG, "getLayoutForWidgetSize: Ultra-kompakt - Using SMALL layout")
-                        R.layout.widget_countdown_small
+                    // Bestimme beste passende Größe
+                    when {
+                        minWidth < 100 && minHeight < 100 -> {
+                            Log.d(TAG, "getWidgetSize: ULTRA_COMPACT (1×1)")
+                            WidgetSize.ULTRA_COMPACT
+                        }
+                        minWidth < 200 && minHeight < 100 -> {
+                            Log.d(TAG, "getWidgetSize: MINI (2×1)")
+                            WidgetSize.MINI
+                        }
+                        minWidth < 200 && minHeight < 200 -> {
+                            Log.d(TAG, "getWidgetSize: SMALL (2×2)")
+                            WidgetSize.SMALL
+                        }
+                        minWidth < 250 && minHeight < 200 -> {
+                            Log.d(TAG, "getWidgetSize: MEDIUM_H (3×2)")
+                            WidgetSize.MEDIUM_H
+                        }
+                        minWidth < 300 && minHeight < 200 -> {
+                            Log.d(TAG, "getWidgetSize: MEDIUM (4×2)")
+                            WidgetSize.MEDIUM
+                        }
+                        minWidth < 300 && minHeight < 250 -> {
+                            Log.d(TAG, "getWidgetSize: LARGE (4×3)")
+                            WidgetSize.LARGE
+                        }
+                        else -> {
+                            Log.d(TAG, "getWidgetSize: EXTRA_LARGE (4×4)")
+                            WidgetSize.EXTRA_LARGE
+                        }
                     }
-                    minHeight < 150 -> {
-                        Log.d(TAG, "getLayoutForWidgetSize: Kompakt - Using SMALL layout")
-                        R.layout.widget_countdown_small
-                    }
-                    minHeight < 200 -> {
-                        Log.d(TAG, "getLayoutForWidgetSize: Mittel - Using MEDIUM layout")
-                        R.layout.widget_countdown_medium
-                    }
-                    else -> {
-                        Log.d(TAG, "getLayoutForWidgetSize: Groß - Using LARGE layout")
-                        R.layout.widget_countdown_large
-                    }
+                } else {
+                    // Fallback für ältere Android-Versionen
+                    Log.d(TAG, "getWidgetSize: Fallback to MEDIUM (older Android version)")
+                    WidgetSize.MEDIUM
                 }
             } catch (e: Exception) {
-                Log.w(TAG, "getLayoutForWidgetSize: Error, defaulting to MEDIUM", e)
-                R.layout.widget_countdown_medium
+                Log.w(TAG, "getWidgetSize: Error, defaulting to MEDIUM", e)
+                WidgetSize.MEDIUM
+            }
+        }
+
+        private fun showPlaceholder(views: RemoteViews, size: WidgetSize) {
+            when (size) {
+                WidgetSize.ULTRA_COMPACT -> {
+                    views.setViewVisibility(R.id.widget_ultracompact_container, View.VISIBLE)
+                    views.setTextViewText(R.id.widget_days_ultracompact, "?")
+                }
+                WidgetSize.MINI -> {
+                    views.setViewVisibility(R.id.widget_compact_container, View.VISIBLE)
+                    views.setTextViewText(R.id.widget_days_compact, "?")
+                }
+                else -> {
+                    views.setViewVisibility(R.id.widget_small_container, View.VISIBLE)
+                    views.setTextViewText(R.id.widget_title_small, "Kein Countdown")
+                    views.setTextViewText(R.id.widget_days_small, "?")
+                }
             }
         }
 
@@ -167,11 +230,7 @@ class CountdownWidget : AppWidgetProvider() {
                     if (selectedCountdown != null) {
                         Log.d(TAG, "loadCountdownForWidget: Found saved countdown: ${selectedCountdown.title}")
                         return selectedCountdown
-                    } else {
-                        Log.w(TAG, "loadCountdownForWidget: Saved ID $savedCountdownId not found in DB")
                     }
-                } else {
-                    Log.d(TAG, "loadCountdownForWidget: No saved countdown ID, using fallback")
                 }
 
                 val fallback = allCountdowns.firstOrNull { !it.calculateTimeRemaining().isPast }
@@ -185,123 +244,122 @@ class CountdownWidget : AppWidgetProvider() {
 
             } catch (e: Exception) {
                 Log.e(TAG, "Error loading countdown for widget $appWidgetId", e)
-                e.printStackTrace()
                 null
             }
         }
 
         private fun updateWidgetViews(
+            context: Context,
             views: RemoteViews,
             countdown: Countdown,
-            layoutResId: Int
+            size: WidgetSize
         ) {
             try {
-                Log.d(TAG, "updateWidgetViews: Updating with countdown: ${countdown.title}, format: ${countdown.displayFormat}")
-
                 val timeInfo = countdown.calculateTimeRemaining()
-
-                val format = try {
-                    de.beigel.nextime.data.model.CountdownDisplayFormat.valueOf(countdown.displayFormat)
+                val color = try {
+                    Color.parseColor(countdown.color)
                 } catch (e: Exception) {
-                    de.beigel.nextime.data.model.CountdownDisplayFormat.DAYS_ONLY
+                    0xFFFF7043.toInt()
                 }
 
-                views.setTextViewText(R.id.widget_title, countdown.title)
+                // Farbbalken setzen
+                views.setInt(R.id.widget_color_bar_top, "setBackgroundColor", color)
+                views.setInt(R.id.widget_color_bar_bottom, "setBackgroundColor", color)
 
-                // ======= PHASE 1: HINTERGRUNDFARBE SETZEN =======
-                try {
-                    val color = Color.parseColor(countdown.color)
+                // Hintergrundfarbe mit 20% Opacity
+                val alpha = (255 * 0.2).toInt()
+                val backgroundColor = (alpha shl 24) or (color and 0x00FFFFFF)
+                views.setInt(R.id.widget_container, "setBackgroundColor", backgroundColor)
 
-                    // 20% Opacity für halbdurchsichtig - damit die Farbe nicht zu dominant wirkt
-                    // Alternative zu ColorUtils.setAlphaComponent():
-                    val alpha = (255 * 0.2).toInt()  // 20% = 51
-                    val backgroundColor = (alpha shl 24) or (color and 0x00FFFFFF)
+                // Bestimme welcher Container sichtbar sein soll
+                when (size) {
+                    WidgetSize.ULTRA_COMPACT -> {
+                        views.setViewVisibility(R.id.widget_ultracompact_container, View.VISIBLE)
+                        views.setTextViewText(R.id.widget_days_ultracompact, "${timeInfo.days}")
+                        views.setTextColor(R.id.widget_days_ultracompact, color)
+                    }
 
-                    views.setInt(R.id.widget_container, "setBackgroundColor", backgroundColor)
-                    Log.d(TAG, "updateWidgetViews: Set background color to ${countdown.color} with 20% opacity")
+                    WidgetSize.MINI -> {
+                        views.setViewVisibility(R.id.widget_compact_container, View.VISIBLE)
+                        views.setTextViewText(R.id.widget_days_compact, "${timeInfo.days}")
+                        views.setTextViewText(R.id.widget_days_label_compact, 
+                            if (timeInfo.days == 1L) "Tag" else "Tage")
+                        views.setTextColor(R.id.widget_days_compact, color)
+                    }
 
-                    // Farbbalken oben/unten bleiben voll sichtbar
-                    views.setInt(R.id.widget_color_bar_top, "setBackgroundColor", color)
-                    views.setInt(R.id.widget_color_bar_bottom, "setBackgroundColor", color)
-                    views.setTextColor(R.id.widget_days, color)
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error parsing color", e)
-                }
+                    WidgetSize.SMALL -> {
+                        views.setViewVisibility(R.id.widget_small_container, View.VISIBLE)
+                        views.setTextViewText(R.id.widget_title_small, countdown.title)
+                        views.setTextViewText(R.id.widget_days_small, "${timeInfo.days}")
+                        views.setTextViewText(R.id.widget_days_label_small, 
+                            if (timeInfo.days == 1L) "Tag" else "Tage")
+                        views.setTextViewText(R.id.widget_date_small, 
+                            "📅 ${countdown.targetDateTime.format(java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy"))}")
+                        views.setTextColor(R.id.widget_days_small, color)
+                    }
 
-                // Setze immer die Tage
-                views.setTextViewText(R.id.widget_days, "${timeInfo.days}")
-                views.setTextViewText(
-                    R.id.widget_days_label,
-                    if (timeInfo.days == 1L) "Tag" else "Tage"
-                )
+                    else -> {
+                        // MEDIUM, MEDIUM_H, LARGE, EXTRA_LARGE
+                        views.setViewVisibility(R.id.widget_large_container, View.VISIBLE)
+                        views.setTextViewText(R.id.widget_title_large, countdown.title)
+                        views.setTextViewText(R.id.widget_days_large, "${timeInfo.days}")
+                        views.setTextViewText(R.id.widget_days_label_large, 
+                            if (timeInfo.days == 1L) "Tag" else "Tage")
+                        views.setTextViewText(R.id.widget_date_large, 
+                            "📅 ${countdown.targetDateTime.format(java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy"))}")
+                        views.setTextColor(R.id.widget_days_large, color)
 
-                // Verstecke alle optional Container zuerst
-                if (layoutResId != R.layout.widget_countdown_small) {
-                    views.setViewVisibility(R.id.widget_weeks_container, View.GONE)
-                    views.setViewVisibility(R.id.widget_months_container, View.GONE)
-                    views.setViewVisibility(R.id.widget_years_container, View.GONE)
-
-                    // Zeige basierend auf Format
-                    when (format) {
-                        de.beigel.nextime.data.model.CountdownDisplayFormat.DAYS_ONLY -> {
-                            // Nur Tage - Standard
+                        // Zusätzliche Formate für größere Widgets
+                        val format = try {
+                            de.beigel.nextime.data.model.CountdownDisplayFormat.valueOf(countdown.displayFormat)
+                        } catch (e: Exception) {
+                            de.beigel.nextime.data.model.CountdownDisplayFormat.DAYS_ONLY
                         }
 
-                        de.beigel.nextime.data.model.CountdownDisplayFormat.WEEKS_DAYS -> {
-                            views.setViewVisibility(R.id.widget_weeks_container, View.VISIBLE)
-                            views.setTextViewText(R.id.widget_weeks, "${timeInfo.weeks}")
-                            views.setTextViewText(
-                                R.id.widget_weeks_label,
-                                if (timeInfo.weeks == 1L) "Woche" else "Wochen"
-                            )
-                        }
+                        // Verstecke zunächst alle optionalen Container
+                        views.setViewVisibility(R.id.widget_weeks_container, View.GONE)
+                        views.setViewVisibility(R.id.widget_months_container, View.GONE)
+                        views.setViewVisibility(R.id.widget_years_container, View.GONE)
 
-                        de.beigel.nextime.data.model.CountdownDisplayFormat.MONTHS_DAYS -> {
-                            views.setViewVisibility(R.id.widget_months_container, View.VISIBLE)
-                            views.setTextViewText(R.id.widget_months, "${timeInfo.months}")
-                            views.setTextViewText(
-                                R.id.widget_months_label,
-                                if (timeInfo.months == 1L) "Monat" else "Monate"
-                            )
-                        }
+                        when (format) {
+                            de.beigel.nextime.data.model.CountdownDisplayFormat.WEEKS_DAYS -> {
+                                views.setViewVisibility(R.id.widget_weeks_container, View.VISIBLE)
+                                views.setTextViewText(R.id.widget_weeks_large, "${timeInfo.weeks}")
+                                views.setTextViewText(R.id.widget_weeks_label_large, 
+                                    if (timeInfo.weeks == 1L) "Woche" else "Wochen")
+                                views.setTextColor(R.id.widget_weeks_large, color)
+                            }
 
-                        de.beigel.nextime.data.model.CountdownDisplayFormat.YEARS_MONTHS_DAYS -> {
-                            if (layoutResId == R.layout.widget_countdown_large) {
-                                // Für großes Widget: zeige Jahre, Monate und Tage
+                            de.beigel.nextime.data.model.CountdownDisplayFormat.MONTHS_DAYS -> {
+                                views.setViewVisibility(R.id.widget_months_container, View.VISIBLE)
+                                views.setTextViewText(R.id.widget_months_large, "${timeInfo.months}")
+                                views.setTextViewText(R.id.widget_months_label_large, 
+                                    if (timeInfo.months == 1L) "Monat" else "Monate")
+                                views.setTextColor(R.id.widget_months_large, color)
+                            }
+
+                            de.beigel.nextime.data.model.CountdownDisplayFormat.YEARS_MONTHS_DAYS -> {
                                 if (timeInfo.years > 0) {
                                     views.setViewVisibility(R.id.widget_years_container, View.VISIBLE)
-                                    views.setTextViewText(R.id.widget_years, "${timeInfo.years}")
-                                    views.setTextViewText(
-                                        R.id.widget_years_label,
-                                        if (timeInfo.years == 1L) "Jahr" else "Jahre"
-                                    )
+                                    views.setTextViewText(R.id.widget_years_large, "${timeInfo.years}")
+                                    views.setTextViewText(R.id.widget_years_label_large, 
+                                        if (timeInfo.years == 1L) "Jahr" else "Jahre")
+                                    views.setTextColor(R.id.widget_years_large, color)
                                 }
 
                                 val remainingMonths = timeInfo.months % 12
                                 if (remainingMonths > 0) {
                                     views.setViewVisibility(R.id.widget_months_container, View.VISIBLE)
-                                    views.setTextViewText(R.id.widget_months, "$remainingMonths")
-                                    views.setTextViewText(
-                                        R.id.widget_months_label,
-                                        if (remainingMonths == 1L) "Monat" else "Monate"
-                                    )
+                                    views.setTextViewText(R.id.widget_months_large, "$remainingMonths")
+                                    views.setTextViewText(R.id.widget_months_label_large, 
+                                        if (remainingMonths == 1L) "Monat" else "Monate")
+                                    views.setTextColor(R.id.widget_months_large, color)
                                 }
-                            } else {
-                                // Für kleinere Widgets: nur Monate anzeigen
-                                views.setViewVisibility(R.id.widget_months_container, View.VISIBLE)
-                                views.setTextViewText(R.id.widget_months, "${timeInfo.months}")
-                                views.setTextViewText(
-                                    R.id.widget_months_label,
-                                    if (timeInfo.months == 1L) "Monat" else "Monate"
-                                )
                             }
+
+                            else -> {} // DAYS_ONLY - alles beim Standard
                         }
                     }
-
-                    val dateText = countdown.targetDateTime.format(
-                        java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy")
-                    )
-                    views.setTextViewText(R.id.widget_date, " $dateText")
                 }
 
             } catch (e: Exception) {
