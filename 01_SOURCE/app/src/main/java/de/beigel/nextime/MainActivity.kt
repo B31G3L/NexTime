@@ -30,8 +30,6 @@ import de.beigel.nextime.ui.theme.ThemeMode
 import de.beigel.nextime.ui.theme.ThemePreferences
 import de.beigel.nextime.ui.screens.MainScreenWithBottomNav  // ← NEU!
 import de.beigel.nextime.ui.theme.CustomTheme
-import de.beigel.nextime.widget.CountdownWidget
-import de.beigel.nextime.widget.WidgetUpdateWorker
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
@@ -64,7 +62,6 @@ class MainActivity : ComponentActivity() {
             }
         }
         scheduleAllPendingNotifications()
-        WidgetUpdateWorker.schedule(this)
         requestNotificationPermissionIfNeeded()
 
         enableEdgeToEdge()
@@ -213,8 +210,6 @@ class MainActivity : ComponentActivity() {
                 "✅ ${testCountdowns.size} Test-Countdowns erstellt!",
                 Toast.LENGTH_LONG
             ).show()
-
-            CountdownWidget.updateAllWidgets(this@MainActivity)
         }
     }
 }
