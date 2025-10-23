@@ -2,10 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
-    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
 
     <application
         android:allowBackup="true"
@@ -20,44 +19,24 @@
 
         <activity
             android:name=".MainActivity"
-            android:exported="true"
-            android:theme="@style/Theme.NexTime">
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
-        <!-- Widget Configuration Activity -->
-        <activity
-            android:name=".widget.CountdownWidgetConfigActivity"
-            android:exported="false"
-            android:theme="@style/Theme.NexTime">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
-            </intent-filter>
-        </activity>
-
-        <!-- Notification Receiver -->
+        <!-- Benachrichtigungen Receiver -->
         <receiver
             android:name=".notifications.NotificationReceiver"
             android:enabled="true"
-            android:exported="false" />
+            android:exported="true" />
 
-        <!-- ========= UNIVERSAL COUNTDOWN WIDGET =========
-             Ein Widget, das sich automatisch an alle Größen anpasst
-             Ersetzt die 3 separaten Widget-Größen (klein, mittel, groß) -->
-        <receiver
-            android:name=".widget.CountdownWidget"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/countdown_widget_universal" />  <!-- ✅ NEU -->
-        </receiver>
-
+        <!-- Services für Benachrichtigungen -->
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:foregroundServiceType="shortService"
+            tools:node="merge" />
 
     </application>
 
