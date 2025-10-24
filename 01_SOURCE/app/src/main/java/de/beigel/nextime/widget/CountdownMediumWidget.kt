@@ -23,7 +23,8 @@ import java.time.format.DateTimeFormatter
 
 /**
  * Medium Widget (4×2) - Standard mit Datum & Format
- * Zeigt: Emoji, Titel, Große Zahl, Format-Text, Datum
+ * Design: Fast weißer Hintergrund (#FAFAFA) mit Farbakzenten
+ * Zeigt: Emoji, Titel, Datum, Große Zahl, Format-Text
  */
 class CountdownMediumWidget : GlanceAppWidget() {
 
@@ -43,7 +44,7 @@ class CountdownMediumWidget : GlanceAppWidget() {
         Box(
             modifier = GlanceModifier
                 .fillMaxSize()
-                .background(Color(0xFFF5F5F5))
+                .background(Color(0xFFFAFAFA))  // Fast weiß
                 .padding(16.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -55,20 +56,23 @@ class CountdownMediumWidget : GlanceAppWidget() {
                 ) {
                     Text(
                         text = "⏰",
-                        style = TextStyle(fontSize = 32.sp)
+                        style = TextStyle(
+                            fontSize = 40.sp,
+                            color = ColorProvider(Color(0xFFBBBBBB))
+                        )
                     )
-                    Spacer(modifier = GlanceModifier.height(8.dp))
+                    Spacer(modifier = GlanceModifier.height(12.dp))
                     Text(
                         text = "Kein Countdown",
                         style = TextStyle(
                             fontSize = 14.sp,
-                            color = ColorProvider(Color(0xFF666666))
+                            color = ColorProvider(Color(0xFF999999))
                         )
                     )
                 }
             } else {
                 val timeInfo = countdown.calculateTimeRemaining()
-                val baseColor = try {
+                val accentColor = try {
                     Color(android.graphics.Color.parseColor(countdown.color))
                 } catch (e: Exception) {
                     Color(0xFFFF9800)
@@ -79,28 +83,30 @@ class CountdownMediumWidget : GlanceAppWidget() {
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalAlignment = Alignment.Top
                 ) {
-                    // Oberer Balken
+                    // Oberer Farbakzent
                     Box(
                         modifier = GlanceModifier
                             .fillMaxWidth()
-                            .height(3.dp)
-                            .background(baseColor),
-                        contentAlignment = Alignment.Center
+                            .height(4.dp)
+                            .background(accentColor)
                     ) { }
 
                     Spacer(modifier = GlanceModifier.height(12.dp))
 
-                    // Emoji + Titel Zeile
+                    // Header: Emoji + Titel + Datum
                     Row(
                         modifier = GlanceModifier.fillMaxWidth(),
                         horizontalAlignment = Alignment.Start,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        // Emoji
                         Text(
                             text = getEmojiForCountdown(countdown.title),
-                            style = TextStyle(fontSize = 20.sp)
+                            style = TextStyle(fontSize = 22.sp)
                         )
-                        Spacer(modifier = GlanceModifier.width(8.dp))
+                        Spacer(modifier = GlanceModifier.width(10.dp))
+
+                        // Titel
                         Column(modifier = GlanceModifier.defaultWeight()) {
                             Text(
                                 text = countdown.title,
@@ -112,7 +118,10 @@ class CountdownMediumWidget : GlanceAppWidget() {
                                 maxLines = 1
                             )
                         }
-                        Spacer(modifier = GlanceModifier.width(8.dp))
+
+                        Spacer(modifier = GlanceModifier.width(10.dp))
+
+                        // Datum
                         Text(
                             text = countdown.targetDateTime.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")),
                             style = TextStyle(
@@ -124,13 +133,13 @@ class CountdownMediumWidget : GlanceAppWidget() {
 
                     Spacer(modifier = GlanceModifier.height(16.dp))
 
-                    // Hauptzahl
+                    // Hauptzahl in Akzentfarbe
                     Text(
                         text = "${timeInfo.days}",
                         style = TextStyle(
                             fontSize = 72.sp,
                             fontWeight = FontWeight.Bold,
-                            color = ColorProvider(baseColor)
+                            color = ColorProvider(accentColor)
                         )
                     )
 
@@ -164,13 +173,12 @@ class CountdownMediumWidget : GlanceAppWidget() {
 
                     Spacer(modifier = GlanceModifier.defaultWeight())
 
-                    // Unterer Balken
+                    // Unterer Farbakzent
                     Box(
                         modifier = GlanceModifier
                             .fillMaxWidth()
-                            .height(3.dp)
-                            .background(baseColor),
-                        contentAlignment = Alignment.Center
+                            .height(4.dp)
+                            .background(accentColor)
                     ) { }
                 }
             }

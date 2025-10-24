@@ -16,13 +16,13 @@ import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import de.beigel.nextime.data.database.CountdownDatabase
 import de.beigel.nextime.data.model.Countdown
-import de.beigel.nextime.data.model.CountdownDisplayFormat
 import de.beigel.nextime.data.model.calculateTimeRemaining
 import kotlinx.coroutines.flow.first
 
 /**
  * Mini Widget (1×1) - Ultra kompakt
- * Zeigt nur: Zahl + Farbbalken
+ * Design: Fast weißer Hintergrund (#FAFAFA) mit Farbakzenten
+ * Zeigt nur: Zahl + Farbbalken + Titel (gekürzt)
  */
 class CountdownMiniWidget : GlanceAppWidget() {
 
@@ -42,25 +42,28 @@ class CountdownMiniWidget : GlanceAppWidget() {
         Box(
             modifier = GlanceModifier
                 .fillMaxSize()
-                .background(Color(0xFFF5F5F5))
-                .padding(4.dp),
+                .background(Color(0xFFFAFAFA))  // Fast weiß
+                .padding(6.dp),
             contentAlignment = Alignment.Center
         ) {
             if (countdown == null) {
-                // Kein Countdown
+                // Kein Countdown - dezentes Icon
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
                         text = "⏰",
-                        style = TextStyle(fontSize = 24.sp)
+                        style = TextStyle(
+                            fontSize = 24.sp,
+                            color = ColorProvider(Color(0xFFBBBBBB))
+                        )
                     )
                 }
             } else {
                 // Countdown vorhanden
                 val timeInfo = countdown.calculateTimeRemaining()
-                val baseColor = try {
+                val accentColor = try {
                     Color(android.graphics.Color.parseColor(countdown.color))
                 } catch (e: Exception) {
                     Color(0xFFFF9800)
@@ -71,47 +74,45 @@ class CountdownMiniWidget : GlanceAppWidget() {
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Oberer Balken
+                    // Oberer Farbakzent (dicker für bessere Sichtbarkeit)
                     Box(
                         modifier = GlanceModifier
                             .fillMaxWidth()
-                            .height(2.dp)
-                            .background(baseColor),
-                        contentAlignment = Alignment.Center
+                            .height(3.dp)
+                            .background(accentColor)
                     ) { }
 
                     Spacer(modifier = GlanceModifier.defaultWeight())
 
-                    // Die große Zahl
+                    // Hauptzahl in Akzentfarbe
                     Text(
                         text = "${timeInfo.days}",
                         style = TextStyle(
-                            fontSize = 28.sp,
+                            fontSize = 30.sp,
                             fontWeight = FontWeight.Bold,
-                            color = ColorProvider(baseColor)
+                            color = ColorProvider(accentColor)
                         )
                     )
 
-                    // Titel (sehr kurz und klein)
+                    // Titel in dunkler Textfarbe
                     Text(
                         text = countdown.title.take(8),
                         style = TextStyle(
                             fontSize = 9.sp,
                             fontWeight = FontWeight.Normal,
-                            color = ColorProvider(Color(0xFF666666))
+                            color = ColorProvider(Color(0xFF333333))
                         ),
                         maxLines = 1
                     )
 
                     Spacer(modifier = GlanceModifier.defaultWeight())
 
-                    // Unterer Balken
+                    // Unterer Farbakzent
                     Box(
                         modifier = GlanceModifier
                             .fillMaxWidth()
-                            .height(2.dp)
-                            .background(baseColor),
-                        contentAlignment = Alignment.Center
+                            .height(3.dp)
+                            .background(accentColor)
                     ) { }
                 }
             }

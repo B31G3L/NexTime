@@ -23,6 +23,7 @@ import java.time.format.DateTimeFormatter
 
 /**
  * Large Widget (4×3) - Vollständig mit Statistiken
+ * Design: Fast weißer Hintergrund (#FAFAFA) mit Farbakzenten
  * Zeigt: Emoji, Titel, Datum, Große Zahl, Format-Text, Erstellt, Verbleibend %
  */
 class CountdownLargeWidget : GlanceAppWidget() {
@@ -43,7 +44,7 @@ class CountdownLargeWidget : GlanceAppWidget() {
         Box(
             modifier = GlanceModifier
                 .fillMaxSize()
-                .background(Color(0xFFF5F5F5))
+                .background(Color(0xFFFAFAFA))  // Fast weiß
                 .padding(16.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -55,20 +56,23 @@ class CountdownLargeWidget : GlanceAppWidget() {
                 ) {
                     Text(
                         text = "⏰",
-                        style = TextStyle(fontSize = 40.sp)
+                        style = TextStyle(
+                            fontSize = 48.sp,
+                            color = ColorProvider(Color(0xFFBBBBBB))
+                        )
                     )
-                    Spacer(modifier = GlanceModifier.height(12.dp))
+                    Spacer(modifier = GlanceModifier.height(16.dp))
                     Text(
                         text = "Kein Countdown",
                         style = TextStyle(
                             fontSize = 16.sp,
-                            color = ColorProvider(Color(0xFF666666))
+                            color = ColorProvider(Color(0xFF999999))
                         )
                     )
                 }
             } else {
                 val timeInfo = countdown.calculateTimeRemaining()
-                val baseColor = try {
+                val accentColor = try {
                     Color(android.graphics.Color.parseColor(countdown.color))
                 } catch (e: Exception) {
                     Color(0xFFFF9800)
@@ -79,28 +83,30 @@ class CountdownLargeWidget : GlanceAppWidget() {
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalAlignment = Alignment.Top
                 ) {
-                    // Oberer Balken
+                    // Oberer Farbakzent
                     Box(
                         modifier = GlanceModifier
                             .fillMaxWidth()
-                            .height(3.dp)
-                            .background(baseColor),
-                        contentAlignment = Alignment.Center
+                            .height(4.dp)
+                            .background(accentColor)
                     ) { }
 
                     Spacer(modifier = GlanceModifier.height(12.dp))
 
-                    // Emoji + Titel + Datum
+                    // Header: Emoji + Titel + Datum
                     Row(
                         modifier = GlanceModifier.fillMaxWidth(),
                         horizontalAlignment = Alignment.Start,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        // Emoji
                         Text(
                             text = getEmojiForCountdown(countdown.title),
-                            style = TextStyle(fontSize = 24.sp)
+                            style = TextStyle(fontSize = 26.sp)
                         )
-                        Spacer(modifier = GlanceModifier.width(8.dp))
+                        Spacer(modifier = GlanceModifier.width(10.dp))
+
+                        // Titel
                         Column(modifier = GlanceModifier.defaultWeight()) {
                             Text(
                                 text = countdown.title,
@@ -112,7 +118,10 @@ class CountdownLargeWidget : GlanceAppWidget() {
                                 maxLines = 1
                             )
                         }
-                        Spacer(modifier = GlanceModifier.width(8.dp))
+
+                        Spacer(modifier = GlanceModifier.width(10.dp))
+
+                        // Datum
                         Text(
                             text = countdown.targetDateTime.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")),
                             style = TextStyle(
@@ -124,13 +133,13 @@ class CountdownLargeWidget : GlanceAppWidget() {
 
                     Spacer(modifier = GlanceModifier.height(16.dp))
 
-                    // Hauptzahl
+                    // Hauptzahl in Akzentfarbe
                     Text(
                         text = "${timeInfo.days}",
                         style = TextStyle(
                             fontSize = 80.sp,
                             fontWeight = FontWeight.Bold,
-                            color = ColorProvider(baseColor)
+                            color = ColorProvider(accentColor)
                         )
                     )
 
@@ -163,10 +172,12 @@ class CountdownLargeWidget : GlanceAppWidget() {
                         Spacer(modifier = GlanceModifier.height(12.dp))
                     }
 
-                    // Statistiken
+                    // Statistiken - mit leichtem Hintergrund für Abgrenzung
                     Column(
-                        modifier = GlanceModifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.Start
+                        modifier = GlanceModifier
+                            .fillMaxWidth()
+                            .background(Color(0xFFF0F0F0))  // Ganz leichter Hintergrund
+                            .padding(horizontal = 12.dp, vertical = 8.dp)
                     ) {
                         // Erstellt
                         Row(
@@ -179,9 +190,9 @@ class CountdownLargeWidget : GlanceAppWidget() {
                                 style = TextStyle(
                                     fontSize = 12.sp,
                                     color = ColorProvider(Color(0xFF666666))
-                                )
+                                ),
+                                modifier = GlanceModifier.defaultWeight()
                             )
-                            Spacer(modifier = GlanceModifier.defaultWeight())
                             Text(
                                 text = countdown.createdAt.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")),
                                 style = TextStyle(
@@ -192,7 +203,7 @@ class CountdownLargeWidget : GlanceAppWidget() {
                             )
                         }
 
-                        Spacer(modifier = GlanceModifier.height(4.dp))
+                        Spacer(modifier = GlanceModifier.height(6.dp))
 
                         // Verbleibend (Prozent)
                         val percentage = calculatePercentage(countdown, timeInfo)
@@ -206,15 +217,15 @@ class CountdownLargeWidget : GlanceAppWidget() {
                                 style = TextStyle(
                                     fontSize = 12.sp,
                                     color = ColorProvider(Color(0xFF666666))
-                                )
+                                ),
+                                modifier = GlanceModifier.defaultWeight()
                             )
-                            Spacer(modifier = GlanceModifier.defaultWeight())
                             Text(
                                 text = percentage,
                                 style = TextStyle(
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Medium,
-                                    color = ColorProvider(Color(0xFF333333))
+                                    color = ColorProvider(accentColor)  // Prozent in Akzentfarbe
                                 )
                             )
                         }
@@ -222,13 +233,12 @@ class CountdownLargeWidget : GlanceAppWidget() {
 
                     Spacer(modifier = GlanceModifier.defaultWeight())
 
-                    // Unterer Balken
+                    // Unterer Farbakzent
                     Box(
                         modifier = GlanceModifier
                             .fillMaxWidth()
-                            .height(3.dp)
-                            .background(baseColor),
-                        contentAlignment = Alignment.Center
+                            .height(4.dp)
+                            .background(accentColor)
                     ) { }
                 }
             }
