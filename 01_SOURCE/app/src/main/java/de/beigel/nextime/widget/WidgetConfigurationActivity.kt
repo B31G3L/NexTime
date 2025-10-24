@@ -71,6 +71,7 @@ class WidgetConfigurationActivity : ComponentActivity() {
         }
     }
 
+    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     private fun WidgetConfigurationScreen(
         onCountdownSelected: (Countdown) -> Unit,

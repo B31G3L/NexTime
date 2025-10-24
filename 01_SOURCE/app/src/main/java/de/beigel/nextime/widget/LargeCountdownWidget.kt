@@ -20,6 +20,8 @@ import androidx.glance.unit.ColorProvider
 import de.beigel.nextime.data.model.Countdown
 import de.beigel.nextime.data.model.calculateTimeRemaining
 import de.beigel.nextime.widget.utils.WidgetHelper
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
@@ -27,8 +29,10 @@ import java.time.temporal.ChronoUnit
 class LargeCountdownWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val countdown = WidgetHelper.getCountdownForWidget(context, id)
-        
+        val countdown = withContext(Dispatchers.IO) {
+            WidgetHelper.getCountdownForWidget(context, id)
+        }
+
         provideContent {
             LargeWidgetContent(countdown, context)
         }
@@ -56,7 +60,7 @@ class LargeCountdownWidget : GlanceAppWidget() {
                     .fillMaxWidth()
                     .height(4.dp)
                     .background(ColorProvider(color))
-            )
+            ) {}
 
             Spacer(modifier = GlanceModifier.height(12.dp))
 
@@ -169,7 +173,7 @@ class LargeCountdownWidget : GlanceAppWidget() {
                         .fillMaxHeight()
                         .width((340 * (1 - progress / 100f)).dp)
                         .background(ColorProvider(color))
-                )
+                ) {}
             }
 
             Spacer(modifier = GlanceModifier.height(12.dp))
@@ -179,7 +183,7 @@ class LargeCountdownWidget : GlanceAppWidget() {
                     .fillMaxWidth()
                     .height(4.dp)
                     .background(ColorProvider(color))
-            )
+            ) {}
         }
     }
 

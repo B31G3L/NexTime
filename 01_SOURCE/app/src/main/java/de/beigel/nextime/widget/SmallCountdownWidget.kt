@@ -32,10 +32,11 @@ import kotlinx.coroutines.withContext
 class SmallCountdownWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
+        val countdown = withContext(Dispatchers.IO) {
+            WidgetHelper.getCountdownForWidget(context, id)
+        }
+
         provideContent {
-            val countdown = withContext(Dispatchers.IO) {
-                WidgetHelper.getCountdownForWidget(context, id)
-            }
             SmallWidgetContent(countdown, context)
         }
     }
@@ -64,7 +65,7 @@ class SmallCountdownWidget : GlanceAppWidget() {
                     .fillMaxWidth()
                     .height(4.dp)
                     .background(ColorProvider(color))
-            )
+            ) {}
 
             Spacer(modifier = GlanceModifier.height(8.dp))
 
@@ -113,7 +114,7 @@ class SmallCountdownWidget : GlanceAppWidget() {
                     .fillMaxWidth()
                     .height(4.dp)
                     .background(ColorProvider(color))
-            )
+            ) {}
         }
     }
 

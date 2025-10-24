@@ -35,10 +35,11 @@ import java.time.format.DateTimeFormatter
 class MediumCountdownWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
+        val countdown = withContext(Dispatchers.IO) {
+            WidgetHelper.getCountdownForWidget(context, id)
+        }
+
         provideContent {
-            val countdown = withContext(Dispatchers.IO) {
-                WidgetHelper.getCountdownForWidget(context, id)
-            }
             MediumWidgetContent(countdown, context)
         }
     }
@@ -71,7 +72,7 @@ class MediumCountdownWidget : GlanceAppWidget() {
                     .fillMaxWidth()
                     .height(4.dp)
                     .background(ColorProvider(color))
-            )
+            ) {}
 
             Spacer(modifier = GlanceModifier.height(12.dp))
 
@@ -156,7 +157,7 @@ class MediumCountdownWidget : GlanceAppWidget() {
                     .fillMaxWidth()
                     .height(4.dp)
                     .background(ColorProvider(color))
-            )
+            ) {}
         }
     }
 

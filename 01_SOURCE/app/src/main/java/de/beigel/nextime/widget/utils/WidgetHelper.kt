@@ -1,48 +1,48 @@
 package de.beigel.nextime.widget.utils
 
+import android.content.ComponentName
 import android.content.Context
-import android.content.Intent
 import android.graphics.Color
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.glance.GlanceId
 import androidx.glance.action.Action
 import androidx.glance.action.actionStartActivity
 import androidx.glance.appwidget.state.getAppWidgetState
+import androidx.glance.state.PreferencesGlanceStateDefinition
 import de.beigel.nextime.MainActivity
 import de.beigel.nextime.data.database.CountdownDatabase
 import de.beigel.nextime.data.model.Countdown
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.withContext
 
 object WidgetHelper {
 
     val COUNTDOWN_ID_KEY = longPreferencesKey("countdown_id")
 
     suspend fun getCountdownForWidget(context: Context, glanceId: GlanceId): Countdown? {
-        return withContext(Dispatchers.IO) {
-            try {
-                val prefs = getAppWidgetState(context, glanceId)
-                val countdownId = prefs[COUNTDOWN_ID_KEY] ?: return@withContext null
+        return try {
+            // Korrekte Signatur für Glance 1.0.0: benötigt PreferencesGlanceStateDefinition
+            val prefs = getAppWidgetState(
+                context = context,
+                definition = PreferencesGlanceStateDefinition,
+                glanceId = glanceId
+            )
+            val countdownId = prefs[COUNTDOWN_ID_KEY] ?: return null
 
-                val database = CountdownDatabase.getDatabase(context)
-                database.countdownDao().getCountdownById(countdownId)
-            } catch (e: Exception) {
-                e.printStackTrace()
-                null
-            }
+            val database = CountdownDatabase.getDatabase(context)
+            database.countdownDao().getCountdownById(countdownId)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
         }
     }
 
     suspend fun getAllCountdowns(context: Context): List<Countdown> {
-        return withContext(Dispatchers.IO) {
-            try {
-                val database = CountdownDatabase.getDatabase(context)
-                database.countdownDao().getAllCountdowns().first()
-            } catch (e: Exception) {
-                e.printStackTrace()
-                emptyList()
-            }
+        return try {
+            val database = CountdownDatabase.getDatabase(context)
+            database.countdownDao().getAllCountdowns().first()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emptyList()
         }
     }
 
@@ -55,11 +55,11 @@ object WidgetHelper {
     }
 
     fun getAppOpenAction(context: Context, countdown: Countdown): Action {
-        val intent = Intent(context, MainActivity::class.java).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-            putExtra("countdown_id", countdown.id)
-        }
-        return actionStartActivity(intent)
+        // ComponentName für MainActivity erstellen
+        val componentName = ComponentName(context, MainActivity::class.java)
+
+        // actionStartActivity mit ComponentName (ohne Parameter)
+        return actionStartActivity(componentName)
     }
 
     fun getOnSurfaceColor(context: Context): Int {
