@@ -6,8 +6,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
-import androidx.glance.Image
-import androidx.glance.ImageProvider
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
@@ -22,6 +20,8 @@ import androidx.glance.unit.ColorProvider
 import de.beigel.nextime.data.model.Countdown
 import de.beigel.nextime.data.model.calculateTimeRemaining
 import de.beigel.nextime.widget.utils.WidgetHelper
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * Small Widget (2×2 / 160×160dp)
@@ -33,7 +33,9 @@ class SmallCountdownWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         provideContent {
-            val countdown = WidgetHelper.getCountdownForWidget(context, id)
+            val countdown = withContext(Dispatchers.IO) {
+                WidgetHelper.getCountdownForWidget(context, id)
+            }
             SmallWidgetContent(countdown, context)
         }
     }
@@ -41,7 +43,7 @@ class SmallCountdownWidget : GlanceAppWidget() {
     @Composable
     private fun SmallWidgetContent(countdown: Countdown?, context: Context) {
         if (countdown == null) {
-            EmptySmallWidget()
+            EmptySmallWidget(context)
             return
         }
 
@@ -51,7 +53,7 @@ class SmallCountdownWidget : GlanceAppWidget() {
         Column(
             modifier = GlanceModifier
                 .fillMaxSize()
-                .background(androidx.glance.R.color.widget_background_color)
+                .background(ColorProvider(WidgetHelper.getSurfaceVariantColor(context)))
                 .clickable(WidgetHelper.getAppOpenAction(context, countdown)),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalAlignment = Alignment.CenterVertically
@@ -116,11 +118,11 @@ class SmallCountdownWidget : GlanceAppWidget() {
     }
 
     @Composable
-    private fun EmptySmallWidget() {
+    private fun EmptySmallWidget(context: Context) {
         Column(
             modifier = GlanceModifier
                 .fillMaxSize()
-                .background(androidx.glance.R.color.widget_background_color),
+                .background(ColorProvider(WidgetHelper.getSurfaceVariantColor(context))),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -133,7 +135,8 @@ class SmallCountdownWidget : GlanceAppWidget() {
                 text = "Kein Countdown",
                 style = TextStyle(
                     fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
+                    color = ColorProvider(WidgetHelper.getOnSurfaceColor(context))
                 )
             )
         }

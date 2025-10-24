@@ -20,12 +20,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.datastore.preferences.core.edit
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.lifecycle.lifecycleScope
 import de.beigel.nextime.data.database.CountdownDatabase
 import de.beigel.nextime.data.model.Countdown
+import de.beigel.nextime.data.model.calculateTimeRemaining
 import de.beigel.nextime.ui.theme.NexTimeTheme
 import de.beigel.nextime.widget.utils.WidgetHelper
 import kotlinx.coroutines.flow.first

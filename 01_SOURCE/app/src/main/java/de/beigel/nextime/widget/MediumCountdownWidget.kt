@@ -21,6 +21,8 @@ import de.beigel.nextime.data.model.Countdown
 import de.beigel.nextime.data.model.CountdownDisplayFormat
 import de.beigel.nextime.data.model.calculateTimeRemaining
 import de.beigel.nextime.widget.utils.WidgetHelper
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.time.format.DateTimeFormatter
 
 /**
@@ -34,7 +36,9 @@ class MediumCountdownWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         provideContent {
-            val countdown = WidgetHelper.getCountdownForWidget(context, id)
+            val countdown = withContext(Dispatchers.IO) {
+                WidgetHelper.getCountdownForWidget(context, id)
+            }
             MediumWidgetContent(countdown, context)
         }
     }
@@ -42,7 +46,7 @@ class MediumCountdownWidget : GlanceAppWidget() {
     @Composable
     private fun MediumWidgetContent(countdown: Countdown?, context: Context) {
         if (countdown == null) {
-            EmptyMediumWidget()
+            EmptyMediumWidget(context)
             return
         }
 
@@ -57,7 +61,7 @@ class MediumCountdownWidget : GlanceAppWidget() {
         Column(
             modifier = GlanceModifier
                 .fillMaxSize()
-                .background(androidx.glance.R.color.widget_background_color)
+                .background(ColorProvider(WidgetHelper.getSurfaceVariantColor(context)))
                 .clickable(WidgetHelper.getAppOpenAction(context, countdown)),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -186,11 +190,11 @@ class MediumCountdownWidget : GlanceAppWidget() {
     }
 
     @Composable
-    private fun EmptyMediumWidget() {
+    private fun EmptyMediumWidget(context: Context) {
         Column(
             modifier = GlanceModifier
                 .fillMaxSize()
-                .background(androidx.glance.R.color.widget_background_color),
+                .background(ColorProvider(WidgetHelper.getSurfaceVariantColor(context))),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -203,7 +207,8 @@ class MediumCountdownWidget : GlanceAppWidget() {
                 text = "Kein Countdown ausgewählt",
                 style = TextStyle(
                     fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
+                    color = ColorProvider(WidgetHelper.getOnSurfaceColor(context))
                 )
             )
         }

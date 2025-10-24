@@ -18,26 +18,18 @@ import androidx.glance.text.TextStyle
 import androidx.glance.text.FontWeight
 import androidx.glance.unit.ColorProvider
 import de.beigel.nextime.data.model.Countdown
-import de.beigel.nextime.data.model.CountdownDisplayFormat
 import de.beigel.nextime.data.model.calculateTimeRemaining
 import de.beigel.nextime.widget.utils.WidgetHelper
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 
-/**
- * Large Widget (4×3 / 340×240dp)
- * - Vollständige Ansicht mit allen Details
- * - Titel + Datum
- * - Hauptzähler
- * - Statistiken-Box
- * - Fortschrittsbalken
- */
 class LargeCountdownWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
+        val countdown = WidgetHelper.getCountdownForWidget(context, id)
+        
         provideContent {
-            val countdown = WidgetHelper.getCountdownForWidget(context, id)
             LargeWidgetContent(countdown, context)
         }
     }
@@ -45,7 +37,7 @@ class LargeCountdownWidget : GlanceAppWidget() {
     @Composable
     private fun LargeWidgetContent(countdown: Countdown?, context: Context) {
         if (countdown == null) {
-            EmptyLargeWidget()
+            EmptyLargeWidget(context)
             return
         }
 
@@ -56,10 +48,9 @@ class LargeCountdownWidget : GlanceAppWidget() {
         Column(
             modifier = GlanceModifier
                 .fillMaxSize()
-                .background(androidx.glance.R.color.widget_background_color)
+                .background(ColorProvider(WidgetHelper.getSurfaceVariantColor(context)))
                 .clickable(WidgetHelper.getAppOpenAction(context, countdown))
         ) {
-            // Farbbalken oben
             Box(
                 modifier = GlanceModifier
                     .fillMaxWidth()
@@ -69,7 +60,6 @@ class LargeCountdownWidget : GlanceAppWidget() {
 
             Spacer(modifier = GlanceModifier.height(12.dp))
 
-            // Header: Titel + Datum
             Row(
                 modifier = GlanceModifier
                     .fillMaxWidth()
@@ -102,7 +92,6 @@ class LargeCountdownWidget : GlanceAppWidget() {
 
             Spacer(modifier = GlanceModifier.height(12.dp))
 
-            // Hauptzähler
             Column(
                 modifier = GlanceModifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -129,7 +118,6 @@ class LargeCountdownWidget : GlanceAppWidget() {
 
                 Spacer(modifier = GlanceModifier.height(4.dp))
 
-                // Sublabel
                 val weeks = timeInfo.days / 7
                 val remainingDays = timeInfo.days % 7
                 Text(
@@ -145,7 +133,6 @@ class LargeCountdownWidget : GlanceAppWidget() {
 
             Spacer(modifier = GlanceModifier.height(12.dp))
 
-            // Statistiken-Box
             Column(
                 modifier = GlanceModifier
                     .fillMaxWidth()
@@ -170,7 +157,6 @@ class LargeCountdownWidget : GlanceAppWidget() {
 
             Spacer(modifier = GlanceModifier.height(8.dp))
 
-            // Fortschrittsbalken
             Box(
                 modifier = GlanceModifier
                     .fillMaxWidth()
@@ -188,7 +174,6 @@ class LargeCountdownWidget : GlanceAppWidget() {
 
             Spacer(modifier = GlanceModifier.height(12.dp))
 
-            // Farbbalken unten
             Box(
                 modifier = GlanceModifier
                     .fillMaxWidth()
@@ -237,11 +222,11 @@ class LargeCountdownWidget : GlanceAppWidget() {
     }
 
     @Composable
-    private fun EmptyLargeWidget() {
+    private fun EmptyLargeWidget(context: Context) {
         Column(
             modifier = GlanceModifier
                 .fillMaxSize()
-                .background(androidx.glance.R.color.widget_background_color),
+                .background(ColorProvider(WidgetHelper.getSurfaceVariantColor(context))),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -255,7 +240,8 @@ class LargeCountdownWidget : GlanceAppWidget() {
                 style = TextStyle(
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    color = ColorProvider(WidgetHelper.getOnSurfaceColor(context))
                 )
             )
             Spacer(modifier = GlanceModifier.height(8.dp))
@@ -264,7 +250,8 @@ class LargeCountdownWidget : GlanceAppWidget() {
                 style = TextStyle(
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Normal,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    color = ColorProvider(WidgetHelper.getOnSurfaceVariantColor(context))
                 )
             )
         }

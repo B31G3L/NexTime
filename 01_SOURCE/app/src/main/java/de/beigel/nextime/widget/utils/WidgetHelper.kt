@@ -1,6 +1,5 @@
 package de.beigel.nextime.widget.utils
 
-import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
@@ -8,7 +7,6 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.glance.GlanceId
 import androidx.glance.action.Action
 import androidx.glance.action.actionStartActivity
-import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.state.getAppWidgetState
 import de.beigel.nextime.MainActivity
 import de.beigel.nextime.data.database.CountdownDatabase
@@ -19,12 +17,8 @@ import kotlinx.coroutines.withContext
 
 object WidgetHelper {
 
-    // DataStore Keys
     val COUNTDOWN_ID_KEY = longPreferencesKey("countdown_id")
 
-    /**
-     * Holt den Countdown für das Widget
-     */
     suspend fun getCountdownForWidget(context: Context, glanceId: GlanceId): Countdown? {
         return withContext(Dispatchers.IO) {
             try {
@@ -40,9 +34,6 @@ object WidgetHelper {
         }
     }
 
-    /**
-     * Holt alle Countdowns
-     */
     suspend fun getAllCountdowns(context: Context): List<Countdown> {
         return withContext(Dispatchers.IO) {
             try {
@@ -55,31 +46,22 @@ object WidgetHelper {
         }
     }
 
-    /**
-     * Parst einen Farbstring zu Int
-     */
     fun parseColor(colorString: String): Int {
         return try {
             Color.parseColor(colorString)
         } catch (e: Exception) {
-            Color.parseColor("#FF9800") // Default Orange
+            Color.parseColor("#FF9800")
         }
     }
 
-    /**
-     * Gibt eine Action zurück, die die App öffnet
-     */
     fun getAppOpenAction(context: Context, countdown: Countdown): Action {
         val intent = Intent(context, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             putExtra("countdown_id", countdown.id)
         }
         return actionStartActivity(intent)
     }
 
-    /**
-     * Theme-abhängige Farben
-     */
     fun getOnSurfaceColor(context: Context): Int {
         return if (isDarkTheme(context)) {
             Color.parseColor("#E0E3E3")
@@ -104,9 +86,6 @@ object WidgetHelper {
         }
     }
 
-    /**
-     * Prüft ob Dark Theme aktiv ist
-     */
     private fun isDarkTheme(context: Context): Boolean {
         val nightModeFlags = context.resources.configuration.uiMode and
                 android.content.res.Configuration.UI_MODE_NIGHT_MASK
