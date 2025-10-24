@@ -3,6 +3,7 @@ package de.beigel.nextime.widget.utils
 import android.content.ComponentName
 import android.content.Context
 import android.graphics.Color
+import android.util.Log
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.glance.GlanceId
 import androidx.glance.action.Action
@@ -16,21 +17,41 @@ import kotlinx.coroutines.flow.first
 
 object WidgetHelper {
 
+    private const val TAG = "WidgetHelper"
     val COUNTDOWN_ID_KEY = longPreferencesKey("countdown_id")
 
     suspend fun getCountdownForWidget(context: Context, glanceId: GlanceId): Countdown? {
         return try {
-            // Korrekte Signatur für Glance 1.0.0: benötigt PreferencesGlanceStateDefinition
+            Log.d(TAG, "Loading countdown for widget: $glanceId")
+
+            // State aus Glance Preferences laden
             val prefs = getAppWidgetState(
                 context = context,
                 definition = PreferencesGlanceStateDefinition,
                 glanceId = glanceId
             )
-            val countdownId = prefs[COUNTDOWN_ID_KEY] ?: return null
+            val countdownId = prefs[COUNTDOWN_ID_KEY]
 
+            if (countdownId == null) {
+                Log.w(TAG, "No countdown ID found in widget state for $glanceId")
+                return null
+            }
+
+            Log.d(TAG, "Found countdown ID: $countdownId")
+
+            // Countdown aus Datenbank laden
             val database = CountdownDatabase.getDatabase(context)
-            database.countdownDao().getCountdownById(countdownId)
+            val countdown = database.countdownDao().getCountdownById(countdownId)
+
+            if (countdown == null) {
+                Log.w(TAG, "Countdown with ID $countdownId not found in database")
+            } else {
+                Log.d(TAG, "Successfully loaded countdown: ${countdown.title}")
+            }
+
+            countdown
         } catch (e: Exception) {
+            Log.e(TAG, "Error loading countdown for widget", e)
             e.printStackTrace()
             null
         }
@@ -41,6 +62,7 @@ object WidgetHelper {
             val database = CountdownDatabase.getDatabase(context)
             database.countdownDao().getAllCountdowns().first()
         } catch (e: Exception) {
+            Log.e(TAG, "Error loading all countdowns", e)
             e.printStackTrace()
             emptyList()
         }
@@ -50,15 +72,13 @@ object WidgetHelper {
         return try {
             Color.parseColor(colorString)
         } catch (e: Exception) {
+            Log.w(TAG, "Invalid color string: $colorString, using default", e)
             Color.parseColor("#FF9800")
         }
     }
 
     fun getAppOpenAction(context: Context, countdown: Countdown): Action {
-        // ComponentName für MainActivity erstellen
         val componentName = ComponentName(context, MainActivity::class.java)
-
-        // actionStartActivity mit ComponentName (ohne Parameter)
         return actionStartActivity(componentName)
     }
 

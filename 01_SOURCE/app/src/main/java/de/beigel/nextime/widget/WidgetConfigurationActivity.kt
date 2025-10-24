@@ -3,6 +3,7 @@ package de.beigel.nextime.widget
 import android.appwidget.AppWidgetManager
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.clickable
@@ -31,30 +32,29 @@ import de.beigel.nextime.widget.utils.WidgetHelper
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
-/**
- * Configuration Activity für Widgets
- * Wird angezeigt, wenn User ein Widget zum Homescreen hinzufügt
- */
 class WidgetConfigurationActivity : ComponentActivity() {
 
     private var appWidgetId: Int = AppWidgetManager.INVALID_APPWIDGET_ID
+    private val TAG = "WidgetConfig"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Widget-ID aus Intent holen
+        Log.d(TAG, "WidgetConfigurationActivity started")
+
         appWidgetId = intent?.extras?.getInt(
             AppWidgetManager.EXTRA_APPWIDGET_ID,
             AppWidgetManager.INVALID_APPWIDGET_ID
         ) ?: AppWidgetManager.INVALID_APPWIDGET_ID
 
-        // Wenn keine gültige ID, Activity beenden
+        Log.d(TAG, "Widget ID: $appWidgetId")
+
         if (appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID) {
+            Log.e(TAG, "Invalid widget ID, finishing activity")
             finish()
             return
         }
 
-        // Standardmäßig RESULT_CANCELED setzen
         setResult(RESULT_CANCELED)
 
         setContent {
@@ -64,6 +64,7 @@ class WidgetConfigurationActivity : ComponentActivity() {
                         configureWidget(countdown)
                     },
                     onCancel = {
+                        Log.d(TAG, "Configuration cancelled by user")
                         finish()
                     }
                 )
@@ -81,9 +82,15 @@ class WidgetConfigurationActivity : ComponentActivity() {
         var isLoading by remember { mutableStateOf(true) }
 
         LaunchedEffect(Unit) {
-            val database = CountdownDatabase.getDatabase(this@WidgetConfigurationActivity)
-            countdowns = database.countdownDao().getAllCountdowns().first()
-            isLoading = false
+            try {
+                val database = CountdownDatabase.getDatabase(this@WidgetConfigurationActivity)
+                countdowns = database.countdownDao().getAllCountdowns().first()
+                Log.d(TAG, "Loaded ${countdowns.size} countdowns")
+            } catch (e: Exception) {
+                Log.e(TAG, "Error loading countdowns", e)
+            } finally {
+                isLoading = false
+            }
         }
 
         Scaffold(
@@ -189,7 +196,6 @@ class WidgetConfigurationActivity : ComponentActivity() {
                     .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Farbindikator
                 Box(
                     modifier = Modifier
                         .size(48.dp)
@@ -225,7 +231,6 @@ class WidgetConfigurationActivity : ComponentActivity() {
 
                 Spacer(modifier = Modifier.width(16.dp))
 
-                // Countdown Info
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = countdown.title,
@@ -248,35 +253,54 @@ class WidgetConfigurationActivity : ComponentActivity() {
     private fun configureWidget(countdown: Countdown) {
         lifecycleScope.launch {
             try {
-                // GlanceId für das Widget holen
-                val glanceId = GlanceAppWidgetManager(this@WidgetConfigurationActivity)
-                    .getGlanceIdBy(appWidgetId)
+                Log.d(TAG, "Configuring widget $appWidgetId with countdown ${countdown.id}: ${countdown.title}")
 
-                // Countdown-ID im Widget-State speichern
+                val glanceManager = GlanceAppWidgetManager(this@WidgetConfigurationActivity)
+                val glanceId = glanceManager.getGlanceIdBy(appWidgetId)
+
+                Log.d(TAG, "Got GlanceId: $glanceId")
+
                 updateAppWidgetState(this@WidgetConfigurationActivity, glanceId) { prefs ->
                     prefs[WidgetHelper.COUNTDOWN_ID_KEY] = countdown.id
+                    Log.d(TAG, "Saved countdown ID ${countdown.id} to widget state")
                 }
 
-                // Widget aktualisieren
+                // ⭐ KORREKTUR: Widget-Typ über AppWidgetManager ermitteln
+                val appWidgetManager = AppWidgetManager.getInstance(this@WidgetConfigurationActivity)
+                val widgetInfo = appWidgetManager.getAppWidgetInfo(appWidgetId)
+                val providerClassName = widgetInfo?.provider?.className
+
+                Log.d(TAG, "Widget provider class name: $providerClassName")
+
+                // Widget basierend auf Provider-Klasse aktualisieren
                 when {
-                    intent?.component?.className?.contains("Small") == true -> {
+                    providerClassName?.contains("SmallCountdownWidgetReceiver") == true -> {
+                        Log.d(TAG, "Updating SmallCountdownWidget")
                         SmallCountdownWidget().update(this@WidgetConfigurationActivity, glanceId)
                     }
-                    intent?.component?.className?.contains("Medium") == true -> {
+                    providerClassName?.contains("MediumCountdownWidgetReceiver") == true -> {
+                        Log.d(TAG, "Updating MediumCountdownWidget")
                         MediumCountdownWidget().update(this@WidgetConfigurationActivity, glanceId)
                     }
-                    intent?.component?.className?.contains("Large") == true -> {
+                    providerClassName?.contains("LargeCountdownWidgetReceiver") == true -> {
+                        Log.d(TAG, "Updating LargeCountdownWidget")
                         LargeCountdownWidget().update(this@WidgetConfigurationActivity, glanceId)
+                    }
+                    else -> {
+                        Log.w(TAG, "Unknown widget provider: $providerClassName, defaulting to MediumCountdownWidget")
+                        MediumCountdownWidget().update(this@WidgetConfigurationActivity, glanceId)
                     }
                 }
 
-                // Erfolg zurückgeben
                 val resultValue = Intent().apply {
                     putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
                 }
                 setResult(RESULT_OK, resultValue)
+
+                Log.d(TAG, "Widget configuration successful")
                 finish()
             } catch (e: Exception) {
+                Log.e(TAG, "Error configuring widget", e)
                 e.printStackTrace()
                 finish()
             }

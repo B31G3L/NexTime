@@ -1,6 +1,7 @@
 package de.beigel.nextime.widget
 
 import android.content.Context
+import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -146,4 +147,16 @@ class SmallCountdownWidget : GlanceAppWidget() {
 
 class SmallCountdownWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = SmallCountdownWidget()
+
+    private val TAG = "SmallWidgetReceiver"
+
+    override fun onEnabled(context: Context) {
+        super.onEnabled(context)
+        Log.d(TAG, "Widget enabled")
+    }
+
+    override fun onDisabled(context: Context) {
+        super.onDisabled(context)
+        Log.d(TAG, "Widget disabled")
+    }
 }
