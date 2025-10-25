@@ -44,8 +44,7 @@ class CountdownLargeWidget : GlanceAppWidget() {
         Box(
             modifier = GlanceModifier
                 .fillMaxSize()
-                .background(Color(0xFFFAFAFA))  // Fast weiß
-                .padding(16.dp),
+                .background(Color(0xFFFAFAFA)),  // Fast weiß
             contentAlignment = Alignment.Center
         ) {
             if (countdown == null) {
@@ -83,19 +82,19 @@ class CountdownLargeWidget : GlanceAppWidget() {
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalAlignment = Alignment.Top
                 ) {
-                    // Oberer Farbakzent
+                    // Oberer Farbakzent - ganz am Rand über die volle Breite
                     Box(
                         modifier = GlanceModifier
                             .fillMaxWidth()
-                            .height(4.dp)
+                            .height(5.dp)
                             .background(accentColor)
                     ) { }
 
                     Spacer(modifier = GlanceModifier.height(12.dp))
 
-                    // Header: Emoji + Titel + Datum
+                    // Header: Emoji + Titel + Datum (mit horizontalem Padding)
                     Row(
-                        modifier = GlanceModifier.fillMaxWidth(),
+                        modifier = GlanceModifier.fillMaxWidth().padding(horizontal = 16.dp),
                         horizontalAlignment = Alignment.Start,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -177,7 +176,7 @@ class CountdownLargeWidget : GlanceAppWidget() {
                         modifier = GlanceModifier
                             .fillMaxWidth()
                             .background(Color(0xFFF0F0F0))  // Ganz leichter Hintergrund
-                            .padding(horizontal = 12.dp, vertical = 8.dp)
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
                     ) {
                         // Erstellt
                         Row(
@@ -233,11 +232,11 @@ class CountdownLargeWidget : GlanceAppWidget() {
 
                     Spacer(modifier = GlanceModifier.defaultWeight())
 
-                    // Unterer Farbakzent
+                    // Unterer Farbakzent - ganz am Rand über die volle Breite
                     Box(
                         modifier = GlanceModifier
                             .fillMaxWidth()
-                            .height(4.dp)
+                            .height(5.dp)
                             .background(accentColor)
                     ) { }
                 }
