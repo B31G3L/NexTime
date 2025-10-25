@@ -18,6 +18,12 @@
     <string name="settings">Settings</string>
     <string name="info">Info &amp; Support</string>
     <string name="ok">OK</string>
+    <!-- Widget Strings -->
+    <string name="widget_dynamic_label">NexTime Countdown</string>
+    <string name="widget_dynamic_description">Zeigt deinen Countdown an - passt sich automatisch der Größe an</string>
+
+    <!-- Größen-Beschreibungen für Nutzer-Info -->
+    <string name="widget_size_info">Das Widget passt sich automatisch an:\n\n• Klein (1×1): Nur Zahl\n• Standard (2×2): Mit Titel\n• Mittel (4×2): Mit Datum\n• Groß (4×3): Mit Statistiken</string>
 
     <!-- Add/Edit Dialog -->
     <string name="create_countdown">Create Countdown</string>

@@ -28,67 +28,25 @@
             </intent-filter>
         </activity>
 
-
         <!-- Benachrichtigungen Receiver -->
         <receiver
             android:name=".notifications.NotificationReceiver"
             android:enabled="true"
             android:exported="false" />
 
-        <!-- ========== WIDGET RECEIVERS ========== -->
-
-        <!-- Mini Widget (1×1) -->
+        <!-- ========== WIDGET RECEIVER (Nur einer!) ========== -->
         <receiver
-            android:name=".widget.CountdownMiniWidgetReceiver"
+            android:name=".widget.CountdownWidgetReceiver"
             android:exported="true"
-            android:enabled="true">
+            android:enabled="true"
+            android:label="@string/widget_dynamic_label">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/countdown_widget_mini_info" />
+                android:resource="@xml/countdown_widget_info" />
         </receiver>
-
-        <!-- Small Widget (2×2) -->
-        <receiver
-            android:name=".widget.CountdownSmallWidgetReceiver"
-            android:exported="true"
-            android:enabled="true">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/countdown_widget_small_info" />
-        </receiver>
-
-        <!-- Medium Widget (4×2) -->
-        <receiver
-            android:name=".widget.CountdownMediumWidgetReceiver"
-            android:exported="true"
-            android:enabled="true">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/countdown_widget_medium_info" />
-        </receiver>
-
-        <!-- Large Widget (4×3) -->
-        <receiver
-            android:name=".widget.CountdownLargeWidgetReceiver"
-            android:exported="true"
-            android:enabled="true">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/countdown_widget_large_info" />
-        </receiver>
-
 
         <!-- Services für Benachrichtigungen -->
         <service

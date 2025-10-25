@@ -17,11 +17,7 @@ class WidgetUpdateWorker(
 
     override suspend fun doWork(): Result {
         return try {
-            // Alle Widgets aktualisieren
-            CountdownSmallWidget().updateAll(applicationContext)
-            CountdownMiniWidget().updateAll(applicationContext)
-            CountdownMediumWidget().updateAll(applicationContext)
-            CountdownLargeWidget().updateAll(applicationContext)
+            CountdownWidget().updateAll(applicationContext)
             Result.success()
         } catch (e: Exception) {
             Result.retry()
