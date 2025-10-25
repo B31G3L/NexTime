@@ -22,7 +22,7 @@ import kotlinx.coroutines.flow.first
 /**
  * Mini Widget (1×1) - Ultra kompakt
  * Design: Fast weißer Hintergrund (#FAFAFA) mit Farbakzenten
- * Zeigt nur: Zahl + Farbbalken + Titel (gekürzt)
+ * Zeigt nur: Zahl + Farbbalken oben/unten + Label
  */
 class CountdownMiniWidget : GlanceAppWidget() {
 
@@ -42,8 +42,7 @@ class CountdownMiniWidget : GlanceAppWidget() {
         Box(
             modifier = GlanceModifier
                 .fillMaxSize()
-                .background(Color(0xFFFAFAFA))  // Fast weiß
-                .padding(6.dp),
+                .background(Color(0xFFFAFAFA)),  // Fast weiß
             contentAlignment = Alignment.Center
         ) {
             if (countdown == null) {
@@ -72,9 +71,9 @@ class CountdownMiniWidget : GlanceAppWidget() {
                 Column(
                     modifier = GlanceModifier.fillMaxSize(),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.Top
                 ) {
-                    // Oberer Farbakzent (dicker für bessere Sichtbarkeit)
+                    // Oberer Farbakzent - volle Breite
                     Box(
                         modifier = GlanceModifier
                             .fillMaxWidth()
@@ -88,26 +87,26 @@ class CountdownMiniWidget : GlanceAppWidget() {
                     Text(
                         text = "${timeInfo.days}",
                         style = TextStyle(
-                            fontSize = 30.sp,
+                            fontSize = 32.sp,
                             fontWeight = FontWeight.Bold,
                             color = ColorProvider(accentColor)
                         )
                     )
 
-                    // Titel in dunkler Textfarbe
+                    // Label in dunkler Textfarbe
                     Text(
-                        text = countdown.title.take(8),
+                        text = if (timeInfo.days == 1L) "Tag" else "Tage",
                         style = TextStyle(
-                            fontSize = 9.sp,
+                            fontSize = 8.sp,
                             fontWeight = FontWeight.Normal,
-                            color = ColorProvider(Color(0xFF333333))
+                            color = ColorProvider(Color(0xFF666666))
                         ),
                         maxLines = 1
                     )
 
                     Spacer(modifier = GlanceModifier.defaultWeight())
 
-                    // Unterer Farbakzent
+                    // Unterer Farbakzent - volle Breite
                     Box(
                         modifier = GlanceModifier
                             .fillMaxWidth()

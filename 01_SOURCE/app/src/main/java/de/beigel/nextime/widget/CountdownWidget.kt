@@ -1,7 +1,6 @@
 package de.beigel.nextime.widget
 
 import android.content.Context
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -23,7 +22,7 @@ import kotlinx.coroutines.flow.first
 /**
  * Small Widget (2×2) - Kompakte Anzeige
  * Design: Fast weißer Hintergrund (#FAFAFA) mit Farbakzenten
- * Zeigt: Titel, Hauptzahl, Label (z.B. "Tage")
+ * Zeigt: Titel, Hauptzahl, Label (z.B. "Tage") mit Farbbalken oben/unten
  */
 class CountdownSmallWidget : GlanceAppWidget() {
 
@@ -43,8 +42,7 @@ class CountdownSmallWidget : GlanceAppWidget() {
         Box(
             modifier = GlanceModifier
                 .fillMaxSize()
-                .background(Color(0xFFFAFAFA))  // Fast weiß
-                .padding(16.dp),
+                .background(Color(0xFFFAFAFA)),  // Fast weiß
             contentAlignment = Alignment.Center
         ) {
             if (countdown == null) {
@@ -82,7 +80,7 @@ class CountdownSmallWidget : GlanceAppWidget() {
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalAlignment = Alignment.Top
                 ) {
-                    // Oberer Farbakzent
+                    // Oberer Farbakzent - volle Breite
                     Box(
                         modifier = GlanceModifier
                             .fillMaxWidth()
@@ -90,20 +88,20 @@ class CountdownSmallWidget : GlanceAppWidget() {
                             .background(accentColor)
                     ) { }
 
-                    Spacer(modifier = GlanceModifier.defaultWeight())
+                    Spacer(modifier = GlanceModifier.height(8.dp))
 
                     // Titel in dunkler Farbe
                     Text(
-                        text = countdown.title.take(12),
+                        text = countdown.title,
                         style = TextStyle(
-                            fontSize = 13.sp,
+                            fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
                             color = ColorProvider(Color(0xFF333333))
                         ),
                         maxLines = 1
                     )
 
-                    Spacer(modifier = GlanceModifier.height(12.dp))
+                    Spacer(modifier = GlanceModifier.defaultWeight())
 
                     // Hauptzahl in Akzentfarbe
                     Text(
@@ -126,7 +124,7 @@ class CountdownSmallWidget : GlanceAppWidget() {
 
                     Spacer(modifier = GlanceModifier.defaultWeight())
 
-                    // Unterer Farbakzent
+                    // Unterer Farbakzent - volle Breite
                     Box(
                         modifier = GlanceModifier
                             .fillMaxWidth()
