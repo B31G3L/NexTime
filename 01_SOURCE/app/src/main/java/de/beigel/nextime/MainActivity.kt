@@ -3,10 +3,15 @@
 package de.beigel.nextime
 
 import android.Manifest
+import android.app.AlarmManager
+import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import de.beigel.nextime.ui.theme.CustomThemePreferences
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -28,7 +33,7 @@ import de.beigel.nextime.notifications.NotificationScheduler
 import de.beigel.nextime.ui.theme.NexTimeTheme
 import de.beigel.nextime.ui.theme.ThemeMode
 import de.beigel.nextime.ui.theme.ThemePreferences
-import de.beigel.nextime.ui.screens.MainScreenWithBottomNav  // ← NEU!
+import de.beigel.nextime.ui.screens.MainScreenWithBottomNav
 import de.beigel.nextime.ui.theme.CustomTheme
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -41,9 +46,10 @@ class MainActivity : ComponentActivity() {
     ) { isGranted ->
         if (isGranted) {
             Toast.makeText(this, "✅ Benachrichtigungen aktiviert", Toast.LENGTH_SHORT).show()
+            // Nach erfolgreicher Notification-Permission, prüfe Exact Alarm
+            checkExactAlarmPermission()
         } else {
-            // Permission abgelehnt - zeige Erklärung
-            showPermissionRationaleDialog()
+            Toast.makeText(this, "⚠️ Benachrichtigungen deaktiviert", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -52,17 +58,10 @@ class MainActivity : ComponentActivity() {
 
         CountdownNotificationManager.createNotificationChannel(this)
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(
-                    this,
-                    Manifest.permission.POST_NOTIFICATIONS
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-            }
-        }
-        scheduleAllPendingNotifications()
+        // Einmalige Permission-Abfrage beim Start
         requestNotificationPermissionIfNeeded()
+
+        scheduleAllPendingNotifications()
 
         enableEdgeToEdge()
         setContent {
@@ -87,7 +86,6 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    // ← HIER DIE ÄNDERUNG:
                     MainScreenWithBottomNav(
                         isDarkTheme = isDarkTheme,
                         onThemeToggle = { }
@@ -99,6 +97,7 @@ class MainActivity : ComponentActivity() {
         // Optional: Test-Daten nur beim ersten Start
         // insertTestData()
     }
+
     private fun scheduleAllPendingNotifications() {
         val database = CountdownDatabase.getDatabase(this)
 
@@ -119,7 +118,8 @@ class MainActivity : ComponentActivity() {
                     this,
                     Manifest.permission.POST_NOTIFICATIONS
                 ) == PackageManager.PERMISSION_GRANTED -> {
-                    // Permission bereits vorhanden
+                    // Permission bereits vorhanden, prüfe Exact Alarm
+                    checkExactAlarmPermission()
                 }
                 shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS) -> {
                     // Zeige Erklärung WARUM wir die Permission brauchen
@@ -130,7 +130,48 @@ class MainActivity : ComponentActivity() {
                     notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                 }
             }
+        } else {
+            // Für ältere Android-Versionen direkt Exact Alarm prüfen
+            checkExactAlarmPermission()
         }
+    }
+
+    private fun checkExactAlarmPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            if (!alarmManager.canScheduleExactAlarms()) {
+                // Zeige Dialog und leite zur Einstellungsseite
+                showExactAlarmPermissionDialog()
+            }
+        }
+    }
+
+    private fun showExactAlarmPermissionDialog() {
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("⏰ Exakte Alarme")
+            .setMessage(
+                "NexTime benötigt die Berechtigung für exakte Alarme, um dich pünktlich an deine Countdowns zu erinnern.\n\n" +
+                        "Bitte erlaube \"Alarme und Erinnerungen\" in den Einstellungen."
+            )
+            .setPositiveButton("Zu Einstellungen") { _, _ ->
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    try {
+                        startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                            data = Uri.parse("package:$packageName")
+                        })
+                    } catch (e: Exception) {
+                        Toast.makeText(
+                            this,
+                            "Bitte erlaube Alarme in den App-Einstellungen",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                }
+            }
+            .setNegativeButton("Später") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .show()
     }
 
     private fun showPermissionRationaleDialog() {

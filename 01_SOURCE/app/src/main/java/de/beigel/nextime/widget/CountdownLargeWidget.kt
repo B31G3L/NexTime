@@ -98,12 +98,6 @@ class CountdownLargeWidget : GlanceAppWidget() {
                         horizontalAlignment = Alignment.Start,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Emoji
-                        Text(
-                            text = getEmojiForCountdown(countdown.title),
-                            style = TextStyle(fontSize = 26.sp)
-                        )
-                        Spacer(modifier = GlanceModifier.width(10.dp))
 
                         // Titel
                         Column(modifier = GlanceModifier.defaultWeight()) {
@@ -130,7 +124,7 @@ class CountdownLargeWidget : GlanceAppWidget() {
                         )
                     }
 
-                    Spacer(modifier = GlanceModifier.height(16.dp))
+                    Spacer(modifier = GlanceModifier.defaultWeight())
 
                     // Format bestimmen
                     val format = try {
@@ -332,7 +326,7 @@ class CountdownLargeWidget : GlanceAppWidget() {
                         }
                     }
 
-                    Spacer(modifier = GlanceModifier.height(12.dp))
+                    Spacer(modifier = GlanceModifier.defaultWeight())
 
                     // Statistiken - mit leichtem Hintergrund für Abgrenzung
                     Column(
@@ -393,7 +387,6 @@ class CountdownLargeWidget : GlanceAppWidget() {
                         }
                     }
 
-                    Spacer(modifier = GlanceModifier.defaultWeight())
 
                     // Unterer Farbakzent - ganz am Rand über die volle Breite
                     Box(
