@@ -63,22 +63,38 @@ class CountdownWidget : GlanceAppWidget() {
                     .fillMaxSize()
                     .clickable(clickAction)
             ) {
+                // --- Debug (temporär): zeigt gemessene Größe im Widget an
+                // Text(text = "${size.width.value.toInt()}dp x ${size.height.value.toInt()}dp")
+
                 when {
-                    // MINI: 1×1 - Titel + Farbbalken + Zahl + "Tage"
-                    size.width < 100.dp && size.height < 74.dp -> MiniLayout(countdown)
+                    // MEDIUM: wenn die gemessene Höhe oder Breite mindestens den MEDIUM_SIZE Abmessungen entspricht
+                    // (z.B. 2×2, 4×2, 2×3, 2×4)
+                    size.width >= MEDIUM_SIZE.width || size.height >= MEDIUM_SIZE.height -> {
+                        MediumLayout(countdown)
+                    }
 
-                    // SMALL: 2×1 - Titel + Zahl + "Tage"
-                    size.width < 180.dp && size.height < 74.dp -> SmallLayout(countdown)
+                    // MINI: wenn beide Abmessungen kleiner-gleich MINI_SIZE sind (1x1)
+                    size.width <= MINI_SIZE.width && size.height <= MINI_SIZE.height -> {
+                        MiniLayout(countdown)
+                    }
 
-                    // SMALL_XL: 3×1 und 4×1 - Titel links + Datum rechts + Zahl + "Tage"
-                    size.width > 180.dp  && size.height < 158.dp -> SmallXLLayout(countdown)
+                    // SMALL_XL: sehr breite, aber flache Widgets (3×1 oder 4×1)
+                    size.width >= SMALL_XL_SIZE.width && size.height <= MINI_SIZE.height -> {
+                        SmallXLLayout(countdown)
+                    }
 
-                    // MEDIUM: 2×2, 2×3, 2×4 - Titel links + Datum rechts + Format + "Tage"
+                    // SMALL: breite im Bereich 2×1 (Fallback für alles, das flach aber nicht XL ist)
+                    size.width >= SMALL_SIZE.width && size.height <= MINI_SIZE.height -> {
+                        SmallLayout(countdown)
+                    }
+
+                    // Fallback: Medium (sichere Wahl)
                     else -> MediumLayout(countdown)
                 }
             }
         }
     }
+
 
     /**
      * MINI Layout (1×1) - 70x70dp
