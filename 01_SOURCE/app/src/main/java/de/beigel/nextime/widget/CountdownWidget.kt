@@ -261,12 +261,6 @@ class CountdownWidget : GlanceAppWidget() {
                         horizontalAlignment = Alignment.Start,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = getEmojiForCountdown(countdown.title),
-                            style = TextStyle(fontSize = 22.sp)
-                        )
-                        Spacer(modifier = GlanceModifier.width(10.dp))
-
                         Column(modifier = GlanceModifier.defaultWeight()) {
                             Text(
                                 text = countdown.title,
@@ -473,7 +467,7 @@ class CountdownWidget : GlanceAppWidget() {
         accentColor: Color,
         isLarge: Boolean
     ) {
-        val fontSize = if (isLarge) 80.sp else 64.sp
+        val fontSize = if (isLarge) 70.sp else 64.sp
         val labelSize = if (isLarge) 18.sp else 16.sp
         val secondarySize = if (isLarge) 42.sp else 32.sp
         val secondaryLabelSize = if (isLarge) 14.sp else 12.sp
