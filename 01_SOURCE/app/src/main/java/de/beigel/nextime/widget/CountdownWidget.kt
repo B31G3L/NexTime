@@ -1,12 +1,16 @@
 package de.beigel.nextime.widget
 
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.*
+import androidx.glance.action.clickable
+import androidx.glance.action.actionStartActivity
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.SizeMode
@@ -16,6 +20,7 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
+import de.beigel.nextime.MainActivity
 import de.beigel.nextime.data.database.CountdownDatabase
 import de.beigel.nextime.data.model.Countdown
 import de.beigel.nextime.data.model.CountdownDisplayFormat
@@ -25,31 +30,19 @@ import java.time.format.DateTimeFormatter
 
 /**
  * Dynamisches Widget, das sich automatisch an die Größe anpasst
- *
- * Größen:
- * - Mini (1×1): 70×70 dp - Nur Zahl + Label
- * - Small (2×2): 110×110 dp - Titel + Zahl + Label
- * - Medium (4×2): 250×110 dp - Emoji + Titel + Datum + Zahl
- * - Large (4×3): 250×150 dp - Vollständig mit Statistiken
+ * Öffnet die App beim Klick
  */
 class CountdownWidget : GlanceAppWidget() {
 
     companion object {
-        // Größen-Definitionen in dp
         private val MINI_SIZE = DpSize(70.dp, 70.dp)
         private val SMALL_SIZE = DpSize(110.dp, 110.dp)
         private val MEDIUM_SIZE = DpSize(250.dp, 110.dp)
         private val LARGE_SIZE = DpSize(250.dp, 150.dp)
     }
 
-    // SizeMode mit allen unterstützten Größen
     override val sizeMode = SizeMode.Responsive(
-        setOf(
-            MINI_SIZE,    // 1×1
-            SMALL_SIZE,   // 2×2
-            MEDIUM_SIZE,  // 4×2
-            LARGE_SIZE    // 4×3
-        )
+        setOf(MINI_SIZE, SMALL_SIZE, MEDIUM_SIZE, LARGE_SIZE)
     )
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
@@ -58,19 +51,23 @@ class CountdownWidget : GlanceAppWidget() {
         val countdown = countdowns.firstOrNull()
 
         provideContent {
-            // LocalSize gibt uns die aktuelle Widget-Größe
             val size = LocalSize.current
+            val clickAction = actionStartActivity<MainActivity>()
 
-            when {
-                size.width <= 80.dp && size.height <= 80.dp -> MiniLayout(countdown)
-                size.width <= 120.dp && size.height <= 120.dp -> SmallLayout(countdown)
-                size.width >= 240.dp && size.height >= 140.dp -> LargeLayout(countdown)
-                else -> MediumLayout(countdown)
-            }
-        }
+            Box(
+                modifier = GlanceModifier
+                    .fillMaxSize()
+                    .clickable(clickAction)
+            ) {
+                when {
+                    size.width <= 90.dp && size.height <= 90.dp -> MiniLayout(countdown)      // 1×1
+                    size.width <= 170.dp && size.height <= 170.dp -> SmallLayout(countdown)    // 2×2
+                    size.height < 200.dp -> MediumLayout(countdown)                             // 4×2 und kleiner
+                    else -> LargeLayout(countdown)
+                }
+        }  }
     }
 
-    // ========== MINI LAYOUT (1×1) ==========
     @Composable
     private fun MiniLayout(countdown: Countdown?) {
         Box(
@@ -96,7 +93,6 @@ class CountdownWidget : GlanceAppWidget() {
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalAlignment = Alignment.Top
                 ) {
-                    // Farbbalken oben
                     Box(
                         modifier = GlanceModifier
                             .fillMaxWidth()
@@ -106,7 +102,6 @@ class CountdownWidget : GlanceAppWidget() {
 
                     Spacer(modifier = GlanceModifier.height(4.dp))
 
-                    // ========== NEU: TITEL HINZUGEFÜGT ==========
                     Text(
                         text = countdown.title,
                         style = TextStyle(
@@ -116,11 +111,9 @@ class CountdownWidget : GlanceAppWidget() {
                         ),
                         maxLines = 1
                     )
-                    // ============================================
 
                     Spacer(modifier = GlanceModifier.defaultWeight())
 
-                    // Countdown-Zahl
                     Text(
                         text = "${timeInfo.days}",
                         style = TextStyle(
@@ -130,7 +123,6 @@ class CountdownWidget : GlanceAppWidget() {
                         )
                     )
 
-                    // Label
                     Text(
                         text = if (timeInfo.days == 1L) "Tag" else "Tage",
                         style = TextStyle(
@@ -142,7 +134,6 @@ class CountdownWidget : GlanceAppWidget() {
 
                     Spacer(modifier = GlanceModifier.defaultWeight())
 
-                    // Farbbalken unten
                     Box(
                         modifier = GlanceModifier
                             .fillMaxWidth()
@@ -154,8 +145,6 @@ class CountdownWidget : GlanceAppWidget() {
         }
     }
 
-
-    // ========== SMALL LAYOUT (2×2) ==========
     @Composable
     private fun SmallLayout(countdown: Countdown?) {
         Box(
@@ -226,7 +215,6 @@ class CountdownWidget : GlanceAppWidget() {
         }
     }
 
-    // ========== MEDIUM LAYOUT (4×2) ==========
     @Composable
     private fun MediumLayout(countdown: Countdown?) {
         Box(
@@ -286,7 +274,6 @@ class CountdownWidget : GlanceAppWidget() {
 
                     Spacer(modifier = GlanceModifier.defaultWeight())
 
-                    // Format-abhängige Anzeige
                     FormatDisplay(timeInfo, format, accentColor, false)
 
                     Spacer(modifier = GlanceModifier.defaultWeight())
@@ -302,7 +289,6 @@ class CountdownWidget : GlanceAppWidget() {
         }
     }
 
-    // ========== LARGE LAYOUT (4×3) ==========
     @Composable
     private fun LargeLayout(countdown: Countdown?) {
         Box(
@@ -362,12 +348,10 @@ class CountdownWidget : GlanceAppWidget() {
 
                     Spacer(modifier = GlanceModifier.defaultWeight())
 
-                    // Format-abhängige Anzeige
                     FormatDisplay(timeInfo, format, accentColor, true)
 
                     Spacer(modifier = GlanceModifier.defaultWeight())
 
-                    // Statistiken
                     Column(
                         modifier = GlanceModifier
                             .fillMaxWidth()
@@ -433,8 +417,6 @@ class CountdownWidget : GlanceAppWidget() {
             }
         }
     }
-
-    // ========== HILFSFUNKTIONEN ==========
 
     @Composable
     private fun EmptyState() {
@@ -681,17 +663,6 @@ class CountdownWidget : GlanceAppWidget() {
         }
     }
 
-    private fun getEmojiForCountdown(title: String): String {
-        return when {
-            title.contains("Geburtstag", ignoreCase = true) -> "🎂"
-            title.contains("Urlaub", ignoreCase = true) || title.contains("Sommerurlaub", ignoreCase = true) -> "🏖️"
-            title.contains("Weihnachten", ignoreCase = true) -> "🎄"
-            title.contains("Silvester", ignoreCase = true) -> "🎆"
-            title.contains("Hochzeit", ignoreCase = true) -> "💍"
-            else -> "⏰"
-        }
-    }
-
     private fun calculatePercentage(
         countdown: Countdown,
         timeInfo: de.beigel.nextime.data.model.CountdownInfo
@@ -712,9 +683,6 @@ class CountdownWidget : GlanceAppWidget() {
     }
 }
 
-/**
- * Widget Receiver - Nur ein Receiver für alle Größen
- */
 class CountdownWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = CountdownWidget()
 }
