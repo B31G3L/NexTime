@@ -96,6 +96,7 @@ class CountdownWidget : GlanceAppWidget() {
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalAlignment = Alignment.Top
                 ) {
+                    // Farbbalken oben
                     Box(
                         modifier = GlanceModifier
                             .fillMaxWidth()
@@ -103,8 +104,23 @@ class CountdownWidget : GlanceAppWidget() {
                             .background(accentColor)
                     ) { }
 
+                    Spacer(modifier = GlanceModifier.height(4.dp))
+
+                    // ========== NEU: TITEL HINZUGEFÜGT ==========
+                    Text(
+                        text = countdown.title,
+                        style = TextStyle(
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = ColorProvider(Color(0xFF333333))
+                        ),
+                        maxLines = 1
+                    )
+                    // ============================================
+
                     Spacer(modifier = GlanceModifier.defaultWeight())
 
+                    // Countdown-Zahl
                     Text(
                         text = "${timeInfo.days}",
                         style = TextStyle(
@@ -114,10 +130,11 @@ class CountdownWidget : GlanceAppWidget() {
                         )
                     )
 
+                    // Label
                     Text(
                         text = if (timeInfo.days == 1L) "Tag" else "Tage",
                         style = TextStyle(
-                            fontSize = 8.sp,
+                            fontSize = 9.sp,
                             color = ColorProvider(Color(0xFF666666))
                         ),
                         maxLines = 1
@@ -125,6 +142,7 @@ class CountdownWidget : GlanceAppWidget() {
 
                     Spacer(modifier = GlanceModifier.defaultWeight())
 
+                    // Farbbalken unten
                     Box(
                         modifier = GlanceModifier
                             .fillMaxWidth()
@@ -135,6 +153,7 @@ class CountdownWidget : GlanceAppWidget() {
             }
         }
     }
+
 
     // ========== SMALL LAYOUT (2×2) ==========
     @Composable
