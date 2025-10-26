@@ -65,16 +65,16 @@ class CountdownWidget : GlanceAppWidget() {
             ) {
                 when {
                     // MINI: 1×1 - Titel + Farbbalken + Zahl + "Tage"
-                    size.width < 100.dp && size.height < 100.dp -> MiniLayout(countdown)
+                    size.width < 100.dp && size.height < 74.dp -> MiniLayout(countdown)
 
                     // SMALL: 2×1 - Titel + Zahl + "Tage"
-                    size.width < 180.dp && size.height < 100.dp -> SmallLayout(countdown)
-
-                    // MEDIUM: 2×2, 2×3, 2×4 - Titel links + Datum rechts + Format + "Tage"
-                    size.width < 180.dp -> MediumLayout(countdown)
+                    size.width < 180.dp && size.height < 74.dp -> SmallLayout(countdown)
 
                     // SMALL_XL: 3×1 und 4×1 - Titel links + Datum rechts + Zahl + "Tage"
-                    else -> SmallXLLayout(countdown)
+                    size.width > 180.dp  && size.height < 158.dp -> SmallXLLayout(countdown)
+
+                    // MEDIUM: 2×2, 2×3, 2×4 - Titel links + Datum rechts + Format + "Tage"
+                    else -> MediumLayout(countdown)
                 }
             }
         }
