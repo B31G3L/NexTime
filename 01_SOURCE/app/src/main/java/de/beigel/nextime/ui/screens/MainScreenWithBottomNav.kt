@@ -475,15 +475,63 @@ private fun FeaturesCard() {
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
-                "Features",
-                style = MaterialTheme.typography.titleMedium,
+                "Geplante Features (Coming Soon)",
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
-            FeatureItem("⏰", "Präzise Countdowns")
-            FeatureItem("🎨", "Individuelle Farben")
-            FeatureItem("📱", "7 Anzeigeformate")
-            FeatureItem("🔔", "Flexible Erinnerungen")
-            FeatureItem("📲", "Homescreen Widget")
+            Text(
+                "🎯 Hauptfeatures & Zeiterfassung",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            FeatureItem("⏰", "Countdown mit Stunden/Minuten/Sekunden")
+            FeatureItem("📅", "Uhrzeiten & Wiederkehrende Countdowns (jährlich/monatlich)")
+            FeatureItem("🔔", "Flexible, stundenbasierte und mehrfache Erinnerungen")
+            FeatureItem("🌙", "Anzeige von Nächten (showNights)")
+            FeatureItem("📝", "Beschreibung & Checklisten pro Countdown")
+            Text(
+                "🎨 Design & Personalisierung",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            FeatureItem("🌈", "Erweiterte Farben, Farbverläufe und animierte Farben")
+            FeatureItem("🖼️", "Hintergrundbilder, Icons & Emojis für Countdowns")
+            FeatureItem("🎉", "Konfetti-Animation bei Countdown-Ablauf")
+            FeatureItem("🎨", "Widget-Themes unabhängig von der App")
+            FeatureItem("🖼️", "Themen-Presets und saisonale Themes")
+            Text(
+                "☁️ Organisation & Social",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            FeatureItem("☁️", "Cloud-Synchronisation und Google Drive Backup")
+            FeatureItem("👥", "Countdowns mit Freunden teilen & gemeinsame Challenges")
+            FeatureItem("📁", "Kategorien, Tags, Favoriten und Sortierungs-Funktionen")
+            FeatureItem("🔍", "Countdowns durchsuchen und Schnellzugriff")
+            FeatureItem("🔐", "App-Sperre (PIN/Fingerprint) und private Countdowns")
+
+            // -------------------------------------------------------------------------------------------------
+
+            // ## 📱 Erweiterungen & Statistik
+            Text(
+                "📱 Erweiterungen & Statistik",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            FeatureItem("📱", "Mehrere Widgets gleichzeitig (1x1, 3x1, 4x1)")
+            FeatureItem("📊", "Statistik-Dashboard, Historie und Jahresrückblick")
+            FeatureItem("📈", "Fortschrittsbalken, Prozentuale Anzeige & Meilensteine")
+            FeatureItem("💻", "Tablet-Ansicht, Wear OS und Desktop-Widget Support")
+            FeatureItem("🌐", "Mehr Sprachversionen und Zeitzonen-Support")
+
+            // -------------------------------------------------------------------------------------------------
+
+            // Abschließender Text (Optional, aber nützlich für den Kontext)
+            Text(
+                "Wir arbeiten hart daran, diese Features bald bereitzustellen! 🙌",
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(top = 8.dp)
+            )
         }
     }
 }
