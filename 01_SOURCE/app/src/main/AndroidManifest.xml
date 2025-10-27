@@ -30,6 +30,16 @@
             </intent-filter>
         </activity>
 
+        <!-- ========== WIDGET CONFIG ACTIVITY (NEU!) ========== -->
+        <activity
+            android:name=".widget.WidgetConfigActivity"
+            android:exported="true"
+            android:theme="@style/Theme.NexTime">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
+
         <!-- Benachrichtigungen Receiver -->
         <receiver
             android:name=".notifications.NotificationReceiver"
@@ -50,7 +60,7 @@
                 android:resource="@xml/countdown_widget_info" />
         </receiver>
 
-        <!-- ========== THEME CHANGE RECEIVER (NEU!) ========== -->
+        <!-- ========== THEME CHANGE RECEIVER ========== -->
         <receiver
             android:name=".widget.ThemeChangeReceiver"
             android:enabled="true"

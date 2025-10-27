@@ -1,6 +1,8 @@
 package de.beigel.nextime.widget
 
 import android.app.PendingIntent
+import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
@@ -13,6 +15,7 @@ import androidx.glance.*
 import androidx.glance.action.clickable
 import androidx.glance.action.actionStartActivity
 import androidx.glance.appwidget.GlanceAppWidget
+import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.provideContent
@@ -65,9 +68,28 @@ class CountdownWidget : GlanceAppWidget() {
     )
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
+        // Hole die Widget-ID für dieses Glance-Widget
+        val glanceIds = GlanceAppWidgetManager(context).getGlanceIds(CountdownWidget::class.java)
+        val appWidgetId = if (glanceIds.isNotEmpty()) {
+            // Versuche die appWidgetId für dieses spezifische GlanceId zu finden
+            AppWidgetManager.getInstance(context)
+                .getAppWidgetIds(ComponentName(context, CountdownWidgetReceiver::class.java))
+                .firstOrNull() ?: AppWidgetManager.INVALID_APPWIDGET_ID
+        } else {
+            AppWidgetManager.INVALID_APPWIDGET_ID
+        }
+
+        // Lade den ausgewählten Countdown für dieses Widget
         val database = CountdownDatabase.getDatabase(context)
-        val countdowns = database.countdownDao().getAllCountdowns().first()
-        val countdown = countdowns.firstOrNull()
+        val selectedCountdownId = WidgetConfigActivity.loadCountdownId(context, appWidgetId)
+
+        val countdown = if (selectedCountdownId != null) {
+            // Lade den spezifisch ausgewählten Countdown
+            database.countdownDao().getCountdownById(selectedCountdownId)
+        } else {
+            // Fallback: Ersten Countdown nehmen
+            database.countdownDao().getAllCountdowns().first().firstOrNull()
+        }
 
         // Prüfe System-Theme
         val isDarkMode = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
@@ -729,8 +751,16 @@ class CountdownWidget : GlanceAppWidget() {
 
 
 /**
- * Widget Receiver
+ * Widget Receiver mit onDeleted Callback
  */
 class CountdownWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = CountdownWidget()
+
+    override fun onDeleted(context: Context, appWidgetIds: IntArray) {
+        super.onDeleted(context, appWidgetIds)
+        // Lösche gespeicherte Konfigurationen für gelöschte Widgets
+        appWidgetIds.forEach { appWidgetId ->
+            WidgetConfigActivity.deleteCountdownId(context, appWidgetId)
+        }
+    }
 }
