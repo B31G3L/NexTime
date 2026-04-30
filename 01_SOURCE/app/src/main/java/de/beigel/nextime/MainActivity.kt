@@ -1,5 +1,3 @@
-// MainActivity.kt
-
 package de.beigel.nextime
 
 import android.Manifest
@@ -26,8 +24,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import de.beigel.nextime.data.database.CountdownDatabase
-import de.beigel.nextime.data.model.Countdown
-import de.beigel.nextime.data.model.CountdownDisplayFormat
 import de.beigel.nextime.notifications.CountdownNotificationManager
 import de.beigel.nextime.notifications.NotificationScheduler
 import de.beigel.nextime.ui.theme.NexTimeTheme
@@ -37,7 +33,6 @@ import de.beigel.nextime.ui.screens.MainScreenWithBottomNav
 import de.beigel.nextime.ui.theme.CustomTheme
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import java.time.LocalDateTime
 
 class MainActivity : ComponentActivity() {
 
@@ -46,7 +41,6 @@ class MainActivity : ComponentActivity() {
     ) { isGranted ->
         if (isGranted) {
             Toast.makeText(this, "✅ Benachrichtigungen aktiviert", Toast.LENGTH_SHORT).show()
-            // Nach erfolgreicher Notification-Permission, prüfe Exact Alarm
             checkExactAlarmPermission()
         } else {
             Toast.makeText(this, "⚠️ Benachrichtigungen deaktiviert", Toast.LENGTH_SHORT).show()
@@ -57,31 +51,23 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         CountdownNotificationManager.createNotificationChannel(this)
-
-        // Einmalige Permission-Abfrage beim Start
         requestNotificationPermissionIfNeeded()
-
         scheduleAllPendingNotifications()
 
         enableEdgeToEdge()
         setContent {
             val context = LocalContext.current
-
             val themeMode by ThemePreferences.getThemeMode(context).collectAsState(initial = ThemeMode.SYSTEM)
             val systemDarkTheme = isSystemInDarkTheme()
-
             val customTheme by CustomThemePreferences.getCustomTheme(context).collectAsState(initial = CustomTheme.NEXTIME)
 
             val isDarkTheme = when (themeMode) {
                 ThemeMode.SYSTEM -> systemDarkTheme
-                ThemeMode.LIGHT -> false
-                ThemeMode.DARK -> true
+                ThemeMode.LIGHT  -> false
+                ThemeMode.DARK   -> true
             }
 
-            NexTimeTheme(
-                darkTheme = isDarkTheme,
-                customTheme = customTheme
-            ) {
+            NexTimeTheme(darkTheme = isDarkTheme, customTheme = customTheme) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
@@ -93,14 +79,10 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-
-        // Optional: Test-Daten nur beim ersten Start
-        // insertTestData()
     }
 
     private fun scheduleAllPendingNotifications() {
         val database = CountdownDatabase.getDatabase(this)
-
         lifecycleScope.launch {
             val countdowns = database.countdownDao().getAllCountdowns().first()
             countdowns.forEach { countdown ->
@@ -114,24 +96,17 @@ class MainActivity : ComponentActivity() {
     private fun requestNotificationPermissionIfNeeded() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             when {
-                ContextCompat.checkSelfPermission(
-                    this,
-                    Manifest.permission.POST_NOTIFICATIONS
-                ) == PackageManager.PERMISSION_GRANTED -> {
-                    // Permission bereits vorhanden, prüfe Exact Alarm
+                ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED -> {
                     checkExactAlarmPermission()
                 }
                 shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS) -> {
-                    // Zeige Erklärung WARUM wir die Permission brauchen
                     showPermissionRationaleDialog()
                 }
                 else -> {
-                    // Frage Permission ab
                     notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                 }
             }
         } else {
-            // Für ältere Android-Versionen direkt Exact Alarm prüfen
             checkExactAlarmPermission()
         }
     }
@@ -140,7 +115,6 @@ class MainActivity : ComponentActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
             if (!alarmManager.canScheduleExactAlarms()) {
-                // Zeige Dialog und leite zur Einstellungsseite
                 showExactAlarmPermissionDialog()
             }
         }
@@ -160,17 +134,11 @@ class MainActivity : ComponentActivity() {
                             data = Uri.parse("package:$packageName")
                         })
                     } catch (e: Exception) {
-                        Toast.makeText(
-                            this,
-                            "Bitte erlaube Alarme in den App-Einstellungen",
-                            Toast.LENGTH_LONG
-                        ).show()
+                        Toast.makeText(this, "Bitte erlaube Alarme in den App-Einstellungen", Toast.LENGTH_LONG).show()
                     }
                 }
             }
-            .setNegativeButton("Später") { dialog, _ ->
-                dialog.dismiss()
-            }
+            .setNegativeButton("Später") { dialog, _ -> dialog.dismiss() }
             .show()
     }
 
@@ -186,71 +154,7 @@ class MainActivity : ComponentActivity() {
                     notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                 }
             }
-            .setNegativeButton("Später") { dialog, _ ->
-                dialog.dismiss()
-            }
+            .setNegativeButton("Später") { dialog, _ -> dialog.dismiss() }
             .show()
-    }
-
-    // Optional: Test-Daten Funktion (kannst du später löschen)
-    private fun insertTestData() {
-        val database = CountdownDatabase.getDatabase(this)
-        val dao = database.countdownDao()
-
-        lifecycleScope.launch {
-            val existing = dao.getAllCountdowns().first()
-            if (existing.isNotEmpty()) return@launch
-
-            val testCountdowns = listOf(
-                Countdown(
-                    title = "🎂 Geburtstag",
-                    targetDateTime = LocalDateTime.now().plusDays(7),
-                    displayFormat = CountdownDisplayFormat.DAYS_ONLY.name,
-                    color = "#FF7043",
-                    notificationEnabled = true,
-                    reminderOptions = "DAY_1"
-                ),
-                Countdown(
-                    title = "🎄 Weihnachten",
-                    targetDateTime = LocalDateTime.of(2025, 12, 24, 0, 0),
-                    displayFormat = CountdownDisplayFormat.WEEKS_DAYS.name,
-                    color = "#66BB6A"
-                ),
-                Countdown(
-                    title = "🎆 Silvester",
-                    targetDateTime = LocalDateTime.of(2025, 12, 31, 0, 0),
-                    displayFormat = CountdownDisplayFormat.MONTHS_DAYS.name,
-                    color = "#5C6BC0"
-                ),
-                Countdown(
-                    title = "🏖️ Sommerurlaub",
-                    targetDateTime = LocalDateTime.of(2026, 7, 15, 0, 0),
-                    displayFormat = CountdownDisplayFormat.YEARS_MONTHS_DAYS.name,
-                    color = "#42A5F5"
-                ),
-                Countdown(
-                    title = "💍 Hochzeitstag",
-                    targetDateTime = LocalDateTime.now().minusYears(2).minusMonths(3),
-                    displayFormat = CountdownDisplayFormat.DAYS_ONLY.name,
-                    color = "#EC407A"
-                ),
-                Countdown(
-                    title = "🚀 Mars Mission",
-                    targetDateTime = LocalDateTime.of(2030, 1, 1, 0, 0),
-                    displayFormat = CountdownDisplayFormat.YEARS_MONTHS_DAYS.name,
-                    color = "#8D6E63"
-                )
-            )
-
-            testCountdowns.forEach { countdown ->
-                dao.insertCountdown(countdown)
-            }
-
-            Toast.makeText(
-                this@MainActivity,
-                "✅ ${testCountdowns.size} Test-Countdowns erstellt!",
-                Toast.LENGTH_LONG
-            ).show()
-        }
     }
 }

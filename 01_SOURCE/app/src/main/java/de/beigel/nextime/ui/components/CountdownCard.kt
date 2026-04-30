@@ -18,8 +18,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import de.beigel.nextime.data.model.Countdown
 import de.beigel.nextime.data.model.CountdownDisplayFormat
+import de.beigel.nextime.data.model.CountdownInfo
 import de.beigel.nextime.data.model.calculateTimeRemaining
-import de.beigel.nextime.ui.theme.DesignSystem
 import kotlinx.coroutines.delay
 import java.time.format.DateTimeFormatter
 
@@ -38,7 +38,6 @@ fun CountdownCard(countdown: Countdown) {
     val baseColor = runCatching { Color(android.graphics.Color.parseColor(countdown.color)) }
         .getOrElse { MaterialTheme.colorScheme.primary }
 
-    // Format aus Countdown holen
     val format = try {
         CountdownDisplayFormat.valueOf(countdown.displayFormat)
     } catch (e: Exception) {
@@ -54,17 +53,13 @@ fun CountdownCard(countdown: Countdown) {
             containerColor = baseColor.copy(alpha = 0.08f)
         ),
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            // Farbbalken oben
+        Column(modifier = Modifier.fillMaxSize()) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(4.dp)
                     .background(baseColor)
             )
-
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -72,7 +67,6 @@ fun CountdownCard(countdown: Countdown) {
                     .padding(16.dp),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
-                // Titel
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -87,28 +81,22 @@ fun CountdownCard(countdown: Countdown) {
                     )
                 }
 
-                // Hauptanzeige - Format-abhängig
                 Box(
                     modifier = Modifier.fillMaxWidth(),
                     contentAlignment = Alignment.Center
                 ) {
                     when (format) {
-                        CountdownDisplayFormat.DAYS_ONLY -> {
+                        CountdownDisplayFormat.DAYS_ONLY ->
                             DaysOnlyDisplay(timeInfo, baseColor)
-                        }
-                        CountdownDisplayFormat.WEEKS_DAYS -> {
+                        CountdownDisplayFormat.WEEKS_DAYS ->
                             WeeksDaysDisplay(timeInfo, baseColor)
-                        }
-                        CountdownDisplayFormat.MONTHS_DAYS -> {
+                        CountdownDisplayFormat.MONTHS_DAYS ->
                             MonthsDaysDisplay(timeInfo, baseColor)
-                        }
-                        CountdownDisplayFormat.YEARS_MONTHS_DAYS -> {
+                        CountdownDisplayFormat.YEARS_MONTHS_DAYS ->
                             YearsMonthsDaysDisplay(timeInfo, baseColor)
-                        }
                     }
                 }
 
-                // Datum
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center,
@@ -128,8 +116,6 @@ fun CountdownCard(countdown: Countdown) {
                     )
                 }
             }
-
-            // Farbbalken unten
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -141,13 +127,8 @@ fun CountdownCard(countdown: Countdown) {
 }
 
 @Composable
-private fun DaysOnlyDisplay(
-    timeInfo: de.beigel.nextime.data.model.CountdownInfo,
-    color: Color
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
+private fun DaysOnlyDisplay(timeInfo: CountdownInfo, color: Color) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = "${timeInfo.days}",
             fontSize = 48.sp,
@@ -163,11 +144,7 @@ private fun DaysOnlyDisplay(
 }
 
 @Composable
-private fun WeeksDaysDisplay(
-    timeInfo: de.beigel.nextime.data.model.CountdownInfo,
-    color: Color
-) {
-    val remainingDays = timeInfo.days % 7
+private fun WeeksDaysDisplay(timeInfo: CountdownInfo, color: Color) {
     Row(
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.Bottom
@@ -187,14 +164,14 @@ private fun WeeksDaysDisplay(
         )
         Spacer(modifier = Modifier.width(12.dp))
         Text(
-            text = "$remainingDays",
+            text = "${timeInfo.remainingDaysAfterWeeks}",
             fontSize = 32.sp,
             fontWeight = FontWeight.Bold,
             color = color.copy(alpha = 0.7f)
         )
         Spacer(modifier = Modifier.width(4.dp))
         Text(
-            text = if (remainingDays == 1L) "Tag" else "Tage",
+            text = if (timeInfo.remainingDaysAfterWeeks == 1L) "Tag" else "Tage",
             fontSize = 14.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 2.dp)
@@ -203,11 +180,7 @@ private fun WeeksDaysDisplay(
 }
 
 @Composable
-private fun MonthsDaysDisplay(
-    timeInfo: de.beigel.nextime.data.model.CountdownInfo,
-    color: Color
-) {
-    val remainingDays = timeInfo.days - (timeInfo.months * 30)
+private fun MonthsDaysDisplay(timeInfo: CountdownInfo, color: Color) {
     Row(
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.Bottom
@@ -225,17 +198,17 @@ private fun MonthsDaysDisplay(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 4.dp)
         )
-        if (remainingDays > 0) {
+        if (timeInfo.remainingDaysAfterMonths > 0) {
             Spacer(modifier = Modifier.width(12.dp))
             Text(
-                text = "$remainingDays",
+                text = "${timeInfo.remainingDaysAfterMonths}",
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold,
                 color = color.copy(alpha = 0.7f)
             )
             Spacer(modifier = Modifier.width(4.dp))
             Text(
-                text = if (remainingDays == 1L) "Tag" else "Tage",
+                text = if (timeInfo.remainingDaysAfterMonths == 1L) "Tag" else "Tage",
                 fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 2.dp)
@@ -245,13 +218,8 @@ private fun MonthsDaysDisplay(
 }
 
 @Composable
-private fun YearsMonthsDaysDisplay(
-    timeInfo: de.beigel.nextime.data.model.CountdownInfo,
-    color: Color
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
+private fun YearsMonthsDaysDisplay(timeInfo: CountdownInfo, color: Color) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Row(
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.Bottom
@@ -270,26 +238,22 @@ private fun YearsMonthsDaysDisplay(
                     modifier = Modifier.padding(bottom = 2.dp)
                 )
             }
-            if (timeInfo.months > 0 || timeInfo.years > 0) {
-                val remainingMonths = timeInfo.months % 12
-                if (remainingMonths > 0) {
-                    Text(
-                        text = "$remainingMonths",
-                        fontSize = 32.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = color
-                    )
-                    Text(
-                        text = "M ",
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 2.dp)
-                    )
-                }
+            if (timeInfo.remainingMonthsAfterYears > 0) {
+                Text(
+                    text = "${timeInfo.remainingMonthsAfterYears}",
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = color
+                )
+                Text(
+                    text = "M ",
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 2.dp)
+                )
             }
-            val remainingDays = timeInfo.days % 30
             Text(
-                text = "$remainingDays",
+                text = "${timeInfo.remainingDaysAfterYears}",
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold,
                 color = color

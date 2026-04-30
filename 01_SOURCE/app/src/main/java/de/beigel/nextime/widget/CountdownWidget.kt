@@ -32,35 +32,25 @@ import de.beigel.nextime.data.model.calculateTimeRemaining
 import kotlinx.coroutines.flow.first
 import java.time.format.DateTimeFormatter
 
-/**
- * Dynamisches Widget mit 4 verschiedenen Größen:
- * - MINI (1×1):   Nur die Zahl, minimalistisch
- * - SMALL (2×2):  Zahl + Label + Titel
- * - MEDIUM (4×2): Mit Datum und Format
- * - LARGE (4×3):  Vollständig mit Statistiken
- */
 class CountdownWidget : GlanceAppWidget() {
 
     companion object {
-        // Größen-Definitionen
-        private val MINI_SIZE = DpSize(70.dp, 70.dp)       // 1×1
-        private val SMALL_SIZE = DpSize(140.dp, 70.dp)     // 2×1
-        private val SMALL_XL_SIZE = DpSize(210.dp, 70.dp)  // 3×1 und 4×1
-        private val MEDIUM_SIZE = DpSize(140.dp, 140.dp)   // 2×2, 2×3, 2×4
+        private val MINI_SIZE    = DpSize(70.dp, 70.dp)
+        private val SMALL_SIZE   = DpSize(140.dp, 70.dp)
+        private val SMALL_XL_SIZE = DpSize(210.dp, 70.dp)
+        private val MEDIUM_SIZE  = DpSize(140.dp, 140.dp)
 
-        // Farben für Light Theme
-        private val LIGHT_BACKGROUND = Color(0xFFFAFAFA)
-        private val LIGHT_TEXT_PRIMARY = Color(0xFF333333)
+        private val LIGHT_BACKGROUND     = Color(0xFFFAFAFA)
+        private val LIGHT_TEXT_PRIMARY   = Color(0xFF333333)
         private val LIGHT_TEXT_SECONDARY = Color(0xFF666666)
-        private val LIGHT_TEXT_TERTIARY = Color(0xFF888888)
-        private val LIGHT_EMPTY = Color(0xFFBBBBBB)
+        private val LIGHT_TEXT_TERTIARY  = Color(0xFF888888)
+        private val LIGHT_EMPTY          = Color(0xFFBBBBBB)
 
-        // Farben für Dark Theme
-        private val DARK_BACKGROUND = Color(0xFF1E1E1E)
-        private val DARK_TEXT_PRIMARY = Color(0xFFE0E0E0)
+        private val DARK_BACKGROUND     = Color(0xFF1E1E1E)
+        private val DARK_TEXT_PRIMARY   = Color(0xFFE0E0E0)
         private val DARK_TEXT_SECONDARY = Color(0xFFB0B0B0)
-        private val DARK_TEXT_TERTIARY = Color(0xFF808080)
-        private val DARK_EMPTY = Color(0xFF606060)
+        private val DARK_TEXT_TERTIARY  = Color(0xFF808080)
+        private val DARK_EMPTY          = Color(0xFF606060)
     }
 
     override val sizeMode = SizeMode.Responsive(
@@ -68,31 +58,30 @@ class CountdownWidget : GlanceAppWidget() {
     )
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        // Hole die Widget-ID für dieses Glance-Widget
-        val glanceIds = GlanceAppWidgetManager(context).getGlanceIds(CountdownWidget::class.java)
-        val appWidgetId = if (glanceIds.isNotEmpty()) {
-            // Versuche die appWidgetId für dieses spezifische GlanceId zu finden
-            AppWidgetManager.getInstance(context)
+        // FIX: Korrekte appWidgetId für dieses spezifische GlanceId ermitteln
+        val appWidgetManager = AppWidgetManager.getInstance(context)
+        val glanceManager = GlanceAppWidgetManager(context)
+
+        val appWidgetId = try {
+            glanceManager.getAppWidgetId(id)
+        } catch (e: Exception) {
+            // Fallback falls getAppWidgetId nicht verfügbar
+            appWidgetManager
                 .getAppWidgetIds(ComponentName(context, CountdownWidgetReceiver::class.java))
                 .firstOrNull() ?: AppWidgetManager.INVALID_APPWIDGET_ID
-        } else {
-            AppWidgetManager.INVALID_APPWIDGET_ID
         }
 
-        // Lade den ausgewählten Countdown für dieses Widget
         val database = CountdownDatabase.getDatabase(context)
         val selectedCountdownId = WidgetConfigActivity.loadCountdownId(context, appWidgetId)
 
         val countdown = if (selectedCountdownId != null) {
-            // Lade den spezifisch ausgewählten Countdown
             database.countdownDao().getCountdownById(selectedCountdownId)
         } else {
-            // Fallback: Ersten Countdown nehmen
             database.countdownDao().getAllCountdowns().first().firstOrNull()
         }
 
-        // Prüfe System-Theme
-        val isDarkMode = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+        val isDarkMode = (context.resources.configuration.uiMode and
+                Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
 
         provideContent {
             val size = LocalSize.current
@@ -105,130 +94,48 @@ class CountdownWidget : GlanceAppWidget() {
                     .clickable(clickAction)
             ) {
                 when {
-                    // MEDIUM: wenn die gemessene Höhe oder Breite mindestens den MEDIUM_SIZE Abmessungen entspricht
-                    size.width >= MEDIUM_SIZE.width || size.height >= MEDIUM_SIZE.height -> {
+                    size.width >= MEDIUM_SIZE.width || size.height >= MEDIUM_SIZE.height ->
                         MediumLayout(countdown, isDarkMode)
-                    }
-
-                    // MINI: wenn beide Abmessungen kleiner-gleich MINI_SIZE sind (1x1)
-                    size.width <= MINI_SIZE.width && size.height <= MINI_SIZE.height -> {
+                    size.width <= MINI_SIZE.width && size.height <= MINI_SIZE.height ->
                         MiniLayout(countdown, isDarkMode)
-                    }
-
-                    // SMALL: breite im Bereich 2×1 (MUSS VOR SmallXL geprüft werden!)
-                    size.width >= SMALL_SIZE.width && size.width < SMALL_XL_SIZE.width && size.height <= MINI_SIZE.height -> {
+                    size.width >= SMALL_SIZE.width && size.width < SMALL_XL_SIZE.width && size.height <= MINI_SIZE.height ->
                         SmallLayout(countdown, isDarkMode)
-                    }
-
-                    // SMALL_XL: sehr breite, aber flache Widgets (3×1 oder 4×1)
-                    size.width >= SMALL_XL_SIZE.width && size.height <= MINI_SIZE.height -> {
+                    size.width >= SMALL_XL_SIZE.width && size.height <= MINI_SIZE.height ->
                         SmallXLLayout(countdown, isDarkMode)
-                    }
-
-                    // Fallback: Medium
                     else -> MediumLayout(countdown, isDarkMode)
                 }
             }
         }
     }
 
-
-    /**
-     * MINI Layout (1×1) - 70x70dp
-     * Titel + Farbbalken oben + Zahl + "Tage" unten + Farbbalken unten
-     */
     @Composable
     private fun MiniLayout(countdown: Countdown?, isDarkMode: Boolean) {
-        Box(
-            modifier = GlanceModifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
+        Box(modifier = GlanceModifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             if (countdown == null) {
-                // Leeres Widget
-                Text(
-                    text = "⏰",
-                    style = TextStyle(
-                        fontSize = 32.sp,
-                        color = ColorProvider(if (isDarkMode) DARK_EMPTY else LIGHT_EMPTY)
-                    )
-                )
+                Text(text = "⏰", style = TextStyle(fontSize = 32.sp, color = ColorProvider(if (isDarkMode) DARK_EMPTY else LIGHT_EMPTY)))
             } else {
                 val timeInfo = countdown.calculateTimeRemaining()
                 val accentColor = getAccentColor(countdown.color)
                 val textPrimary = if (isDarkMode) DARK_TEXT_PRIMARY else LIGHT_TEXT_PRIMARY
                 val textSecondary = if (isDarkMode) DARK_TEXT_SECONDARY else LIGHT_TEXT_SECONDARY
 
-                Column(
-                    modifier = GlanceModifier.fillMaxSize(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalAlignment = Alignment.Top
-                ) {
-                    // Farbbalken oben
-                    Box(
-                        modifier = GlanceModifier
-                            .fillMaxWidth()
-                            .height(3.dp)
-                            .background(accentColor)
-                    ) { }
-
+                Column(modifier = GlanceModifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalAlignment = Alignment.Top) {
+                    Box(modifier = GlanceModifier.fillMaxWidth().height(3.dp).background(accentColor)) {}
                     Spacer(modifier = GlanceModifier.height(2.dp))
-
-                    // Titel (sehr klein, 1 Zeile)
-                    Text(
-                        text = countdown.title,
-                        style = TextStyle(
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = ColorProvider(textPrimary)
-                        ),
-                        maxLines = 1
-                    )
-
+                    Text(text = countdown.title, style = TextStyle(fontSize = 9.sp, fontWeight = FontWeight.Bold, color = ColorProvider(textPrimary)), maxLines = 1)
                     Spacer(modifier = GlanceModifier.defaultWeight())
-
-                    // Hauptzahl
-                    Text(
-                        text = "${timeInfo.days}",
-                        style = TextStyle(
-                            fontSize = 30.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = ColorProvider(accentColor)
-                        )
-                    )
-
-                    // "Tage" Label
-                    Text(
-                        text = if (timeInfo.days == 1L) "Tag" else "Tage",
-                        style = TextStyle(
-                            fontSize = 8.sp,
-                            color = ColorProvider(textSecondary)
-                        )
-                    )
-
+                    Text(text = "${timeInfo.days}", style = TextStyle(fontSize = 30.sp, fontWeight = FontWeight.Bold, color = ColorProvider(accentColor)))
+                    Text(text = if (timeInfo.days == 1L) "Tag" else "Tage", style = TextStyle(fontSize = 8.sp, color = ColorProvider(textSecondary)))
                     Spacer(modifier = GlanceModifier.defaultWeight())
-
-                    // Farbbalken unten
-                    Box(
-                        modifier = GlanceModifier
-                            .fillMaxWidth()
-                            .height(3.dp)
-                            .background(accentColor)
-                    ) { }
+                    Box(modifier = GlanceModifier.fillMaxWidth().height(3.dp).background(accentColor)) {}
                 }
             }
         }
     }
 
-    /**
-     * SMALL Layout (2×1) - 140x70dp
-     * Titel zentriert + Zahl + "Tage" unten
-     */
     @Composable
     private fun SmallLayout(countdown: Countdown?, isDarkMode: Boolean) {
-        Box(
-            modifier = GlanceModifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
+        Box(modifier = GlanceModifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             if (countdown == null) {
                 EmptyState(isDarkMode)
             } else {
@@ -237,77 +144,23 @@ class CountdownWidget : GlanceAppWidget() {
                 val textPrimary = if (isDarkMode) DARK_TEXT_PRIMARY else LIGHT_TEXT_PRIMARY
                 val textSecondary = if (isDarkMode) DARK_TEXT_SECONDARY else LIGHT_TEXT_SECONDARY
 
-                Column(
-                    modifier = GlanceModifier.fillMaxSize(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalAlignment = Alignment.Top
-                ) {
-                    // Farbbalken oben
-                    Box(
-                        modifier = GlanceModifier
-                            .fillMaxWidth()
-                            .height(3.dp)
-                            .background(accentColor)
-                    ) { }
-
+                Column(modifier = GlanceModifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalAlignment = Alignment.Top) {
+                    Box(modifier = GlanceModifier.fillMaxWidth().height(3.dp).background(accentColor)) {}
                     Spacer(modifier = GlanceModifier.height(4.dp))
-
-                    // Titel - zentriert, 1 Zeile
-                    Text(
-                        text = countdown.title,
-                        style = TextStyle(
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = ColorProvider(textPrimary)
-                        ),
-                        maxLines = 1
-                    )
-
+                    Text(text = countdown.title, style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.Bold, color = ColorProvider(textPrimary)), maxLines = 1)
                     Spacer(modifier = GlanceModifier.defaultWeight())
-
-                    // Hauptzahl
-                    Text(
-                        text = "${timeInfo.days}",
-                        style = TextStyle(
-                            fontSize = 32.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = ColorProvider(accentColor)
-                        )
-                    )
-
-                    // "Tage" Label
-                    Text(
-                        text = if (timeInfo.days == 1L) "Tag" else "Tage",
-                        style = TextStyle(
-                            fontSize = 9.sp,
-                            color = ColorProvider(textSecondary)
-                        )
-                    )
-
+                    Text(text = "${timeInfo.days}", style = TextStyle(fontSize = 32.sp, fontWeight = FontWeight.Bold, color = ColorProvider(accentColor)))
+                    Text(text = if (timeInfo.days == 1L) "Tag" else "Tage", style = TextStyle(fontSize = 9.sp, color = ColorProvider(textSecondary)))
                     Spacer(modifier = GlanceModifier.defaultWeight())
-
-                    // Farbbalken unten
-                    Box(
-                        modifier = GlanceModifier
-                            .fillMaxWidth()
-                            .height(3.dp)
-                            .background(accentColor)
-                    ) { }
+                    Box(modifier = GlanceModifier.fillMaxWidth().height(3.dp).background(accentColor)) {}
                 }
             }
         }
     }
 
-    /**
-     * SMALL_XL Layout (3×1 und 4×1) - ab 210x70dp
-     * Titel linksbündig + Datum rechtsbündig + Zahl + "Tage" unten
-     */
     @Composable
     private fun SmallXLLayout(countdown: Countdown?, isDarkMode: Boolean) {
-        Box(
-            modifier = GlanceModifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
+        Box(modifier = GlanceModifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             if (countdown == null) {
                 EmptyState(isDarkMode)
             } else {
@@ -316,100 +169,27 @@ class CountdownWidget : GlanceAppWidget() {
                 val textPrimary = if (isDarkMode) DARK_TEXT_PRIMARY else LIGHT_TEXT_PRIMARY
                 val textSecondary = if (isDarkMode) DARK_TEXT_SECONDARY else LIGHT_TEXT_SECONDARY
 
-                Column(
-                    modifier = GlanceModifier.fillMaxSize(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalAlignment = Alignment.Top
-                ) {
-                    // Farbbalken oben
-                    Box(
-                        modifier = GlanceModifier
-                            .fillMaxWidth()
-                            .height(3.dp)
-                            .background(accentColor)
-                    ) { }
-
+                Column(modifier = GlanceModifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalAlignment = Alignment.Top) {
+                    Box(modifier = GlanceModifier.fillMaxWidth().height(3.dp).background(accentColor)) {}
                     Spacer(modifier = GlanceModifier.height(4.dp))
-
-                    // Header: Titel links + Datum rechts
-                    Row(
-                        modifier = GlanceModifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 8.dp),
-                        horizontalAlignment = Alignment.Start,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // Titel linksbündig
-                        Text(
-                            text = countdown.title,
-                            style = TextStyle(
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = ColorProvider(textPrimary)
-                            ),
-                            maxLines = 1,
-                            modifier = GlanceModifier.defaultWeight()
-                        )
-
+                    Row(modifier = GlanceModifier.fillMaxWidth().padding(horizontal = 8.dp), horizontalAlignment = Alignment.Start, verticalAlignment = Alignment.CenterVertically) {
+                        Text(text = countdown.title, style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.Bold, color = ColorProvider(textPrimary)), maxLines = 1, modifier = GlanceModifier.defaultWeight())
                         Spacer(modifier = GlanceModifier.width(8.dp))
-
-                        // Datum rechtsbündig
-                        Text(
-                            text = countdown.targetDateTime.format(
-                                DateTimeFormatter.ofPattern("dd.MM.yy")
-                            ),
-                            style = TextStyle(
-                                fontSize = 10.sp,
-                                color = ColorProvider(textSecondary)
-                            )
-                        )
+                        Text(text = countdown.targetDateTime.format(DateTimeFormatter.ofPattern("dd.MM.yy")), style = TextStyle(fontSize = 10.sp, color = ColorProvider(textSecondary)))
                     }
-
                     Spacer(modifier = GlanceModifier.defaultWeight())
-
-                    // Hauptzahl
-                    Text(
-                        text = "${timeInfo.days}",
-                        style = TextStyle(
-                            fontSize = 32.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = ColorProvider(accentColor)
-                        )
-                    )
-
-                    // "Tage" Label
-                    Text(
-                        text = if (timeInfo.days == 1L) "Tag" else "Tage",
-                        style = TextStyle(
-                            fontSize = 9.sp,
-                            color = ColorProvider(textSecondary)
-                        )
-                    )
-
+                    Text(text = "${timeInfo.days}", style = TextStyle(fontSize = 32.sp, fontWeight = FontWeight.Bold, color = ColorProvider(accentColor)))
+                    Text(text = if (timeInfo.days == 1L) "Tag" else "Tage", style = TextStyle(fontSize = 9.sp, color = ColorProvider(textSecondary)))
                     Spacer(modifier = GlanceModifier.defaultWeight())
-
-                    // Farbbalken unten
-                    Box(
-                        modifier = GlanceModifier
-                            .fillMaxWidth()
-                            .height(3.dp)
-                            .background(accentColor)
-                    ) { }
+                    Box(modifier = GlanceModifier.fillMaxWidth().height(3.dp).background(accentColor)) {}
                 }
             }
         }
     }
 
-    /**
-     * MEDIUM Layout (2×2, 2×3, 2×4) - 140x140dp+
-     * Titel linksbündig + Datum rechtsbündig + Formatierte Anzeige + "Tage" darunter
-     */
     @Composable
     private fun MediumLayout(countdown: Countdown?, isDarkMode: Boolean) {
-        Box(
-            modifier = GlanceModifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
+        Box(modifier = GlanceModifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             if (countdown == null) {
                 EmptyState(isDarkMode)
             } else {
@@ -420,123 +200,36 @@ class CountdownWidget : GlanceAppWidget() {
                 val textSecondary = if (isDarkMode) DARK_TEXT_SECONDARY else LIGHT_TEXT_SECONDARY
                 val textTertiary = if (isDarkMode) DARK_TEXT_TERTIARY else LIGHT_TEXT_TERTIARY
 
-                Column(
-                    modifier = GlanceModifier.fillMaxSize(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalAlignment = Alignment.Top
-                ) {
-                    // Farbbalken oben
-                    Box(
-                        modifier = GlanceModifier
-                            .fillMaxWidth()
-                            .height(3.dp)
-                            .background(accentColor)
-                    ) { }
-
+                Column(modifier = GlanceModifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalAlignment = Alignment.Top) {
+                    Box(modifier = GlanceModifier.fillMaxWidth().height(3.dp).background(accentColor)) {}
                     Spacer(modifier = GlanceModifier.height(6.dp))
-
-                    // Header: Titel links + Datum rechts
-                    Row(
-                        modifier = GlanceModifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 10.dp),
-                        horizontalAlignment = Alignment.Start,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // Titel linksbündig
-                        Text(
-                            text = countdown.title,
-                            style = TextStyle(
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = ColorProvider(textPrimary)
-                            ),
-                            maxLines = 1,
-                            modifier = GlanceModifier.defaultWeight()
-                        )
-
+                    Row(modifier = GlanceModifier.fillMaxWidth().padding(horizontal = 10.dp), horizontalAlignment = Alignment.Start, verticalAlignment = Alignment.CenterVertically) {
+                        Text(text = countdown.title, style = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Bold, color = ColorProvider(textPrimary)), maxLines = 1, modifier = GlanceModifier.defaultWeight())
                         Spacer(modifier = GlanceModifier.width(8.dp))
-
-                        // Datum rechtsbündig
-                        Text(
-                            text = countdown.targetDateTime.format(
-                                DateTimeFormatter.ofPattern("dd.MM.yy")
-                            ),
-                            style = TextStyle(
-                                fontSize = 11.sp,
-                                color = ColorProvider(textSecondary)
-                            )
-                        )
+                        Text(text = countdown.targetDateTime.format(DateTimeFormatter.ofPattern("dd.MM.yy")), style = TextStyle(fontSize = 11.sp, color = ColorProvider(textSecondary)))
                     }
-
                     Spacer(modifier = GlanceModifier.defaultWeight())
-
-                    // Formatierte Anzeige (größer als SmallXL)
-                    FormatDisplay(
-                        timeInfo = timeInfo,
-                        format = format,
-                        accentColor = accentColor,
-                        textPrimary = textPrimary
-                    )
-
+                    FormatDisplay(timeInfo = timeInfo, format = format, accentColor = accentColor, textPrimary = textPrimary)
                     Spacer(modifier = GlanceModifier.height(4.dp))
-
-                    // "X Tage" darunter (als Zusatzinfo)
-                    Text(
-                        text = "${timeInfo.days} ${if (timeInfo.days == 1L) "Tag" else "Tage"}",
-                        style = TextStyle(
-                            fontSize = 11.sp,
-                            color = ColorProvider(textTertiary)
-                        )
-                    )
-
+                    Text(text = "${timeInfo.days} ${if (timeInfo.days == 1L) "Tag" else "Tage"}", style = TextStyle(fontSize = 11.sp, color = ColorProvider(textTertiary)))
                     Spacer(modifier = GlanceModifier.defaultWeight())
-
-                    // Farbbalken unten
-                    Box(
-                        modifier = GlanceModifier
-                            .fillMaxWidth()
-                            .height(3.dp)
-                            .background(accentColor)
-                    ) { }
+                    Box(modifier = GlanceModifier.fillMaxWidth().height(3.dp).background(accentColor)) {}
                 }
             }
         }
     }
 
-    /**
-     * Leeres Widget (wenn keine Countdowns vorhanden)
-     */
     @Composable
     private fun EmptyState(isDarkMode: Boolean) {
         val emptyColor = if (isDarkMode) DARK_EMPTY else LIGHT_EMPTY
         val textColor = if (isDarkMode) DARK_TEXT_TERTIARY else Color(0xFF999999)
-
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "⏰",
-                style = TextStyle(
-                    fontSize = 24.sp,
-                    color = ColorProvider(emptyColor)
-                )
-            )
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalAlignment = Alignment.CenterVertically) {
+            Text(text = "⏰", style = TextStyle(fontSize = 24.sp, color = ColorProvider(emptyColor)))
             Spacer(modifier = GlanceModifier.height(4.dp))
-            Text(
-                text = "Kein\nCountdown",
-                style = TextStyle(
-                    fontSize = 9.sp,
-                    color = ColorProvider(textColor)
-                )
-            )
+            Text(text = "Kein\nCountdown", style = TextStyle(fontSize = 9.sp, color = ColorProvider(textColor)))
         }
     }
 
-    /**
-     * Formatierte Zeitanzeige für MEDIUM Widget
-     */
     @Composable
     private fun FormatDisplay(
         timeInfo: de.beigel.nextime.data.model.CountdownInfo,
@@ -546,116 +239,38 @@ class CountdownWidget : GlanceAppWidget() {
     ) {
         when (format) {
             CountdownDisplayFormat.DAYS_ONLY -> {
-                // Bei DAYS_ONLY zeige nur die Zahl
-                Text(
-                    text = "${timeInfo.days}",
-                    style = TextStyle(
-                        fontSize = 48.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = ColorProvider(accentColor)
-                    )
-                )
+                Text(text = "${timeInfo.days}", style = TextStyle(fontSize = 48.sp, fontWeight = FontWeight.Bold, color = ColorProvider(accentColor)))
             }
 
             CountdownDisplayFormat.WEEKS_DAYS -> {
-                val remainingDays = timeInfo.days % 7
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Row(
-                        verticalAlignment = Alignment.Bottom,
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "${timeInfo.weeks}",
-                            style = TextStyle(
-                                fontSize = 38.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = ColorProvider(accentColor)
-                            )
-                        )
+                    Row(verticalAlignment = Alignment.Bottom, horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(text = "${timeInfo.weeks}", style = TextStyle(fontSize = 38.sp, fontWeight = FontWeight.Bold, color = ColorProvider(accentColor)))
                         Spacer(modifier = GlanceModifier.width(4.dp))
-                        Text(
-                            text = if (timeInfo.weeks == 1L) "Woche" else "Wochen",
-                            style = TextStyle(
-                                fontSize = 13.sp,
-                                color = ColorProvider(textPrimary)
-                            ),
-                            modifier = GlanceModifier.padding(bottom = 6.dp)
-                        )
+                        Text(text = if (timeInfo.weeks == 1L) "Woche" else "Wochen", style = TextStyle(fontSize = 13.sp, color = ColorProvider(textPrimary)), modifier = GlanceModifier.padding(bottom = 6.dp))
                     }
                     Spacer(modifier = GlanceModifier.height(2.dp))
-                    Row(
-                        verticalAlignment = Alignment.Bottom,
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "$remainingDays",
-                            style = TextStyle(
-                                fontSize = 24.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = ColorProvider(accentColor.copy(alpha = 0.7f))
-                            )
-                        )
+                    Row(verticalAlignment = Alignment.Bottom, horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(text = "${timeInfo.remainingDaysAfterWeeks}", style = TextStyle(fontSize = 24.sp, fontWeight = FontWeight.Bold, color = ColorProvider(accentColor.copy(alpha = 0.7f))))
                         Spacer(modifier = GlanceModifier.width(3.dp))
-                        Text(
-                            text = if (remainingDays == 1L) "Tag" else "Tage",
-                            style = TextStyle(
-                                fontSize = 11.sp,
-                                color = ColorProvider(textPrimary)
-                            ),
-                            modifier = GlanceModifier.padding(bottom = 2.dp)
-                        )
+                        Text(text = if (timeInfo.remainingDaysAfterWeeks == 1L) "Tag" else "Tage", style = TextStyle(fontSize = 11.sp, color = ColorProvider(textPrimary)), modifier = GlanceModifier.padding(bottom = 2.dp))
                     }
                 }
             }
 
             CountdownDisplayFormat.MONTHS_DAYS -> {
-                val remainingDays = timeInfo.days % 30
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Row(
-                        verticalAlignment = Alignment.Bottom,
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "${timeInfo.months}",
-                            style = TextStyle(
-                                fontSize = 38.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = ColorProvider(accentColor)
-                            )
-                        )
+                    Row(verticalAlignment = Alignment.Bottom, horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(text = "${timeInfo.months}", style = TextStyle(fontSize = 38.sp, fontWeight = FontWeight.Bold, color = ColorProvider(accentColor)))
                         Spacer(modifier = GlanceModifier.width(4.dp))
-                        Text(
-                            text = if (timeInfo.months == 1L) "Monat" else "Monate",
-                            style = TextStyle(
-                                fontSize = 13.sp,
-                                color = ColorProvider(textPrimary)
-                            ),
-                            modifier = GlanceModifier.padding(bottom = 6.dp)
-                        )
+                        Text(text = if (timeInfo.months == 1L) "Monat" else "Monate", style = TextStyle(fontSize = 13.sp, color = ColorProvider(textPrimary)), modifier = GlanceModifier.padding(bottom = 6.dp))
                     }
-                    if (remainingDays > 0) {
+                    if (timeInfo.remainingDaysAfterMonths > 0) {
                         Spacer(modifier = GlanceModifier.height(2.dp))
-                        Row(
-                            verticalAlignment = Alignment.Bottom,
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = "$remainingDays",
-                                style = TextStyle(
-                                    fontSize = 24.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = ColorProvider(accentColor.copy(alpha = 0.7f))
-                                )
-                            )
+                        Row(verticalAlignment = Alignment.Bottom, horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(text = "${timeInfo.remainingDaysAfterMonths}", style = TextStyle(fontSize = 24.sp, fontWeight = FontWeight.Bold, color = ColorProvider(accentColor.copy(alpha = 0.7f))))
                             Spacer(modifier = GlanceModifier.width(3.dp))
-                            Text(
-                                text = if (remainingDays == 1L) "Tag" else "Tage",
-                                style = TextStyle(
-                                    fontSize = 11.sp,
-                                    color = ColorProvider(textPrimary)
-                                ),
-                                modifier = GlanceModifier.padding(bottom = 2.dp)
-                            )
+                            Text(text = if (timeInfo.remainingDaysAfterMonths == 1L) "Tag" else "Tage", style = TextStyle(fontSize = 11.sp, color = ColorProvider(textPrimary)), modifier = GlanceModifier.padding(bottom = 2.dp))
                         }
                     }
                 }
@@ -663,75 +278,23 @@ class CountdownWidget : GlanceAppWidget() {
 
             CountdownDisplayFormat.YEARS_MONTHS_DAYS -> {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Row(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalAlignment = Alignment.Bottom
-                    ) {
+                    Row(horizontalAlignment = Alignment.CenterHorizontally, verticalAlignment = Alignment.Bottom) {
                         if (timeInfo.years > 0) {
-                            Text(
-                                text = "${timeInfo.years}",
-                                style = TextStyle(
-                                    fontSize = 32.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = ColorProvider(accentColor)
-                                )
-                            )
-                            Text(
-                                text = "J ",
-                                style = TextStyle(
-                                    fontSize = 11.sp,
-                                    color = ColorProvider(textPrimary)
-                                ),
-                                modifier = GlanceModifier.padding(bottom = 4.dp)
-                            )
+                            Text(text = "${timeInfo.years}", style = TextStyle(fontSize = 32.sp, fontWeight = FontWeight.Bold, color = ColorProvider(accentColor)))
+                            Text(text = "J ", style = TextStyle(fontSize = 11.sp, color = ColorProvider(textPrimary)), modifier = GlanceModifier.padding(bottom = 4.dp))
                         }
-                        if (timeInfo.months > 0 || timeInfo.years > 0) {
-                            val remainingMonths = timeInfo.months % 12
-                            if (remainingMonths > 0) {
-                                Text(
-                                    text = "$remainingMonths",
-                                    style = TextStyle(
-                                        fontSize = 32.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = ColorProvider(accentColor)
-                                    )
-                                )
-                                Text(
-                                    text = "M ",
-                                    style = TextStyle(
-                                        fontSize = 11.sp,
-                                        color = ColorProvider(textPrimary)
-                                    ),
-                                    modifier = GlanceModifier.padding(bottom = 4.dp)
-                                )
-                            }
+                        if (timeInfo.remainingMonthsAfterYears > 0) {
+                            Text(text = "${timeInfo.remainingMonthsAfterYears}", style = TextStyle(fontSize = 32.sp, fontWeight = FontWeight.Bold, color = ColorProvider(accentColor)))
+                            Text(text = "M ", style = TextStyle(fontSize = 11.sp, color = ColorProvider(textPrimary)), modifier = GlanceModifier.padding(bottom = 4.dp))
                         }
-                        val remainingDays = timeInfo.days % 30
-                        Text(
-                            text = "$remainingDays",
-                            style = TextStyle(
-                                fontSize = 32.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = ColorProvider(accentColor)
-                            )
-                        )
-                        Text(
-                            text = "T",
-                            style = TextStyle(
-                                fontSize = 11.sp,
-                                color = ColorProvider(textPrimary)
-                            ),
-                            modifier = GlanceModifier.padding(bottom = 4.dp)
-                        )
+                        Text(text = "${timeInfo.remainingDaysAfterYears}", style = TextStyle(fontSize = 32.sp, fontWeight = FontWeight.Bold, color = ColorProvider(accentColor)))
+                        Text(text = "T", style = TextStyle(fontSize = 11.sp, color = ColorProvider(textPrimary)), modifier = GlanceModifier.padding(bottom = 4.dp))
                     }
                 }
             }
         }
     }
 
-    /**
-     * Hilfsfunktionen
-     */
     private fun getAccentColor(colorHex: String): Color {
         return try {
             Color(android.graphics.Color.parseColor(colorHex))
@@ -749,16 +312,11 @@ class CountdownWidget : GlanceAppWidget() {
     }
 }
 
-
-/**
- * Widget Receiver mit onDeleted Callback
- */
 class CountdownWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = CountdownWidget()
 
     override fun onDeleted(context: Context, appWidgetIds: IntArray) {
         super.onDeleted(context, appWidgetIds)
-        // Lösche gespeicherte Konfigurationen für gelöschte Widgets
         appWidgetIds.forEach { appWidgetId ->
             WidgetConfigActivity.deleteCountdownId(context, appWidgetId)
         }

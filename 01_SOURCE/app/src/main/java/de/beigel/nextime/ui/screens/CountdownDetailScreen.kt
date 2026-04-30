@@ -25,6 +25,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import de.beigel.nextime.data.model.Countdown
+import de.beigel.nextime.data.model.CountdownDisplayFormat
 import de.beigel.nextime.data.model.CountdownInfo
 import de.beigel.nextime.data.model.calculateTimeRemaining
 import de.beigel.nextime.utils.HapticFeedback
@@ -43,12 +44,9 @@ fun CountdownDetailScreen(
 ) {
     val context = LocalContext.current
     val haptic = remember { HapticFeedback(context) }
-    val scrollState = rememberScrollState()
 
     var showDeleteDialog by remember { mutableStateOf(false) }
     var swipeOffset by remember { mutableStateOf(0f) }
-
-    // Live-Update
     var timeInfo by remember { mutableStateOf(countdown.calculateTimeRemaining()) }
 
     LaunchedEffect(countdown.id) {
@@ -64,7 +62,6 @@ fun CountdownDetailScreen(
         MaterialTheme.colorScheme.primary
     }
 
-    // Statistiken
     val stats = remember(countdown, timeInfo) {
         calculateStatistics(countdown, timeInfo)
     }
@@ -74,18 +71,15 @@ fun CountdownDetailScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // Haupt-Column: oben Hero (nimmt mehr Platz), unten Buttons + Info (am Boden)
         Column(
-            modifier = Modifier
-                .fillMaxSize(),
+            modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // ===== HERO-BEREICH (nimmt verfügbaren Platz) =====
+            // HERO
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    // Swipe-Geste im Hero-Bereich — rechte Wischrichtung erkennt (swipeOffset > threshold).
                     .pointerInput(Unit) {
                         detectHorizontalDragGestures(
                             onHorizontalDrag = { change, dragAmount ->
@@ -93,16 +87,13 @@ fun CountdownDetailScreen(
                                 change.consumePositionChange()
                             },
                             onDragEnd = {
-                                // Schwelle prüfen: positives Offset = nach rechts gewischt
                                 if (swipeOffset > 150f) {
                                     haptic.tick()
                                     onBack()
                                 }
                                 swipeOffset = 0f
                             },
-                            onDragCancel = {
-                                swipeOffset = 0f
-                            }
+                            onDragCancel = { swipeOffset = 0f }
                         )
                     }
                     .background(
@@ -115,12 +106,8 @@ fun CountdownDetailScreen(
                         )
                     )
             ) {
-                // Zurück-Pfeil oben links, aber weiter nach unten gerückt
                 IconButton(
-                    onClick = {
-                        haptic.tick()
-                        onBack()
-                    },
+                    onClick = { haptic.tick(); onBack() },
                     modifier = Modifier
                         .align(Alignment.TopStart)
                         .padding(start = 8.dp, top = 32.dp)
@@ -139,7 +126,6 @@ fun CountdownDetailScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    // Titel
                     Text(
                         text = countdown.title,
                         style = MaterialTheme.typography.displaySmall,
@@ -151,15 +137,14 @@ fun CountdownDetailScreen(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // Hauptzähler - Format-abhängig
                     val format = try {
-                        de.beigel.nextime.data.model.CountdownDisplayFormat.valueOf(countdown.displayFormat)
+                        CountdownDisplayFormat.valueOf(countdown.displayFormat)
                     } catch (e: Exception) {
-                        de.beigel.nextime.data.model.CountdownDisplayFormat.DAYS_ONLY
+                        CountdownDisplayFormat.DAYS_ONLY
                     }
 
                     when (format) {
-                        de.beigel.nextime.data.model.CountdownDisplayFormat.DAYS_ONLY -> {
+                        CountdownDisplayFormat.DAYS_ONLY -> {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(
                                     text = "${timeInfo.days}",
@@ -177,8 +162,7 @@ fun CountdownDetailScreen(
                             }
                         }
 
-                        de.beigel.nextime.data.model.CountdownDisplayFormat.WEEKS_DAYS -> {
-                            val remainingDays = timeInfo.days % 7
+                        CountdownDisplayFormat.WEEKS_DAYS -> {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Row(
                                     verticalAlignment = Alignment.Bottom,
@@ -206,7 +190,7 @@ fun CountdownDetailScreen(
                                     horizontalArrangement = Arrangement.Center
                                 ) {
                                     Text(
-                                        text = "$remainingDays",
+                                        text = "${timeInfo.remainingDaysAfterWeeks}",
                                         fontSize = 36.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = cardColor.copy(alpha = 0.7f),
@@ -214,7 +198,7 @@ fun CountdownDetailScreen(
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
-                                        text = if (remainingDays == 1L) "Tag" else "Tage",
+                                        text = if (timeInfo.remainingDaysAfterWeeks == 1L) "Tag" else "Tage",
                                         fontSize = 16.sp,
                                         fontWeight = FontWeight.Medium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -224,8 +208,7 @@ fun CountdownDetailScreen(
                             }
                         }
 
-                        de.beigel.nextime.data.model.CountdownDisplayFormat.MONTHS_DAYS -> {
-                            val remainingDays = timeInfo.days % 30
+                        CountdownDisplayFormat.MONTHS_DAYS -> {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Row(
                                     verticalAlignment = Alignment.Bottom,
@@ -247,14 +230,14 @@ fun CountdownDetailScreen(
                                         modifier = Modifier.padding(bottom = 6.dp)
                                     )
                                 }
-                                if (remainingDays > 0) {
+                                if (timeInfo.remainingDaysAfterMonths > 0) {
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Row(
                                         verticalAlignment = Alignment.Bottom,
                                         horizontalArrangement = Arrangement.Center
                                     ) {
                                         Text(
-                                            text = "$remainingDays",
+                                            text = "${timeInfo.remainingDaysAfterMonths}",
                                             fontSize = 36.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = cardColor.copy(alpha = 0.7f),
@@ -262,7 +245,7 @@ fun CountdownDetailScreen(
                                         )
                                         Spacer(modifier = Modifier.width(6.dp))
                                         Text(
-                                            text = if (remainingDays == 1L) "Tag" else "Tage",
+                                            text = if (timeInfo.remainingDaysAfterMonths == 1L) "Tag" else "Tage",
                                             fontSize = 16.sp,
                                             fontWeight = FontWeight.Medium,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -273,7 +256,7 @@ fun CountdownDetailScreen(
                             }
                         }
 
-                        de.beigel.nextime.data.model.CountdownDisplayFormat.YEARS_MONTHS_DAYS -> {
+                        CountdownDisplayFormat.YEARS_MONTHS_DAYS -> {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Row(
                                     horizontalArrangement = Arrangement.Center,
@@ -295,28 +278,24 @@ fun CountdownDetailScreen(
                                             modifier = Modifier.padding(bottom = 6.dp)
                                         )
                                     }
-                                    if (timeInfo.months > 0 || timeInfo.years > 0) {
-                                        val remainingMonths = timeInfo.months % 12
-                                        if (remainingMonths > 0) {
-                                            Text(
-                                                text = "$remainingMonths",
-                                                fontSize = 48.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = cardColor,
-                                                letterSpacing = (-1).sp
-                                            )
-                                            Text(
-                                                text = "M ",
-                                                fontSize = 20.sp,
-                                                fontWeight = FontWeight.Medium,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                modifier = Modifier.padding(bottom = 6.dp)
-                                            )
-                                        }
+                                    if (timeInfo.remainingMonthsAfterYears > 0) {
+                                        Text(
+                                            text = "${timeInfo.remainingMonthsAfterYears}",
+                                            fontSize = 48.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = cardColor,
+                                            letterSpacing = (-1).sp
+                                        )
+                                        Text(
+                                            text = "M ",
+                                            fontSize = 20.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.padding(bottom = 6.dp)
+                                        )
                                     }
-                                    val remainingDays = timeInfo.days % 30
                                     Text(
-                                        text = "$remainingDays",
+                                        text = "${timeInfo.remainingDaysAfterYears}",
                                         fontSize = 48.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = cardColor,
@@ -336,101 +315,67 @@ fun CountdownDetailScreen(
                 }
             }
 
-            // ===== BOTTOM-BEREICH: Buttons + Info-Karten (am Boden) =====
+            // BOTTOM
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                InfoCard(title = "Zieldatum", icon = Icons.Outlined.CalendarToday) {
+                    Text(
+                        text = countdown.targetDateTime.format(DateTimeFormatter.ofPattern("dd. MMMM yyyy")),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
 
-                // ===== INFO KARTEN =====
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    // Datum Card
-                    InfoCard(
-                        title = "Zieldatum",
-                        icon = Icons.Outlined.CalendarToday
-                    ) {
-                        Text(
-                            text = countdown.targetDateTime.format(DateTimeFormatter.ofPattern("dd. MMMM yyyy")),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-
-                    // Statistiken Card
-                    InfoCard(
-                        title = "Statistiken",
-                        icon = Icons.Outlined.Event
-                    ) {
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            if (timeInfo.isPast) {
-                                StatRow("Vergangene Zeit", stats.status)
-                                StatRow("Erstellt am", stats.createdDate)
-                            } else {
-                                StatRow("Gesamtdauer", stats.duration)
-                                StatRow("Verbleibend", stats.status)
-                                StatRow("Erstellt am", stats.createdDate)
-                            }
+                InfoCard(title = "Statistiken", icon = Icons.Outlined.Event) {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        if (timeInfo.isPast) {
+                            StatRow("Vergangene Zeit", stats.status)
+                            StatRow("Erstellt am", stats.createdDate)
+                        } else {
+                            StatRow("Gesamtdauer", stats.duration)
+                            StatRow("Verbleibend", stats.status)
+                            StatRow("Erstellt am", stats.createdDate)
                         }
                     }
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        // Teilen
-                        ActionButtonCompact(
-                            icon = Icons.Default.Share,
-                            label = "Teilen",
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.weight(1f),
-                            onClick = {
-                                haptic.click()
-                                onShare()
-                            }
-                        )
+                }
 
-                        // Bearbeiten
-                        ActionButtonCompact(
-                            icon = Icons.Default.Edit,
-                            label = "Bearbeiten",
-                            color = MaterialTheme.colorScheme.secondary,
-                            modifier = Modifier.weight(1f),
-                            onClick = {
-                                haptic.click()
-                                onEdit()
-                            }
-                        )
-
-                        // Löschen
-                        ActionButtonCompact(
-                            icon = Icons.Default.Delete,
-                            label = "Löschen",
-                            color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.weight(1f),
-                            onClick = {
-                                haptic.tick()
-                                showDeleteDialog = true
-                            }
-                        )
-                    }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    ActionButtonCompact(
+                        icon = Icons.Default.Share,
+                        label = "Teilen",
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.weight(1f),
+                        onClick = { haptic.click(); onShare() }
+                    )
+                    ActionButtonCompact(
+                        icon = Icons.Default.Edit,
+                        label = "Bearbeiten",
+                        color = MaterialTheme.colorScheme.secondary,
+                        modifier = Modifier.weight(1f),
+                        onClick = { haptic.click(); onEdit() }
+                    )
+                    ActionButtonCompact(
+                        icon = Icons.Default.Delete,
+                        label = "Löschen",
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.weight(1f),
+                        onClick = { haptic.tick(); showDeleteDialog = true }
+                    )
                 }
             }
         }
     }
 
-    // Lösch-Bestätigungsdialog
     if (showDeleteDialog) {
         AlertDialog(
-            onDismissRequest = {
-                haptic.tick()
-                showDeleteDialog = false
-            },
+            onDismissRequest = { haptic.tick(); showDeleteDialog = false },
             icon = {
                 Icon(
                     imageVector = Icons.Default.Delete,
@@ -438,9 +383,7 @@ fun CountdownDetailScreen(
                     tint = MaterialTheme.colorScheme.error
                 )
             },
-            title = {
-                Text("Countdown löschen?")
-            },
+            title = { Text("Countdown löschen?") },
             text = {
                 Text(
                     "Möchtest du \"${countdown.title}\" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
@@ -449,25 +392,12 @@ fun CountdownDetailScreen(
             },
             confirmButton = {
                 Button(
-                    onClick = {
-                        haptic.heavy()
-                        showDeleteDialog = false
-                        onDelete()
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error
-                    )
-                ) {
-                    Text("Löschen")
-                }
+                    onClick = { haptic.heavy(); showDeleteDialog = false; onDelete() },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) { Text("Löschen") }
             },
             dismissButton = {
-                TextButton(onClick = {
-                    haptic.tick()
-                    showDeleteDialog = false
-                }) {
-                    Text("Abbrechen")
-                }
+                TextButton(onClick = { haptic.tick(); showDeleteDialog = false }) { Text("Abbrechen") }
             }
         )
     }
@@ -482,8 +412,7 @@ private fun ActionButtonCompact(
     onClick: () -> Unit
 ) {
     Surface(
-        modifier = modifier
-            .height(56.dp),
+        modifier = modifier.height(56.dp),
         shape = MaterialTheme.shapes.medium,
         color = color.copy(alpha = 0.1f),
         tonalElevation = 0.dp,
@@ -494,19 +423,8 @@ private fun ActionButtonCompact(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = label,
-                tint = color,
-                modifier = Modifier.size(24.dp)
-            )
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall,
-                color = color,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 9.sp
-            )
+            Icon(imageVector = icon, contentDescription = label, tint = color, modifier = Modifier.size(24.dp))
+            Text(text = label, style = MaterialTheme.typography.labelSmall, color = color, fontWeight = FontWeight.SemiBold, fontSize = 9.sp)
         }
     }
 }
@@ -519,30 +437,12 @@ private fun InfoCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        )
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
-                )
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Icon(imageVector = icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                Text(text = title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             content()
         }
@@ -550,39 +450,19 @@ private fun InfoCard(
 }
 
 @Composable
-private fun StatRow(
-    label: String,
-    value: String
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.SemiBold
-        )
+private fun StatRow(label: String, value: String) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Text(text = label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(text = value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
     }
 }
 
-private data class Statistics(
-    val duration: String,
-    val status: String,
-    val createdDate: String
-)
+private data class Statistics(val duration: String, val status: String, val createdDate: String)
 
 private fun calculateStatistics(countdown: Countdown, timeInfo: CountdownInfo): Statistics {
     val now = LocalDateTime.now().toLocalDate().atStartOfDay()
-
     return if (timeInfo.isPast) {
         val duration = Duration.between(countdown.targetDateTime, now)
-
         Statistics(
             duration = formatDuration(duration),
             status = "Seit ${formatDuration(duration)}",
@@ -591,7 +471,6 @@ private fun calculateStatistics(countdown: Countdown, timeInfo: CountdownInfo): 
     } else {
         val totalDuration = Duration.between(countdown.createdAt, countdown.targetDateTime)
         val remaining = Duration.between(now, countdown.targetDateTime.toLocalDate().atStartOfDay())
-
         Statistics(
             duration = formatDuration(totalDuration),
             status = formatDuration(remaining),
@@ -602,11 +481,10 @@ private fun calculateStatistics(countdown: Countdown, timeInfo: CountdownInfo): 
 
 private fun formatDuration(duration: Duration): String {
     val days = duration.toDays()
-
     return when {
         days > 365 -> "${days / 365} Jahr${if (days / 365 > 1) "e" else ""}"
-        days > 30 -> "${days / 30} Monat${if (days / 30 > 1) "e" else ""}"
-        days > 0 -> "$days Tag${if (days > 1) "e" else ""}"
-        else -> "Heute"
+        days > 30  -> "${days / 30} Monat${if (days / 30 > 1) "e" else ""}"
+        days > 0   -> "$days Tag${if (days > 1) "e" else ""}"
+        else       -> "Heute"
     }
 }
