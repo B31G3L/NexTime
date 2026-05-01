@@ -18,8 +18,19 @@ object NotificationScheduler {
             return
         }
 
-        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        // Zieldatum bereits vergangen → keine Notifications einplanen
+        if (countdown.targetDateTime.isBefore(LocalDateTime.now())) {
+            return
+        }
+
         val reminderOptions = countdown.getReminderOptionsList()
+
+        // Keine Optionen gewählt → nichts tun (nicht crashen)
+        if (reminderOptions.isEmpty()) {
+            return
+        }
+
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
         for (option in reminderOptions) {
             scheduleNotification(context, countdown, option, alarmManager)
@@ -38,8 +49,8 @@ object NotificationScheduler {
             countdown.targetDateTime.minusMinutes(reminderOption.minutes)
         }
 
-        // Nur zukünftige Benachrichtigungen planen
-        if (notificationTime.isBefore(LocalDateTime.now())) {
+        // Nur zukünftige Benachrichtigungen einplanen
+        if (!notificationTime.isAfter(LocalDateTime.now())) {
             return
         }
 
@@ -64,18 +75,21 @@ object NotificationScheduler {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        // Alarm setzen
-        alarmManager.setExactAndAllowWhileIdle(
-            AlarmManager.RTC_WAKEUP,
-            triggerTime,
-            pendingIntent
-        )
+        try {
+            alarmManager.setExactAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                triggerTime,
+                pendingIntent
+            )
+        } catch (e: SecurityException) {
+            // SCHEDULE_EXACT_ALARM nicht erteilt → still ignorieren,
+            // der Nutzer wurde in MainActivity bereits darauf hingewiesen
+        }
     }
 
     fun cancelAllNotifications(context: Context, countdown: Countdown) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
-        // Alle möglichen ReminderOptions durchgehen
         ReminderOption.values().forEach { option ->
             val requestCode = getRequestCode(countdown.id, option)
             val intent = Intent(context, NotificationReceiver::class.java)
@@ -85,7 +99,6 @@ object NotificationScheduler {
                 intent,
                 PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
             )
-
             pendingIntent?.let {
                 alarmManager.cancel(it)
                 it.cancel()
@@ -94,7 +107,6 @@ object NotificationScheduler {
     }
 
     private fun getRequestCode(countdownId: Long, reminderOption: ReminderOption): Int {
-        // Eindeutiger Request Code aus Countdown-ID und ReminderOption
         return (countdownId * 1000 + reminderOption.ordinal).toInt()
     }
 }

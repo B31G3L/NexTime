@@ -268,13 +268,10 @@ private fun calculateProgress(countdown: Countdown): Float {
     val start = countdown.createdAt.toLocalDate()
     val end = countdown.targetDateTime.toLocalDate()
 
-    // Gesamtdauer von Erstellung bis Ziel
     val totalDays = ChronoUnit.DAYS.between(start, end)
-    if (totalDays <= 0L) return 1f
+    if (totalDays <= 0L || start.isAfter(end)) return 1f
 
-    // Bereits vergangene Tage seit Erstellung
     val passedDays = ChronoUnit.DAYS.between(start, now)
-
     return (passedDays.toFloat() / totalDays.toFloat()).coerceIn(0f, 1f)
 }
 

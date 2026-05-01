@@ -30,7 +30,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import de.beigel.nextime.BuildConfig
-import de.beigel.nextime.ui.theme.DesignSystem
 import de.beigel.nextime.utils.HapticFeedback
 
 @Composable
@@ -74,7 +73,6 @@ fun AboutDialog(
                             )
                         )
                 ) {
-                    // Close Button
                     IconButton(
                         onClick = {
                             haptic.tick()
@@ -98,7 +96,6 @@ fun AboutDialog(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
-                        // App Icon mit Gradient-Hintergrund
                         Surface(
                             modifier = Modifier.size(80.dp),
                             shape = CircleShape,
@@ -108,10 +105,7 @@ fun AboutDialog(
                                 contentAlignment = Alignment.Center,
                                 modifier = Modifier.fillMaxSize()
                             ) {
-                                Text(
-                                    text = "⏰",
-                                    fontSize = 40.sp
-                                )
+                                Text(text = "⏰", fontSize = 40.sp)
                             }
                         }
 
@@ -153,7 +147,6 @@ fun AboutDialog(
                     }
                 }
 
-                // Tab Row
                 TabRow(
                     selectedTabIndex = selectedTab,
                     containerColor = Color.Transparent,
@@ -161,31 +154,21 @@ fun AboutDialog(
                 ) {
                     Tab(
                         selected = selectedTab == 0,
-                        onClick = {
-                            haptic.tick()
-                            selectedTab = 0
-                        },
+                        onClick = { haptic.tick(); selectedTab = 0 },
                         text = { Text("Info") }
                     )
                     Tab(
                         selected = selectedTab == 1,
-                        onClick = {
-                            haptic.tick()
-                            selectedTab = 1
-                        },
+                        onClick = { haptic.tick(); selectedTab = 1 },
                         text = { Text("Support") }
                     )
                     Tab(
                         selected = selectedTab == 2,
-                        onClick = {
-                            haptic.tick()
-                            selectedTab = 2
-                        },
+                        onClick = { haptic.tick(); selectedTab = 2 },
                         text = { Text("Details") }
                     )
                 }
 
-                // Content basierend auf Tab
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -206,95 +189,63 @@ fun AboutDialog(
 
 @Composable
 private fun InfoTab(haptic: HapticFeedback) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(20.dp)
-    ) {
-        // Entwickler Card
+    Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
         DeveloperCard()
-
-        // Features
         FeaturesCard()
-
     }
 }
 
 @Composable
 private fun SupportTab(haptic: HapticFeedback, context: android.content.Context) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        // Bewertung
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         SupportActionCard(
             icon = Icons.Outlined.Star,
             iconColor = Color(0xFFFFC107),
             title = "App bewerten",
             description = "Unterstütze die Weiterentwicklung mit einer Bewertung",
             actionText = "Zum Play Store",
-            onClick = {
-                haptic.click()
-                openPlayStore(context)
-            }
+            onClick = { haptic.click(); openPlayStore(context) }
         )
-
-        // Ko-fi Support
         SupportActionCard(
             icon = Icons.Outlined.Coffee,
             iconColor = Color(0xFF5C4033),
             title = "Buy me a Coffee",
             description = "Unterstütze die Entwicklung mit einer kleinen Spende",
             actionText = "Zu Ko-fi",
-            onClick = {
-                haptic.click()
-                openKofi(context)
-            }
+            onClick = { haptic.click(); openKofi(context) }
         )
-
-        // Bug Report
         SupportActionCard(
             icon = Icons.Outlined.BugReport,
             iconColor = MaterialTheme.colorScheme.error,
             title = "Fehler melden",
             description = "Hilf dabei, die App noch besser zu machen",
             actionText = "E-Mail senden",
-            onClick = {
-                haptic.click()
-                reportBug(context)
-            }
+            onClick = { haptic.click(); reportBug(context) }
         )
-
-        // Feature Request
         SupportActionCard(
             icon = Icons.Outlined.Lightbulb,
             iconColor = Color(0xFF4CAF50),
             title = "Feature vorschlagen",
             description = "Hast du eine Idee für eine neue Funktion?",
             actionText = "Idee teilen",
-            onClick = {
-                haptic.click()
-                suggestFeature(context)
-            }
+            onClick = { haptic.click(); suggestFeature(context) }
         )
     }
 }
 
 @Composable
 private fun DetailsTab() {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        // Technische Details
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         TechnicalDetailsCard()
-
-        // Berechtigungen
         PermissionsCard()
-
-        // Credits
         CreditsCard()
     }
 }
 
+// ─── Shared Composables (internal → nutzbar in MainScreenWithBottomNav) ───────
+
 @Composable
-private fun DeveloperCard() {
+internal fun DeveloperCard() {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -310,14 +261,8 @@ private fun DeveloperCard() {
                 color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
                 modifier = Modifier.size(64.dp)
             ) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    Text(
-                        text = "👨‍💻",
-                        fontSize = 32.sp
-                    )
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                    Text(text = "👨‍💻", fontSize = 32.sp)
                 }
             }
 
@@ -329,16 +274,13 @@ private fun DeveloperCard() {
                 fontWeight = FontWeight.SemiBold,
                 textAlign = TextAlign.Center
             )
-
             Text(
                 text = "von einem leidenschaftlichen Solo-Entwickler",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )
-
             Spacer(modifier = Modifier.height(8.dp))
-
             Text(
                 text = "\"Zeit ist kostbar - behalte sie im Blick\"",
                 style = MaterialTheme.typography.bodySmall,
@@ -351,7 +293,7 @@ private fun DeveloperCard() {
 }
 
 @Composable
-private fun FeaturesCard() {
+internal fun FeaturesCard() {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -367,7 +309,6 @@ private fun FeaturesCard() {
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold
             )
-
             FeatureItem(Icons.Outlined.Timer, "Präzise Countdowns bis zur Sekunde")
             FeatureItem(Icons.Outlined.Palette, "Individuelle Farben für jeden Countdown")
             FeatureItem(Icons.Outlined.ViewCarousel, "7 verschiedene Anzeigeformate")
@@ -378,6 +319,8 @@ private fun FeaturesCard() {
         }
     }
 }
+
+// ─── Private Composables ──────────────────────────────────────────────────────
 
 @Composable
 private fun SupportActionCard(
@@ -407,10 +350,7 @@ private fun SupportActionCard(
                 color = iconColor.copy(alpha = 0.1f),
                 modifier = Modifier.size(48.dp)
             ) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.fillMaxSize()
-                ) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
@@ -419,34 +359,15 @@ private fun SupportActionCard(
                     )
                 }
             }
-
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = actionText,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Medium
-                )
+                Text(text = title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Text(text = description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(text = actionText, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
             }
-
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Icon(imageVector = Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -459,16 +380,8 @@ private fun TechnicalDetailsCard() {
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
         )
     ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text(
-                text = "Technische Details",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-
+        Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(text = "Technische Details", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             DetailRow("App Version", BuildConfig.VERSION_NAME)
             DetailRow("Build Nummer", "${BuildConfig.VERSION_CODE}")
         }
@@ -483,43 +396,14 @@ private fun PermissionsCard() {
             containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f)
         )
     ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Security,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.secondary,
-                    modifier = Modifier.size(20.dp)
-                )
-                Text(
-                    text = "Berechtigungen",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.secondary
-                )
+        Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Icon(imageVector = Icons.Outlined.Security, contentDescription = null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(20.dp))
+                Text(text = "Berechtigungen", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.secondary)
             }
-
-            PermissionItem(
-                Icons.Outlined.Notifications,
-                "Benachrichtigungen",
-                "Für Countdown-Erinnerungen"
-            )
-            PermissionItem(
-                Icons.Outlined.Vibration,
-                "Vibration",
-                "Für haptisches Feedback"
-            )
-            PermissionItem(
-                Icons.Outlined.Widgets,
-                "Widget-Aktualisierung",
-                "Für Homescreen-Widgets"
-            )
+            PermissionItem(Icons.Outlined.Notifications, "Benachrichtigungen", "Für Countdown-Erinnerungen")
+            PermissionItem(Icons.Outlined.Vibration, "Vibration", "Für haptisches Feedback")
+            PermissionItem(Icons.Outlined.Widgets, "Widget-Aktualisierung", "Für Homescreen-Widgets")
         }
     }
 }
@@ -532,36 +416,12 @@ private fun CreditsCard() {
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
         )
     ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Text(
-                text = "Credits & Danksagung",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-
-            Text(
-                text = "Ein herzliches Dankeschön an:",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            CreditItem(
-                "☕",
-                "Alle Unterstützer",
-                "Die diese App möglich machen"
-            )
-            CreditItem(
-                "💡",
-                "Die Community",
-                "Für Feedback und Ideen"
-            )
-
+        Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Text(text = "Credits & Danksagung", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Text(text = "Ein herzliches Dankeschön an:", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            CreditItem("☕", "Alle Unterstützer", "Die diese App möglich machen")
+            CreditItem("💡", "Die Community", "Für Feedback und Ideen")
             Spacer(modifier = Modifier.height(8.dp))
-
-            // Abschluss-Nachricht
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
@@ -582,121 +442,58 @@ private fun CreditsCard() {
 
 @Composable
 private fun FeatureItem(icon: ImageVector, text: String) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            modifier = Modifier.size(18.dp),
-            tint = MaterialTheme.colorScheme.primary
-        )
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+        Text(text = text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
 @Composable
 private fun DetailRow(label: String, value: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium
-        )
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Text(text = label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(text = value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
     }
 }
 
 @Composable
 private fun PermissionItem(icon: ImageVector, title: String, description: String) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.Top
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            modifier = Modifier
-                .size(20.dp)
-                .padding(top = 2.dp),
-            tint = MaterialTheme.colorScheme.secondary
-        )
-        Column(
-            verticalArrangement = Arrangement.spacedBy(2.dp)
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium
-            )
-            Text(
-                text = description,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
+        Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(20.dp).padding(top = 2.dp), tint = MaterialTheme.colorScheme.secondary)
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(text = title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+            Text(text = description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
 
 @Composable
 private fun CreditItem(emoji: String, title: String, description: String) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.Top
-    ) {
-        Text(
-            text = emoji,
-            fontSize = 20.sp
-        )
-        Column(
-            verticalArrangement = Arrangement.spacedBy(2.dp)
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium
-            )
-            Text(
-                text = description,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
+        Text(text = emoji, fontSize = 20.sp)
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(text = title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+            Text(text = description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
 
-// Hilfsfunktionen
-private fun openPlayStore(context: android.content.Context) {
+// ─── Shared Helper Functions (internal → nutzbar in MainScreenWithBottomNav) ──
+
+internal fun openPlayStore(context: android.content.Context) {
     val packageName = context.packageName
     try {
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$packageName"))
-        context.startActivity(intent)
+        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$packageName")))
     } catch (e: ActivityNotFoundException) {
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=$packageName"))
-        context.startActivity(intent)
+        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=$packageName")))
     }
 }
 
-private fun openKofi(context: android.content.Context) {
-    val kofiUrl = "https://ko-fi.com/beigel"
-    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(kofiUrl))
-    context.startActivity(intent)
+internal fun openKofi(context: android.content.Context) {
+    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://ko-fi.com/beigel")))
 }
 
-private fun reportBug(context: android.content.Context) {
-    val email = "beigel.dev@gmail.com"
+internal fun reportBug(context: android.content.Context) {
     val subject = "NexTime Bug Report - v${BuildConfig.VERSION_NAME}"
     val body = """
         Hallo,
@@ -729,24 +526,18 @@ private fun reportBug(context: android.content.Context) {
 
     val intent = Intent(Intent.ACTION_SENDTO).apply {
         data = Uri.parse("mailto:")
-        putExtra(Intent.EXTRA_EMAIL, arrayOf(email))
+        putExtra(Intent.EXTRA_EMAIL, arrayOf("beigel.dev@gmail.com"))
         putExtra(Intent.EXTRA_SUBJECT, subject)
         putExtra(Intent.EXTRA_TEXT, body)
     }
-
     try {
         context.startActivity(Intent.createChooser(intent, "Bug melden via..."))
     } catch (e: ActivityNotFoundException) {
-        android.widget.Toast.makeText(
-            context,
-            "Keine E-Mail App gefunden",
-            android.widget.Toast.LENGTH_SHORT
-        ).show()
+        android.widget.Toast.makeText(context, "Keine E-Mail App gefunden", android.widget.Toast.LENGTH_SHORT).show()
     }
 }
 
-private fun suggestFeature(context: android.content.Context) {
-    val email = "beigel.dev@gmail.com"
+internal fun suggestFeature(context: android.content.Context) {
     val subject = "NexTime Feature-Idee"
     val body = """
         Hallo,
@@ -769,18 +560,13 @@ private fun suggestFeature(context: android.content.Context) {
 
     val intent = Intent(Intent.ACTION_SENDTO).apply {
         data = Uri.parse("mailto:")
-        putExtra(Intent.EXTRA_EMAIL, arrayOf(email))
+        putExtra(Intent.EXTRA_EMAIL, arrayOf("beigel.dev@gmail.com"))
         putExtra(Intent.EXTRA_SUBJECT, subject)
         putExtra(Intent.EXTRA_TEXT, body)
     }
-
     try {
         context.startActivity(Intent.createChooser(intent, "Feature vorschlagen via..."))
     } catch (e: ActivityNotFoundException) {
-        android.widget.Toast.makeText(
-            context,
-            "Keine E-Mail App gefunden",
-            android.widget.Toast.LENGTH_SHORT
-        ).show()
+        android.widget.Toast.makeText(context, "Keine E-Mail App gefunden", android.widget.Toast.LENGTH_SHORT).show()
     }
 }

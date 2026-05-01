@@ -7,7 +7,7 @@
     android:minResizeWidth="40dp"
     android:minResizeHeight="40dp"
     android:maxResizeWidth="500dp"
-    android:maxResizeHeight="200dp"
+    android:maxResizeHeight="250dp"
     android:previewImage="@drawable/ic_launcher_foreground"
     android:resizeMode="horizontal|vertical"
     android:targetCellWidth="3"
