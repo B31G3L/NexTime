@@ -5,16 +5,20 @@ import android.widget.Toast
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
@@ -28,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
@@ -35,21 +40,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import de.beigel.nextime.BuildConfig
 import de.beigel.nextime.data.model.Countdown
 import de.beigel.nextime.data.model.FilterMode
 import de.beigel.nextime.data.model.calculateTimeRemaining
 import de.beigel.nextime.ui.components.AddEditCountdownScreen
 import de.beigel.nextime.ui.components.CountdownCard
 import de.beigel.nextime.ui.components.CountdownCardDialog
-import de.beigel.nextime.ui.components.DeveloperCard
+import de.beigel.nextime.ui.components.AboutPageContent
 import de.beigel.nextime.ui.components.EmptyStateView
 import de.beigel.nextime.ui.components.ExpandableFab
-import de.beigel.nextime.ui.components.FeaturesCard
 import de.beigel.nextime.ui.components.ThemeSettingsDialog
-import de.beigel.nextime.ui.components.openKofi
-import de.beigel.nextime.ui.components.openPlayStore
-import de.beigel.nextime.ui.components.reportBug
 import de.beigel.nextime.ui.theme.CustomTheme
 import de.beigel.nextime.ui.theme.CustomThemePreferences
 import de.beigel.nextime.ui.theme.ThemeMode
@@ -231,7 +231,8 @@ fun MainScreenWithBottomNav(
                                 searchQuery = searchQuery,
                                 onCountdownClick = { countdown -> haptic.tick(); dialogCountdown = countdown },
                                 onCountdownEdit = { countdown -> editingCountdown = countdown },
-                                onCountdownDelete = { countdown -> viewModel.deleteCountdown(countdown) }
+                                onCountdownDelete = { countdown -> viewModel.deleteCountdown(countdown) },
+                                onAddCountdown = { showAddEditScreen = true }
                             )
                             2 -> SettingsPageContent(onThemeDialogOpen = { haptic.tick(); showThemeDialog = true })
                         }
@@ -368,10 +369,11 @@ private fun MainListContent(
     searchQuery: String,
     onCountdownClick: (Countdown) -> Unit,
     onCountdownEdit: (Countdown) -> Unit,
-    onCountdownDelete: (Countdown) -> Unit
+    onCountdownDelete: (Countdown) -> Unit,
+    onAddCountdown: () -> Unit = {}
 ) {
     if (countdowns.isEmpty()) {
-        EmptyStateView()
+        EmptyStateView(onAddCountdown = onAddCountdown)
         return
     }
 
@@ -439,63 +441,213 @@ private fun AnimatedCountdownCard(countdown: Countdown, onCountdownClick: (Count
     }
 }
 
-// ─── About-Seite ──────────────────────────────────────────────────────────────
-
-@Composable
-private fun AboutPageContent() {
-    val scrollState = rememberScrollState()
-    Column(modifier = Modifier.fillMaxSize().verticalScroll(scrollState).padding(24.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-        Box(modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp), contentAlignment = Alignment.Center) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("NexTime", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.primaryContainer) {
-                        Text("v${BuildConfig.VERSION_NAME}", modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), style = MaterialTheme.typography.labelMedium)
-                    }
-                }
-            }
-        }
-        DeveloperCard()
-        FeaturesCard()
-        SupportActionsCard()
-    }
-}
-
-@Composable
-private fun SupportActionsCard() {
-    val context = LocalContext.current
-    val haptic = remember { HapticFeedback(context) }
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("Support", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            OutlinedButton(onClick = { haptic.click(); openPlayStore(context) }, modifier = Modifier.fillMaxWidth()) { Text("⭐ App bewerten") }
-            OutlinedButton(onClick = { haptic.click(); openKofi(context) }, modifier = Modifier.fillMaxWidth()) { Text("☕ Buy me a Coffee") }
-            OutlinedButton(onClick = { haptic.click(); reportBug(context) }, modifier = Modifier.fillMaxWidth()) { Text("🐛 Fehler melden") }
-        }
-    }
-}
+// ─── About-Seite → kommt aus AboutDialog.kt ───────────────────────────────────
 
 // ─── Einstellungen ────────────────────────────────────────────────────────────
 
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 private fun SettingsPageContent(onThemeDialogOpen: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val themeMode by ThemePreferences.getThemeMode(context).collectAsState(initial = ThemeMode.SYSTEM)
     val haptic = remember { HapticFeedback(context) }
+    val scrollState = rememberScrollState()
 
-    Column(modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    // Theme
+    val themeMode by ThemePreferences.getThemeMode(context).collectAsState(initial = ThemeMode.SYSTEM)
+
+    // Standard-Einstellungen
+    val defaultFormat by de.beigel.nextime.ui.theme.AppPreferences
+        .getDefaultFormat(context).collectAsState(initial = de.beigel.nextime.data.model.CountdownDisplayFormat.DAYS_ONLY)
+    val defaultColor by de.beigel.nextime.ui.theme.AppPreferences
+        .getDefaultColor(context).collectAsState(initial = "#FF7043")
+    val defaultTime by de.beigel.nextime.ui.theme.AppPreferences
+        .getDefaultTime(context).collectAsState(initial = java.time.LocalTime.of(12, 0))
+
+    var showTimePicker by remember { mutableStateOf(false) }
+    var showColorPicker by remember { mutableStateOf(false) }
+    var showFormatMenu by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(scrollState)
+            .padding(horizontal = 24.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // ── Design ────────────────────────────────────────────────────────────
         Text("Design & Theme", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
         OutlinedButton(onClick = onThemeDialogOpen, modifier = Modifier.fillMaxWidth()) {
             Icon(imageVector = Icons.Outlined.Settings, contentDescription = null, modifier = Modifier.size(18.dp))
             Spacer(Modifier.width(8.dp))
             Text("🎨 Theme auswählen")
         }
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(4.dp))
         Text("Helles/Dunkles Design", style = MaterialTheme.typography.titleMedium)
         ThemeModeOption("⚙️ Systemeinstellung", themeMode == ThemeMode.SYSTEM) { haptic.tick(); scope.launch { ThemePreferences.setThemeMode(context, ThemeMode.SYSTEM) } }
         ThemeModeOption("🌞 Hell", themeMode == ThemeMode.LIGHT) { haptic.tick(); scope.launch { ThemePreferences.setThemeMode(context, ThemeMode.LIGHT) } }
         ThemeModeOption("🌙 Dunkel", themeMode == ThemeMode.DARK) { haptic.tick(); scope.launch { ThemePreferences.setThemeMode(context, ThemeMode.DARK) } }
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp), color = MaterialTheme.colorScheme.outlineVariant)
+
+        // ── Standard-Einstellungen ────────────────────────────────────────────
+        Text("Standard für neue Einträge", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        Text(
+            text = "Diese Werte werden beim Erstellen neuer Einträge vorausgefüllt.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        // Standard-Anzeigeformat
+        SettingsRow(
+            label = "Anzeigeformat",
+            value = when (defaultFormat) {
+                de.beigel.nextime.data.model.CountdownDisplayFormat.DAYS_ONLY         -> "Nur Tage"
+                de.beigel.nextime.data.model.CountdownDisplayFormat.WEEKS_DAYS        -> "Wochen + Tage"
+                de.beigel.nextime.data.model.CountdownDisplayFormat.MONTHS_DAYS       -> "Monate + Tage"
+                de.beigel.nextime.data.model.CountdownDisplayFormat.YEARS_MONTHS_DAYS -> "Jahre + Monate + Tage"
+            },
+            onClick = { haptic.tick(); showFormatMenu = true }
+        )
+
+        // Standard-Farbe
+        SettingsRowColor(
+            label = "Farbe",
+            color = defaultColor,
+            onClick = { haptic.tick(); showColorPicker = true }
+        )
+
+        // Standard-Uhrzeit
+        SettingsRow(
+            label = "Uhrzeit (wenn aktiv)",
+            value = defaultTime.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")) + " Uhr",
+            onClick = { haptic.tick(); showTimePicker = true }
+        )
+    }
+
+    // Format-Picker
+    if (showFormatMenu) {
+        AlertDialog(
+            onDismissRequest = { showFormatMenu = false },
+            title = { Text("Standard-Anzeigeformat") },
+            text = {
+                Column {
+                    listOf(
+                        de.beigel.nextime.data.model.CountdownDisplayFormat.DAYS_ONLY to "Nur Tage",
+                        de.beigel.nextime.data.model.CountdownDisplayFormat.WEEKS_DAYS to "Wochen + Tage",
+                        de.beigel.nextime.data.model.CountdownDisplayFormat.MONTHS_DAYS to "Monate + Tage",
+                        de.beigel.nextime.data.model.CountdownDisplayFormat.YEARS_MONTHS_DAYS to "Jahre + Monate + Tage"
+                    ).forEach { (format, label) ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    haptic.tick()
+                                    scope.launch { de.beigel.nextime.ui.theme.AppPreferences.setDefaultFormat(context, format) }
+                                    showFormatMenu = false
+                                }
+                                .padding(vertical = 12.dp, horizontal = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(label, style = MaterialTheme.typography.bodyMedium)
+                            if (defaultFormat == format) {
+                                Text("✓", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { showFormatMenu = false }) { Text("Schließen") } }
+        )
+    }
+
+    // Farb-Picker
+    if (showColorPicker) {
+        val initialColorInt = try { android.graphics.Color.parseColor(defaultColor) }
+        catch (e: Exception) { android.graphics.Color.parseColor("#FF7043") }
+        var r by remember { mutableStateOf(android.graphics.Color.red(initialColorInt)) }
+        var g by remember { mutableStateOf(android.graphics.Color.green(initialColorInt)) }
+        var b by remember { mutableStateOf(android.graphics.Color.blue(initialColorInt)) }
+
+        AlertDialog(
+            onDismissRequest = { showColorPicker = false },
+            title = { Text("Standard-Farbe") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    // Schnellauswahl
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                        listOf("#FF7043","#EF5350","#EC407A","#AB47BC","#5C6BC0","#42A5F5","#26A69A","#66BB6A","#FFA726","#8D6E63").forEach { hex ->
+                            val c = try { androidx.compose.ui.graphics.Color(android.graphics.Color.parseColor(hex)) }
+                            catch (e: Exception) { MaterialTheme.colorScheme.primary }
+                            Surface(
+                                modifier = Modifier.size(36.dp),
+                                shape = CircleShape,
+                                color = c,
+                                onClick = {
+                                    scope.launch { de.beigel.nextime.ui.theme.AppPreferences.setDefaultColor(context, hex) }
+                                    showColorPicker = false
+                                }
+                            ) {
+                                if (defaultColor == hex) {
+                                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                                        Text("✓", color = androidx.compose.ui.graphics.Color.White, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    HorizontalDivider()
+                    // RGB-Slider
+                    Box(modifier = Modifier.size(40.dp).clip(CircleShape).background(androidx.compose.ui.graphics.Color(android.graphics.Color.rgb(r, g, b))))
+                    Text("R: $r", style = MaterialTheme.typography.bodySmall)
+                    Slider(value = r.toFloat(), onValueChange = { r = it.toInt() }, valueRange = 0f..255f)
+                    Text("G: $g", style = MaterialTheme.typography.bodySmall)
+                    Slider(value = g.toFloat(), onValueChange = { g = it.toInt() }, valueRange = 0f..255f)
+                    Text("B: $b", style = MaterialTheme.typography.bodySmall)
+                    Slider(value = b.toFloat(), onValueChange = { b = it.toInt() }, valueRange = 0f..255f)
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    val hex = String.format("#%02X%02X%02X", r, g, b)
+                    scope.launch { de.beigel.nextime.ui.theme.AppPreferences.setDefaultColor(context, hex) }
+                    showColorPicker = false
+                }) { Text("OK") }
+            },
+            dismissButton = { TextButton(onClick = { showColorPicker = false }) { Text("Abbrechen") } }
+        )
+    }
+
+    // Zeit-Picker
+    if (showTimePicker) {
+        val timePickerState = rememberTimePickerState(
+            initialHour = defaultTime.hour,
+            initialMinute = defaultTime.minute,
+            is24Hour = true
+        )
+        AlertDialog(
+            onDismissRequest = { showTimePicker = false },
+            title = { Text("Standard-Uhrzeit") },
+            text = {
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    TimePicker(state = timePickerState)
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    haptic.click()
+                    scope.launch {
+                        de.beigel.nextime.ui.theme.AppPreferences.setDefaultTime(
+                            context,
+                            java.time.LocalTime.of(timePickerState.hour, timePickerState.minute)
+                        )
+                    }
+                    showTimePicker = false
+                }) { Text("OK") }
+            },
+            dismissButton = { TextButton(onClick = { showTimePicker = false }) { Text("Abbrechen") } }
+        )
     }
 }
 
@@ -505,6 +657,52 @@ private fun ThemeModeOption(label: String, isSelected: Boolean, onClick: () -> U
         Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Text(label)
             RadioButton(selected = isSelected, onClick = onClick)
+        }
+    }
+}
+
+@Composable
+private fun SettingsRow(label: String, value: String, onClick: () -> Unit) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        onClick = onClick
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(label, style = MaterialTheme.typography.bodyMedium)
+            Text(value, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
+        }
+    }
+}
+
+@Composable
+private fun SettingsRowColor(label: String, color: String, onClick: () -> Unit) {
+    val parsedColor = try { androidx.compose.ui.graphics.Color(android.graphics.Color.parseColor(color)) }
+    catch (e: Exception) { MaterialTheme.colorScheme.primary }
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        onClick = onClick
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(label, style = MaterialTheme.typography.bodyMedium)
+            Box(
+                modifier = Modifier
+                    .size(24.dp)
+                    .clip(CircleShape)
+                    .background(parsedColor)
+            )
         }
     }
 }

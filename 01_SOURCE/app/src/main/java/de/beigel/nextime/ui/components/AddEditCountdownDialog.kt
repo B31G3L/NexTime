@@ -79,17 +79,27 @@ fun AddEditCountdownScreen(
     var selectedDate by remember {
         mutableStateOf(countdown?.targetDateTime?.toLocalDate() ?: LocalDate.now().plusDays(1))
     }
-    var selectedTime by remember {
-        mutableStateOf(countdown?.targetDateTime?.toLocalTime() ?: LocalTime.of(12, 0))
+    // Defaults aus AppPreferences (nur für neue Einträge)
+    val defaultFormat by de.beigel.nextime.ui.theme.AppPreferences
+        .getDefaultFormat(context).collectAsState(initial = CountdownDisplayFormat.DAYS_ONLY)
+    val defaultColor by de.beigel.nextime.ui.theme.AppPreferences
+        .getDefaultColor(context).collectAsState(initial = "#FF7043")
+    val defaultTime by de.beigel.nextime.ui.theme.AppPreferences
+        .getDefaultTime(context).collectAsState(initial = LocalTime.of(12, 0))
+
+    var selectedTime by remember(defaultTime) {
+        mutableStateOf(countdown?.targetDateTime?.toLocalTime() ?: defaultTime)
     }
     var includeTime by remember { mutableStateOf(countdown?.includeTime ?: false) }
     var selectedRecurrence by remember {
         mutableStateOf(countdown?.recurrenceType ?: RecurrenceType.NONE)
     }
-    var selectedFormat by remember {
+    var selectedFormat by remember(defaultFormat) {
         mutableStateOf(
-            try { CountdownDisplayFormat.valueOf(countdown?.displayFormat ?: CountdownDisplayFormat.DAYS_ONLY.name) }
-            catch (e: Exception) { CountdownDisplayFormat.DAYS_ONLY }
+            if (countdown != null) {
+                try { CountdownDisplayFormat.valueOf(countdown.displayFormat) }
+                catch (e: Exception) { CountdownDisplayFormat.DAYS_ONLY }
+            } else defaultFormat
         )
     }
     var notificationEnabled by remember { mutableStateOf(countdown?.notificationEnabled ?: false) }
@@ -107,7 +117,9 @@ fun AddEditCountdownScreen(
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
     var showCustomColorPicker by remember { mutableStateOf(false) }
-    var selectedColor by remember { mutableStateOf(countdown?.color ?: "#FF7043") }
+    var selectedColor by remember(defaultColor) {
+        mutableStateOf(countdown?.color ?: defaultColor)
+    }
 
     val colorOptions = listOf(
         "#FF7043", "#EF5350", "#EC407A", "#AB47BC", "#5C6BC0",
