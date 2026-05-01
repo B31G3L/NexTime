@@ -3,6 +3,8 @@ package de.beigel.nextime.ui.components
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -32,9 +34,9 @@ import de.beigel.nextime.data.model.ReminderOption
 import de.beigel.nextime.utils.HapticFeedback
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
-// Schnellauswahl-Emojis für häufige Anlässe
 private val QUICK_EMOJIS = listOf(
     "⏰", "🎂", "✈️", "🎄", "🎃", "🎵", "🏖️", "💍",
     "🎓", "🏆", "🎉", "❤️", "🚀", "🌍", "🏠", "💼"
@@ -56,13 +58,14 @@ fun AddEditCountdownScreen(
     var selectedDate by remember {
         mutableStateOf(countdown?.targetDateTime?.toLocalDate() ?: LocalDate.now().plusDays(1))
     }
+    var selectedTime by remember {
+        mutableStateOf(countdown?.targetDateTime?.toLocalTime() ?: LocalTime.of(12, 0))
+    }
+    var includeTime by remember { mutableStateOf(countdown?.includeTime ?: false) }
     var selectedFormat by remember {
         mutableStateOf(
-            try {
-                CountdownDisplayFormat.valueOf(countdown?.displayFormat ?: CountdownDisplayFormat.DAYS_ONLY.name)
-            } catch (e: Exception) {
-                CountdownDisplayFormat.DAYS_ONLY
-            }
+            try { CountdownDisplayFormat.valueOf(countdown?.displayFormat ?: CountdownDisplayFormat.DAYS_ONLY.name) }
+            catch (e: Exception) { CountdownDisplayFormat.DAYS_ONLY }
         )
     }
     var notificationEnabled by remember { mutableStateOf(countdown?.notificationEnabled ?: false) }
@@ -78,6 +81,7 @@ fun AddEditCountdownScreen(
         }
     }
     var showDatePicker by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
     var showCustomColorPicker by remember { mutableStateOf(false) }
     var selectedColor by remember { mutableStateOf(countdown?.color ?: "#FF7043") }
 
@@ -93,11 +97,33 @@ fun AddEditCountdownScreen(
     )
     val availableReminders = listOf(
         ReminderOption.AT_TIME, ReminderOption.DAY_1, ReminderOption.DAYS_2,
-        ReminderOption.DAYS_3, ReminderOption.WEEK_1, ReminderOption.WEEKS_2, ReminderOption.MONTH_1
+        ReminderOption.DAYS_3, ReminderOption.WEEK_1, ReminderOption.WEEKS_2,
+        ReminderOption.MONTH_1
     )
 
+    val previewCountdown by remember(title, icon, selectedDate, selectedTime, includeTime, selectedFormat, selectedColor) {
+        derivedStateOf {
+            val targetDateTime = LocalDateTime.of(selectedDate, if (includeTime) selectedTime else LocalTime.MIDNIGHT)
+            countdown?.copy(
+                title = title.ifBlank { "Vorschau" },
+                icon = icon.ifBlank { "⏰" },
+                targetDateTime = targetDateTime,
+                displayFormat = selectedFormat.name,
+                color = selectedColor,
+                includeTime = includeTime
+            ) ?: Countdown(
+                title = title.ifBlank { "Vorschau" },
+                icon = icon.ifBlank { "⏰" },
+                targetDateTime = targetDateTime,
+                displayFormat = selectedFormat.name,
+                color = selectedColor,
+                includeTime = includeTime
+            )
+        }
+    }
+
     fun buildCountdown(): Countdown {
-        val targetDateTime = LocalDateTime.of(selectedDate, LocalDateTime.now().toLocalTime())
+        val targetDateTime = LocalDateTime.of(selectedDate, if (includeTime) selectedTime else LocalTime.MIDNIGHT)
         return countdown?.copy(
             title = title,
             icon = icon.ifBlank { "⏰" },
@@ -105,7 +131,8 @@ fun AddEditCountdownScreen(
             displayFormat = selectedFormat.name,
             color = selectedColor,
             notificationEnabled = notificationEnabled,
-            reminderOptions = selectedReminders.joinToString(",") { it.name }
+            reminderOptions = selectedReminders.joinToString(",") { it.name },
+            includeTime = includeTime
         ) ?: Countdown(
             title = title,
             icon = icon.ifBlank { "⏰" },
@@ -113,7 +140,8 @@ fun AddEditCountdownScreen(
             displayFormat = selectedFormat.name,
             color = selectedColor,
             notificationEnabled = notificationEnabled,
-            reminderOptions = selectedReminders.joinToString(",") { it.name }
+            reminderOptions = selectedReminders.joinToString(",") { it.name },
+            includeTime = includeTime
         )
     }
 
@@ -149,6 +177,27 @@ fun AddEditCountdownScreen(
                     )
                 }
         ) {
+            // ── STICKY PREVIEW ────────────────────────────────────────────
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.background)
+                    .padding(horizontal = 12.dp, vertical = 8.dp)
+            ) {
+                Text(
+                    text = "Vorschau",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 6.dp, start = 4.dp)
+                )
+                CountdownCard(countdown = previewCountdown)
+                HorizontalDivider(
+                    modifier = Modifier.padding(top = 12.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant
+                )
+            }
+
+            // ── SCROLLBARER INHALT ────────────────────────────────────────
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -157,7 +206,7 @@ fun AddEditCountdownScreen(
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // ===== TITEL =====
+                // Titel
                 SectionCardCompact(title = "Titel") {
                     OutlinedTextField(
                         value = title,
@@ -172,15 +221,13 @@ fun AddEditCountdownScreen(
                     )
                 }
 
-                // ===== ICON =====
+                // Icon
                 SectionCardCompact(title = "Icon") {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        // Eigenes Emoji eintippen
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            // Vorschau
                             Box(
                                 modifier = Modifier
                                     .size(48.dp)
@@ -188,10 +235,7 @@ fun AddEditCountdownScreen(
                                     .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text(
-                                    text = icon.ifBlank { "⏰" },
-                                    fontSize = 24.sp
-                                )
+                                Text(text = icon.ifBlank { "⏰" }, fontSize = 24.sp)
                             }
                             OutlinedTextField(
                                 value = icon,
@@ -205,8 +249,6 @@ fun AddEditCountdownScreen(
                                 )
                             )
                         }
-
-                        // Schnellauswahl
                         Text(
                             text = "Schnellauswahl",
                             style = MaterialTheme.typography.labelSmall,
@@ -222,17 +264,12 @@ fun AddEditCountdownScreen(
                                         .size(40.dp)
                                         .clip(RoundedCornerShape(8.dp))
                                         .background(
-                                            if (icon == emoji)
-                                                MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-                                            else
-                                                MaterialTheme.colorScheme.surfaceVariant
+                                            if (icon == emoji) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                                            else MaterialTheme.colorScheme.surfaceVariant
                                         )
                                         .then(
-                                            if (icon == emoji) Modifier.border(
-                                                2.dp,
-                                                MaterialTheme.colorScheme.primary,
-                                                RoundedCornerShape(8.dp)
-                                            ) else Modifier
+                                            if (icon == emoji) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp))
+                                            else Modifier
                                         )
                                         .clickable { haptic.tick(); icon = emoji },
                                     contentAlignment = Alignment.Center
@@ -244,27 +281,71 @@ fun AddEditCountdownScreen(
                     }
                 }
 
-                // ===== DATUM =====
-                SectionCardCompact(title = "Datum") {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        OutlinedButton(
-                            onClick = { haptic.tick(); showDatePicker = true },
-                            modifier = Modifier.weight(1f)
+                // Datum & Uhrzeit
+                SectionCardCompact(title = "Datum & Uhrzeit") {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        // Datum-Zeile
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            Icon(Icons.Default.CalendarToday, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.width(8.dp))
-                            Text(selectedDate.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")))
+                            OutlinedButton(
+                                onClick = { haptic.tick(); showDatePicker = true },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(Icons.Default.CalendarToday, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(8.dp))
+                                Text(selectedDate.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")))
+                            }
+                            TextButton(onClick = { selectedDate = LocalDate.now() }) {
+                                Text("Heute")
+                            }
                         }
-                        TextButton(onClick = { selectedDate = LocalDate.now() }) {
-                            Text("Heute")
+
+                        // Uhrzeit Toggle
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    Icons.Default.AccessTime,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    "Uhrzeit einbeziehen",
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                            Switch(
+                                checked = includeTime,
+                                onCheckedChange = { haptic.tick(); includeTime = it }
+                            )
+                        }
+
+                        // Uhrzeit-Picker — nur sichtbar wenn includeTime aktiv
+                        AnimatedVisibility(
+                            visible = includeTime,
+                            enter = fadeIn() + expandVertically(),
+                            exit = fadeOut() + shrinkVertically()
+                        ) {
+                            OutlinedButton(
+                                onClick = { haptic.tick(); showTimePicker = true },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(Icons.Default.Schedule, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(8.dp))
+                                Text(selectedTime.format(DateTimeFormatter.ofPattern("HH:mm")) + " Uhr")
+                            }
                         }
                     }
                 }
 
-                // ===== ANZEIGEFORMAT =====
+                // Anzeigeformat
                 SectionCardCompact(title = "Anzeigeformat") {
                     var formatExpanded by remember { mutableStateOf(false) }
                     Row(
@@ -280,7 +361,10 @@ fun AddEditCountdownScreen(
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.SemiBold
                         )
-                        Icon(if (formatExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, contentDescription = null)
+                        Icon(
+                            if (formatExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                            contentDescription = null
+                        )
                     }
                     AnimatedVisibility(visible = formatExpanded, enter = fadeIn(), exit = fadeOut()) {
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -294,8 +378,16 @@ fun AddEditCountdownScreen(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Column {
-                                        Text(label, style = MaterialTheme.typography.bodyMedium, fontWeight = if (selectedFormat == format) FontWeight.Bold else FontWeight.Normal)
-                                        Text(getFormatExample(format), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text(
+                                            label,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = if (selectedFormat == format) FontWeight.Bold else FontWeight.Normal
+                                        )
+                                        Text(
+                                            getFormatExample(format),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
                                     }
                                     if (selectedFormat == format) {
                                         Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
@@ -306,7 +398,7 @@ fun AddEditCountdownScreen(
                     }
                 }
 
-                // ===== FARBE =====
+                // Farbe
                 SectionCardCompact(title = "Farbe") {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -338,7 +430,7 @@ fun AddEditCountdownScreen(
                     }
                 }
 
-                // ===== BENACHRICHTIGUNGEN =====
+                // Benachrichtigungen
                 SectionCardCompact(title = "Benachrichtigungen") {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Row(
@@ -382,7 +474,7 @@ fun AddEditCountdownScreen(
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
-            // ===== BUTTONS =====
+            // Buttons
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -406,9 +498,10 @@ fun AddEditCountdownScreen(
         }
     }
 
-    // ===== CUSTOM COLOR PICKER =====
+    // Custom Color Picker
     if (showCustomColorPicker) {
-        val initialColorInt = try { android.graphics.Color.parseColor(selectedColor) } catch (e: Exception) { android.graphics.Color.parseColor("#FF7043") }
+        val initialColorInt = try { android.graphics.Color.parseColor(selectedColor) }
+        catch (e: Exception) { android.graphics.Color.parseColor("#FF7043") }
         var r by remember { mutableStateOf(android.graphics.Color.red(initialColorInt)) }
         var g by remember { mutableStateOf(android.graphics.Color.green(initialColorInt)) }
         var b by remember { mutableStateOf(android.graphics.Color.blue(initialColorInt)) }
@@ -439,9 +532,11 @@ fun AddEditCountdownScreen(
         )
     }
 
-    // ===== DATE PICKER =====
+    // Date Picker
     if (showDatePicker) {
-        val datePickerState = rememberDatePickerState(initialSelectedDateMillis = selectedDate.toEpochDay() * 86400000)
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = selectedDate.toEpochDay() * 86400000
+        )
         DatePickerDialog(
             onDismissRequest = { haptic.tick(); showDatePicker = false },
             confirmButton = {
@@ -458,13 +553,41 @@ fun AddEditCountdownScreen(
             DatePicker(state = datePickerState)
         }
     }
+
+    // Time Picker
+    if (showTimePicker) {
+        val timePickerState = rememberTimePickerState(
+            initialHour = selectedTime.hour,
+            initialMinute = selectedTime.minute,
+            is24Hour = true
+        )
+        AlertDialog(
+            onDismissRequest = { haptic.tick(); showTimePicker = false },
+            title = { Text("Uhrzeit wählen") },
+            text = {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    TimePicker(state = timePickerState)
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    haptic.click()
+                    selectedTime = LocalTime.of(timePickerState.hour, timePickerState.minute)
+                    showTimePicker = false
+                }) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { haptic.tick(); showTimePicker = false }) { Text("Abbrechen") }
+            }
+        )
+    }
 }
 
 @Composable
-private fun SectionCardCompact(
-    title: String,
-    content: @Composable ColumnScope.() -> Unit
-) {
+private fun SectionCardCompact(title: String, content: @Composable ColumnScope.() -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),

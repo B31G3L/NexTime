@@ -14,8 +14,6 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.outlined.AvTimer
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Settings
@@ -32,11 +30,11 @@ import de.beigel.nextime.BuildConfig
 import de.beigel.nextime.data.model.Countdown
 import de.beigel.nextime.data.model.FilterMode
 import de.beigel.nextime.data.model.calculateTimeRemaining
-import de.beigel.nextime.ui.components.AddEditCountdownScreen
 import de.beigel.nextime.ui.components.CountdownCard
 import de.beigel.nextime.ui.components.CountdownCardDialog
 import de.beigel.nextime.ui.components.DeveloperCard
 import de.beigel.nextime.ui.components.EmptyStateView
+import de.beigel.nextime.ui.components.ExpandableFab
 import de.beigel.nextime.ui.components.FeaturesCard
 import de.beigel.nextime.ui.components.ThemeSettingsDialog
 import de.beigel.nextime.ui.components.openKofi
@@ -112,7 +110,7 @@ fun MainScreenWithBottomNav(
     ) { screen ->
         when (screen) {
             "add_edit" -> {
-                AddEditCountdownScreen(
+                de.beigel.nextime.ui.components.AddEditCountdownScreen(
                     countdown = editingCountdown,
                     onSave = { countdown: Countdown ->
                         if (editingCountdown != null) viewModel.updateCountdown(countdown)
@@ -177,18 +175,17 @@ fun MainScreenWithBottomNav(
                             ) + fadeIn(),
                             exit = scaleOut(animationSpec = tween(200)) + fadeOut()
                         ) {
-                            FloatingActionButton(
-                                onClick = { haptic.click(); showAddEditScreen = true },
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(64.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Add,
-                                    contentDescription = "Countdown hinzufügen",
-                                    modifier = Modifier.size(28.dp),
-                                    tint = MaterialTheme.colorScheme.onPrimary
-                                )
-                            }
+                            ExpandableFab(
+                                onCreateCustom = {
+                                    showAddEditScreen = true
+                                },
+                                onTemplateSelected = { countdown ->
+                                    // Template direkt als neuen Countdown öffnen im Edit-Screen
+                                    // damit der Nutzer Datum etc. noch anpassen kann
+                                    editingCountdown = countdown.copy(id = 0)
+                                    showAddEditScreen = true
+                                }
+                            )
                         }
                     },
                     floatingActionButtonPosition = FabPosition.End
@@ -238,9 +235,7 @@ fun MainScreenWithBottomNav(
                 viewModel.deleteCountdown(c)
                 dialogCountdown = null
             },
-            onShare = { c ->
-                shareCountdown(context, c)
-            }
+            onShare = { c -> shareCountdown(context, c) }
         )
     }
 
@@ -302,19 +297,37 @@ private fun BottomNavigationBar(selectedPage: Int, onPageSelected: (Int) -> Unit
         NavigationBarItem(
             selected = selectedPage == 0,
             onClick = { onPageSelected(0) },
-            icon = { Icon(Icons.Outlined.Info, contentDescription = "Info", modifier = Modifier.size(26.dp)) },
+            icon = {
+                Icon(
+                    Icons.Outlined.Info,
+                    contentDescription = "Info",
+                    modifier = Modifier.size(26.dp)
+                )
+            },
             label = null, alwaysShowLabel = false
         )
         NavigationBarItem(
             selected = selectedPage == 1,
             onClick = { onPageSelected(1) },
-            icon = { Icon(Icons.Outlined.AvTimer, contentDescription = "Liste", modifier = Modifier.size(26.dp)) },
+            icon = {
+                Icon(
+                    Icons.Outlined.AvTimer,
+                    contentDescription = "Liste",
+                    modifier = Modifier.size(26.dp)
+                )
+            },
             label = null, alwaysShowLabel = false
         )
         NavigationBarItem(
             selected = selectedPage == 2,
             onClick = { onPageSelected(2) },
-            icon = { Icon(Icons.Outlined.Settings, contentDescription = "Einstellungen", modifier = Modifier.size(26.dp)) },
+            icon = {
+                Icon(
+                    Icons.Outlined.Settings,
+                    contentDescription = "Einstellungen",
+                    modifier = Modifier.size(26.dp)
+                )
+            },
             label = null, alwaysShowLabel = false
         )
     }
@@ -527,17 +540,26 @@ private fun SettingsPageContent(onThemeDialogOpen: () -> Unit) {
         ThemeModeOption(
             label = "⚙️ Systemeinstellung",
             isSelected = themeMode == ThemeMode.SYSTEM,
-            onClick = { haptic.tick(); scope.launch { ThemePreferences.setThemeMode(context, ThemeMode.SYSTEM) } }
+            onClick = {
+                haptic.tick()
+                scope.launch { ThemePreferences.setThemeMode(context, ThemeMode.SYSTEM) }
+            }
         )
         ThemeModeOption(
             label = "🌞 Hell",
             isSelected = themeMode == ThemeMode.LIGHT,
-            onClick = { haptic.tick(); scope.launch { ThemePreferences.setThemeMode(context, ThemeMode.LIGHT) } }
+            onClick = {
+                haptic.tick()
+                scope.launch { ThemePreferences.setThemeMode(context, ThemeMode.LIGHT) }
+            }
         )
         ThemeModeOption(
             label = "🌙 Dunkel",
             isSelected = themeMode == ThemeMode.DARK,
-            onClick = { haptic.tick(); scope.launch { ThemePreferences.setThemeMode(context, ThemeMode.DARK) } }
+            onClick = {
+                haptic.tick()
+                scope.launch { ThemePreferences.setThemeMode(context, ThemeMode.DARK) }
+            }
         )
     }
 }

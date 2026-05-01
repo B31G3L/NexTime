@@ -24,11 +24,10 @@ enum class ReminderOption(val displayName: String, val minutes: Long) {
     MONTH_1("1 Monat vorher", 43200)
 }
 
-// Filtermodus für die Hauptliste
 enum class FilterMode {
-    ALL,        // Countdown + Count-up gemischt (Countdowns oben, Count-ups unten)
-    COUNTDOWN,  // Nur zukünftige Einträge
-    COUNTUP     // Nur vergangene Einträge
+    ALL,
+    COUNTDOWN,
+    COUNTUP
 }
 
 @Entity(tableName = "countdowns")
@@ -47,9 +46,8 @@ data class Countdown(
     val includeTime: Boolean = false,
     val showNights: Boolean = false
 ) {
-    // Computed property: true wenn Zieldatum in der Vergangenheit liegt
     val isCountUp: Boolean
-        get() = targetDateTime.toLocalDate().isBefore(LocalDate.now())
+        get() = targetDateTime.isBefore(LocalDateTime.now())
 }
 
 data class CountdownInfo(
@@ -61,84 +59,118 @@ data class CountdownInfo(
     val remainingDaysAfterYears: Long,
     val remainingMonthsAfterYears: Long,
     val remainingDaysAfterWeeks: Long,
+    // Neu: sekundengenaue Zeit-Komponenten
+    val hours: Long,
+    val minutes: Long,
+    val seconds: Long,
+    val totalSeconds: Long,
     val isPast: Boolean
 )
 
 fun Countdown.calculateTimeRemaining(): CountdownInfo {
-    val now = LocalDateTime.now().toLocalDate()
-    val targetDate = targetDateTime.toLocalDate()
-    val isPast = targetDate.isBefore(now)
+    val now = LocalDateTime.now()
 
-    val start: LocalDate = if (isPast) targetDate else now
-    val end: LocalDate   = if (isPast) now        else targetDate
+    return if (includeTime) {
+        // Sekundengenaue Berechnung
+        val isPast = targetDateTime.isBefore(now)
+        val start: LocalDateTime = if (isPast) targetDateTime else now
+        val end: LocalDateTime   = if (isPast) now else targetDateTime
 
-    val totalDays    = ChronoUnit.DAYS.between(start, end)
-    val totalWeeks   = ChronoUnit.WEEKS.between(start, end)
-    val totalMonths  = ChronoUnit.MONTHS.between(start, end)
-    val totalYears   = ChronoUnit.YEARS.between(start, end)
+        val totalSeconds = ChronoUnit.SECONDS.between(start, end)
+        val totalDays    = totalSeconds / 86400
+        val remaining    = totalSeconds % 86400
+        val hours        = remaining / 3600
+        val minutes      = (remaining % 3600) / 60
+        val seconds      = remaining % 60
 
-    val remainingDaysAfterMonths = ChronoUnit.DAYS.between(
-        start.plusMonths(totalMonths), end
-    )
-    val remainingMonthsAfterYears = ChronoUnit.MONTHS.between(
-        start.plusYears(totalYears), end
-    )
-    val remainingDaysAfterYears = ChronoUnit.DAYS.between(
-        start.plusYears(totalYears).plusMonths(remainingMonthsAfterYears), end
-    )
-    val remainingDaysAfterWeeks = totalDays % 7
+        val startDate = start.toLocalDate()
+        val endDate   = end.toLocalDate()
+        val totalMonths = ChronoUnit.MONTHS.between(startDate, endDate)
+        val totalYears  = ChronoUnit.YEARS.between(startDate, endDate)
+        val remainingDaysAfterMonths = ChronoUnit.DAYS.between(startDate.plusMonths(totalMonths), endDate)
+        val remainingMonthsAfterYears = ChronoUnit.MONTHS.between(startDate.plusYears(totalYears), endDate)
+        val remainingDaysAfterYears = ChronoUnit.DAYS.between(
+            startDate.plusYears(totalYears).plusMonths(remainingMonthsAfterYears), endDate
+        )
 
-    return CountdownInfo(
-        days                      = totalDays,
-        weeks                     = totalWeeks,
-        months                    = totalMonths,
-        years                     = totalYears,
-        remainingDaysAfterMonths  = remainingDaysAfterMonths,
-        remainingDaysAfterYears   = remainingDaysAfterYears,
-        remainingMonthsAfterYears = remainingMonthsAfterYears,
-        remainingDaysAfterWeeks   = remainingDaysAfterWeeks,
-        isPast                    = isPast
-    )
+        CountdownInfo(
+            days                      = totalDays,
+            weeks                     = totalDays / 7,
+            months                    = totalMonths,
+            years                     = totalYears,
+            remainingDaysAfterMonths  = remainingDaysAfterMonths,
+            remainingDaysAfterYears   = remainingDaysAfterYears,
+            remainingMonthsAfterYears = remainingMonthsAfterYears,
+            remainingDaysAfterWeeks   = totalDays % 7,
+            hours                     = hours,
+            minutes                   = minutes,
+            seconds                   = seconds,
+            totalSeconds              = totalSeconds,
+            isPast                    = isPast
+        )
+    } else {
+        // Nur Datum (wie bisher)
+        val nowDate    = now.toLocalDate()
+        val targetDate = targetDateTime.toLocalDate()
+        val isPast     = targetDate.isBefore(nowDate)
+
+        val start: LocalDate = if (isPast) targetDate else nowDate
+        val end: LocalDate   = if (isPast) nowDate else targetDate
+
+        val totalDays   = ChronoUnit.DAYS.between(start, end)
+        val totalMonths = ChronoUnit.MONTHS.between(start, end)
+        val totalYears  = ChronoUnit.YEARS.between(start, end)
+        val remainingDaysAfterMonths = ChronoUnit.DAYS.between(start.plusMonths(totalMonths), end)
+        val remainingMonthsAfterYears = ChronoUnit.MONTHS.between(start.plusYears(totalYears), end)
+        val remainingDaysAfterYears = ChronoUnit.DAYS.between(
+            start.plusYears(totalYears).plusMonths(remainingMonthsAfterYears), end
+        )
+
+        CountdownInfo(
+            days                      = totalDays,
+            weeks                     = ChronoUnit.WEEKS.between(start, end),
+            months                    = totalMonths,
+            years                     = totalYears,
+            remainingDaysAfterMonths  = remainingDaysAfterMonths,
+            remainingDaysAfterYears   = remainingDaysAfterYears,
+            remainingMonthsAfterYears = remainingMonthsAfterYears,
+            remainingDaysAfterWeeks   = totalDays % 7,
+            hours                     = 0L,
+            minutes                   = 0L,
+            seconds                   = 0L,
+            totalSeconds              = totalDays * 86400,
+            isPast                    = isPast
+        )
+    }
 }
 
+// Formatiert HH:MM:SS
+fun CountdownInfo.formatTime(): String =
+    "%02d:%02d:%02d".format(hours, minutes, seconds)
+
 fun Countdown.getFormattedTime(timeInfo: CountdownInfo): String {
-    val format = try {
-        CountdownDisplayFormat.valueOf(displayFormat)
-    } catch (e: Exception) {
-        CountdownDisplayFormat.DAYS_ONLY
-    }
+    val format = try { CountdownDisplayFormat.valueOf(displayFormat) }
+    catch (e: Exception) { CountdownDisplayFormat.DAYS_ONLY }
     return when (format) {
-        CountdownDisplayFormat.DAYS_ONLY ->
-            "${timeInfo.days}"
-        CountdownDisplayFormat.WEEKS_DAYS ->
-            "${timeInfo.weeks} Wochen, ${timeInfo.remainingDaysAfterWeeks} Tage"
-        CountdownDisplayFormat.MONTHS_DAYS ->
-            "${timeInfo.months} Monate, ${timeInfo.remainingDaysAfterMonths} Tage"
-        CountdownDisplayFormat.YEARS_MONTHS_DAYS ->
-            "${timeInfo.years} Jahre, ${timeInfo.remainingMonthsAfterYears} Monate, ${timeInfo.remainingDaysAfterYears} Tage"
+        CountdownDisplayFormat.DAYS_ONLY          -> "${timeInfo.days}"
+        CountdownDisplayFormat.WEEKS_DAYS         -> "${timeInfo.weeks} Wochen, ${timeInfo.remainingDaysAfterWeeks} Tage"
+        CountdownDisplayFormat.MONTHS_DAYS        -> "${timeInfo.months} Monate, ${timeInfo.remainingDaysAfterMonths} Tage"
+        CountdownDisplayFormat.YEARS_MONTHS_DAYS  -> "${timeInfo.years} Jahre, ${timeInfo.remainingMonthsAfterYears} Monate, ${timeInfo.remainingDaysAfterYears} Tage"
     }
 }
 
 fun Countdown.getFormattedTimeLabel(timeInfo: CountdownInfo): String {
-    val format = try {
-        CountdownDisplayFormat.valueOf(displayFormat)
-    } catch (e: Exception) {
-        CountdownDisplayFormat.DAYS_ONLY
-    }
+    val format = try { CountdownDisplayFormat.valueOf(displayFormat) }
+    catch (e: Exception) { CountdownDisplayFormat.DAYS_ONLY }
     return when (format) {
         CountdownDisplayFormat.DAYS_ONLY -> if (timeInfo.days == 1L) "Tag" else "Tage"
         else -> ""
     }
 }
 
-fun CountdownInfo.toDisplayString(): String {
-    return buildString {
-        if (isPast) append("vor ")
-        if (days > 0) {
-            append("$days Tag")
-            if (days > 1) append("e")
-        }
-    }
+fun CountdownInfo.toDisplayString(): String = buildString {
+    if (isPast) append("vor ")
+    if (days > 0) { append("$days Tag"); if (days > 1) append("e") }
 }
 
 fun Countdown.getReminderOptionsList(): List<ReminderOption> {
