@@ -34,6 +34,7 @@ import de.beigel.nextime.data.model.FilterMode
 import de.beigel.nextime.data.model.calculateTimeRemaining
 import de.beigel.nextime.ui.components.AddEditCountdownScreen
 import de.beigel.nextime.ui.components.CountdownCard
+import de.beigel.nextime.ui.components.CountdownCardDialog
 import de.beigel.nextime.ui.components.DeveloperCard
 import de.beigel.nextime.ui.components.EmptyStateView
 import de.beigel.nextime.ui.components.FeaturesCard
@@ -63,12 +64,11 @@ fun MainScreenWithBottomNav(
     val scope = rememberCoroutineScope()
 
     val countdowns by viewModel.countdowns.collectAsState()
-    val selectedCountdown by viewModel.selectedCountdown.collectAsState()
     val filterMode by viewModel.filterMode.collectAsState()
 
     var showAddEditScreen by remember { mutableStateOf(false) }
     var editingCountdown by remember { mutableStateOf<Countdown?>(null) }
-    var countdownToDelete by remember { mutableStateOf<Countdown?>(null) }
+    var dialogCountdown by remember { mutableStateOf<Countdown?>(null) }
     var showThemeDialog by remember { mutableStateOf(false) }
     var selectedCustomTheme by remember { mutableStateOf(CustomTheme.NEXTIME) }
 
@@ -82,7 +82,6 @@ fun MainScreenWithBottomNav(
 
     val currentScreen = when {
         showAddEditScreen || editingCountdown != null -> "add_edit"
-        selectedCountdown != null -> "detail"
         else -> "main"
     }
 
@@ -128,23 +127,6 @@ fun MainScreenWithBottomNav(
                 )
             }
 
-            "detail" -> {
-                val currentCountdown = selectedCountdown ?: return@AnimatedContent
-                CountdownDetailScreen(
-                    countdown = currentCountdown,
-                    onBack = { viewModel.selectCountdown(null) },
-                    onEdit = {
-                        editingCountdown = currentCountdown
-                        viewModel.selectCountdown(null)
-                    },
-                    onDelete = {
-                        countdownToDelete = currentCountdown
-                        viewModel.selectCountdown(null)
-                    },
-                    onShare = { shareCountdown(context, currentCountdown) }
-                )
-            }
-
             else -> {
                 Scaffold(
                     topBar = {
@@ -160,7 +142,9 @@ fun MainScreenWithBottomNav(
                                         }
                                     )
                                 },
-                                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+                                colors = TopAppBarDefaults.topAppBarColors(
+                                    containerColor = Color.Transparent
+                                )
                             )
                             AnimatedVisibility(visible = pagerState.currentPage == 1) {
                                 FilterChipRow(
@@ -222,10 +206,14 @@ fun MainScreenWithBottomNav(
                                 filterMode = filterMode,
                                 onCountdownClick = { countdown ->
                                     haptic.tick()
-                                    viewModel.selectCountdown(countdown)
+                                    dialogCountdown = countdown
                                 },
-                                onCountdownEdit = { countdown -> editingCountdown = countdown },
-                                onCountdownDelete = { countdown -> countdownToDelete = countdown }
+                                onCountdownEdit = { countdown ->
+                                    editingCountdown = countdown
+                                },
+                                onCountdownDelete = { countdown ->
+                                    viewModel.deleteCountdown(countdown)
+                                }
                             )
                             2 -> SettingsPageContent(
                                 onThemeDialogOpen = { haptic.tick(); showThemeDialog = true }
@@ -237,18 +225,26 @@ fun MainScreenWithBottomNav(
         }
     }
 
-    if (countdownToDelete != null) {
-        DeleteConfirmationDialog(
-            countdown = countdownToDelete!!,
-            onConfirm = {
-                haptic.heavy()
-                viewModel.deleteCountdown(countdownToDelete!!)
-                countdownToDelete = null
+    // ─── Card-Dialog ──────────────────────────────────────────────────────────
+    dialogCountdown?.let { countdown ->
+        CountdownCardDialog(
+            countdown = countdown,
+            onDismiss = { dialogCountdown = null },
+            onEdit = { c ->
+                editingCountdown = c
+                dialogCountdown = null
             },
-            onDismiss = { haptic.tick(); countdownToDelete = null }
+            onDelete = { c ->
+                viewModel.deleteCountdown(c)
+                dialogCountdown = null
+            },
+            onShare = { c ->
+                shareCountdown(context, c)
+            }
         )
     }
 
+    // ─── Theme-Dialog ─────────────────────────────────────────────────────────
     if (showThemeDialog) {
         ThemeSettingsDialog(
             onDismiss = { showThemeDialog = false },
@@ -307,22 +303,19 @@ private fun BottomNavigationBar(selectedPage: Int, onPageSelected: (Int) -> Unit
             selected = selectedPage == 0,
             onClick = { onPageSelected(0) },
             icon = { Icon(Icons.Outlined.Info, contentDescription = "Info", modifier = Modifier.size(26.dp)) },
-            label = null,
-            alwaysShowLabel = false
+            label = null, alwaysShowLabel = false
         )
         NavigationBarItem(
             selected = selectedPage == 1,
             onClick = { onPageSelected(1) },
             icon = { Icon(Icons.Outlined.AvTimer, contentDescription = "Liste", modifier = Modifier.size(26.dp)) },
-            label = null,
-            alwaysShowLabel = false
+            label = null, alwaysShowLabel = false
         )
         NavigationBarItem(
             selected = selectedPage == 2,
             onClick = { onPageSelected(2) },
             icon = { Icon(Icons.Outlined.Settings, contentDescription = "Einstellungen", modifier = Modifier.size(26.dp)) },
-            label = null,
-            alwaysShowLabel = false
+            label = null, alwaysShowLabel = false
         )
     }
 }
@@ -569,42 +562,6 @@ private fun ThemeModeOption(label: String, isSelected: Boolean, onClick: () -> U
             RadioButton(selected = isSelected, onClick = onClick)
         }
     }
-}
-
-// ─── Dialoge ──────────────────────────────────────────────────────────────────
-
-@Composable
-private fun DeleteConfirmationDialog(
-    countdown: Countdown,
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        icon = {
-            Icon(
-                imageVector = Icons.Default.Delete,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.error
-            )
-        },
-        title = { Text("Countdown löschen?") },
-        text = {
-            Text(
-                "Möchtest du \"${countdown.title}\" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
-                style = MaterialTheme.typography.bodyMedium
-            )
-        },
-        confirmButton = {
-            Button(
-                onClick = onConfirm,
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-            ) { Text("Löschen") }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Abbrechen") }
-        }
-    )
 }
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
