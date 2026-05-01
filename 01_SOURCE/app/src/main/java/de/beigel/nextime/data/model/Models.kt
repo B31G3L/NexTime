@@ -24,6 +24,13 @@ enum class ReminderOption(val displayName: String, val minutes: Long) {
     MONTH_1("1 Monat vorher", 43200)
 }
 
+// Filtermodus für die Hauptliste
+enum class FilterMode {
+    ALL,        // Countdown + Count-up gemischt (Countdowns oben, Count-ups unten)
+    COUNTDOWN,  // Nur zukünftige Einträge
+    COUNTUP     // Nur vergangene Einträge
+}
+
 @Entity(tableName = "countdowns")
 data class Countdown(
     @PrimaryKey(autoGenerate = true)
@@ -33,13 +40,17 @@ data class Countdown(
     val displayFormat: String = CountdownDisplayFormat.DAYS_ONLY.name,
     val createdAt: LocalDateTime = LocalDateTime.now(),
     val color: String = "#FF7043",
-    val icon: String = "⏰",                // NEU: Emoji-Icon für die Karte
+    val icon: String = "⏰",
     val notificationEnabled: Boolean = false,
     val reminderOptions: String = "",
     val lastNotificationSent: String? = null,
     val includeTime: Boolean = false,
     val showNights: Boolean = false
-)
+) {
+    // Computed property: true wenn Zieldatum in der Vergangenheit liegt
+    val isCountUp: Boolean
+        get() = targetDateTime.toLocalDate().isBefore(LocalDate.now())
+}
 
 data class CountdownInfo(
     val days: Long,

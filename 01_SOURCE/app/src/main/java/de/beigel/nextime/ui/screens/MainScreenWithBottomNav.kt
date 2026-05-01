@@ -30,8 +30,17 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import de.beigel.nextime.BuildConfig
 import de.beigel.nextime.data.model.Countdown
+import de.beigel.nextime.data.model.FilterMode
 import de.beigel.nextime.data.model.calculateTimeRemaining
-import de.beigel.nextime.ui.components.*
+import de.beigel.nextime.ui.components.AddEditCountdownScreen
+import de.beigel.nextime.ui.components.CountdownCard
+import de.beigel.nextime.ui.components.DeveloperCard
+import de.beigel.nextime.ui.components.EmptyStateView
+import de.beigel.nextime.ui.components.FeaturesCard
+import de.beigel.nextime.ui.components.ThemeSettingsDialog
+import de.beigel.nextime.ui.components.openKofi
+import de.beigel.nextime.ui.components.openPlayStore
+import de.beigel.nextime.ui.components.reportBug
 import de.beigel.nextime.ui.theme.CustomTheme
 import de.beigel.nextime.ui.theme.CustomThemePreferences
 import de.beigel.nextime.ui.theme.ThemeMode
@@ -55,12 +64,12 @@ fun MainScreenWithBottomNav(
 
     val countdowns by viewModel.countdowns.collectAsState()
     val selectedCountdown by viewModel.selectedCountdown.collectAsState()
+    val filterMode by viewModel.filterMode.collectAsState()
 
     var showAddEditScreen by remember { mutableStateOf(false) }
     var editingCountdown by remember { mutableStateOf<Countdown?>(null) }
     var countdownToDelete by remember { mutableStateOf<Countdown?>(null) }
     var showThemeDialog by remember { mutableStateOf(false) }
-
     var selectedCustomTheme by remember { mutableStateOf(CustomTheme.NEXTIME) }
 
     LaunchedEffect(Unit) {
@@ -69,10 +78,7 @@ fun MainScreenWithBottomNav(
         }
     }
 
-    val pagerState = rememberPagerState(
-        initialPage = 1,
-        pageCount = { 3 }
-    )
+    val pagerState = rememberPagerState(initialPage = 1, pageCount = { 3 })
 
     val currentScreen = when {
         showAddEditScreen || editingCountdown != null -> "add_edit"
@@ -109,7 +115,7 @@ fun MainScreenWithBottomNav(
             "add_edit" -> {
                 AddEditCountdownScreen(
                     countdown = editingCountdown,
-                    onSave = { countdown ->
+                    onSave = { countdown: Countdown ->
                         if (editingCountdown != null) viewModel.updateCountdown(countdown)
                         else viewModel.addCountdown(countdown)
                         showAddEditScreen = false
@@ -123,9 +129,7 @@ fun MainScreenWithBottomNav(
             }
 
             "detail" -> {
-                val currentCountdown = selectedCountdown
-                if (currentCountdown == null) return@AnimatedContent
-
+                val currentCountdown = selectedCountdown ?: return@AnimatedContent
                 CountdownDetailScreen(
                     countdown = currentCountdown,
                     onBack = { viewModel.selectCountdown(null) },
@@ -144,19 +148,30 @@ fun MainScreenWithBottomNav(
             else -> {
                 Scaffold(
                     topBar = {
-                        TopAppBar(
-                            title = {
-                                Text(
-                                    when (pagerState.currentPage) {
-                                        0 -> "Info & Support"
-                                        1 -> "NexTime"
-                                        2 -> "Einstellungen"
-                                        else -> "NexTime"
+                        Column {
+                            TopAppBar(
+                                title = {
+                                    Text(
+                                        when (pagerState.currentPage) {
+                                            0 -> "Info & Support"
+                                            1 -> "NexTime"
+                                            2 -> "Einstellungen"
+                                            else -> "NexTime"
+                                        }
+                                    )
+                                },
+                                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+                            )
+                            AnimatedVisibility(visible = pagerState.currentPage == 1) {
+                                FilterChipRow(
+                                    currentMode = filterMode,
+                                    onModeSelected = { mode ->
+                                        haptic.tick()
+                                        viewModel.setFilterMode(mode)
                                     }
                                 )
-                            },
-                            colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
-                        )
+                            }
+                        }
                     },
                     bottomBar = {
                         BottomNavigationBar(
@@ -170,7 +185,12 @@ fun MainScreenWithBottomNav(
                     floatingActionButton = {
                         AnimatedVisibility(
                             visible = pagerState.currentPage == 1,
-                            enter = scaleIn(animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium)) + fadeIn(),
+                            enter = scaleIn(
+                                animationSpec = spring(
+                                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                                    stiffness = Spring.StiffnessMedium
+                                )
+                            ) + fadeIn(),
                             exit = scaleOut(animationSpec = tween(200)) + fadeOut()
                         ) {
                             FloatingActionButton(
@@ -178,7 +198,12 @@ fun MainScreenWithBottomNav(
                                 containerColor = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(64.dp)
                             ) {
-                                Icon(imageVector = Icons.Default.Add, contentDescription = "Countdown hinzufügen", modifier = Modifier.size(28.dp), tint = MaterialTheme.colorScheme.onPrimary)
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = "Countdown hinzufügen",
+                                    modifier = Modifier.size(28.dp),
+                                    tint = MaterialTheme.colorScheme.onPrimary
+                                )
                             }
                         }
                     },
@@ -186,17 +211,25 @@ fun MainScreenWithBottomNav(
                 ) { paddingValues ->
                     HorizontalPager(
                         state = pagerState,
-                        modifier = Modifier.fillMaxSize().padding(paddingValues)
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(paddingValues)
                     ) { page ->
                         when (page) {
                             0 -> AboutPageContent()
                             1 -> MainListContent(
                                 countdowns = countdowns,
-                                onCountdownClick = { countdown -> haptic.tick(); viewModel.selectCountdown(countdown) },
+                                filterMode = filterMode,
+                                onCountdownClick = { countdown ->
+                                    haptic.tick()
+                                    viewModel.selectCountdown(countdown)
+                                },
                                 onCountdownEdit = { countdown -> editingCountdown = countdown },
                                 onCountdownDelete = { countdown -> countdownToDelete = countdown }
                             )
-                            2 -> SettingsPageContent(onThemeDialogOpen = { haptic.tick(); showThemeDialog = true })
+                            2 -> SettingsPageContent(
+                                onThemeDialogOpen = { haptic.tick(); showThemeDialog = true }
+                            )
                         }
                     }
                 }
@@ -220,12 +253,44 @@ fun MainScreenWithBottomNav(
         ThemeSettingsDialog(
             onDismiss = { showThemeDialog = false },
             currentTheme = selectedCustomTheme,
-            onThemeChanged = { newTheme ->
+            onThemeChanged = { newTheme: CustomTheme ->
                 haptic.success()
                 selectedCustomTheme = newTheme
                 scope.launch { CustomThemePreferences.setCustomTheme(context, newTheme) }
-                Toast.makeText(context, "Theme geändert zu ${getThemeConfig(newTheme).name}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    context,
+                    "Theme geändert zu ${getThemeConfig(newTheme).name}",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
+        )
+    }
+}
+
+// ─── Filter-Chip-Zeile ────────────────────────────────────────────────────────
+
+@Composable
+private fun FilterChipRow(currentMode: FilterMode, onModeSelected: (FilterMode) -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        FilterChip(
+            selected = currentMode == FilterMode.ALL,
+            onClick = { onModeSelected(FilterMode.ALL) },
+            label = { Text("Alle") }
+        )
+        FilterChip(
+            selected = currentMode == FilterMode.COUNTDOWN,
+            onClick = { onModeSelected(FilterMode.COUNTDOWN) },
+            label = { Text("Countdown") }
+        )
+        FilterChip(
+            selected = currentMode == FilterMode.COUNTUP,
+            onClick = { onModeSelected(FilterMode.COUNTUP) },
+            label = { Text("Count-up") }
         )
     }
 }
@@ -234,84 +299,179 @@ fun MainScreenWithBottomNav(
 
 @Composable
 private fun BottomNavigationBar(selectedPage: Int, onPageSelected: (Int) -> Unit) {
-    NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainer, modifier = Modifier.height(70.dp)) {
+    NavigationBar(
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        modifier = Modifier.height(70.dp)
+    ) {
         NavigationBarItem(
             selected = selectedPage == 0,
             onClick = { onPageSelected(0) },
-            icon = { Icon(imageVector = Icons.Outlined.Info, contentDescription = "Info", modifier = Modifier.size(26.dp)) },
-            label = null, alwaysShowLabel = false
+            icon = { Icon(Icons.Outlined.Info, contentDescription = "Info", modifier = Modifier.size(26.dp)) },
+            label = null,
+            alwaysShowLabel = false
         )
         NavigationBarItem(
             selected = selectedPage == 1,
             onClick = { onPageSelected(1) },
-            icon = { Icon(imageVector = Icons.Outlined.AvTimer, contentDescription = "Liste", modifier = Modifier.size(26.dp)) },
-            label = null, alwaysShowLabel = false
+            icon = { Icon(Icons.Outlined.AvTimer, contentDescription = "Liste", modifier = Modifier.size(26.dp)) },
+            label = null,
+            alwaysShowLabel = false
         )
         NavigationBarItem(
             selected = selectedPage == 2,
             onClick = { onPageSelected(2) },
-            icon = { Icon(imageVector = Icons.Outlined.Settings, contentDescription = "Einstellungen", modifier = Modifier.size(26.dp)) },
-            label = null, alwaysShowLabel = false
+            icon = { Icon(Icons.Outlined.Settings, contentDescription = "Einstellungen", modifier = Modifier.size(26.dp)) },
+            label = null,
+            alwaysShowLabel = false
         )
     }
 }
 
-// ─── Page Contents ────────────────────────────────────────────────────────────
+// ─── Hauptliste ───────────────────────────────────────────────────────────────
 
 @Composable
 private fun MainListContent(
     countdowns: List<Countdown>,
+    filterMode: FilterMode,
     onCountdownClick: (Countdown) -> Unit,
     onCountdownEdit: (Countdown) -> Unit,
     onCountdownDelete: (Countdown) -> Unit
 ) {
     if (countdowns.isEmpty()) {
         EmptyStateView()
-    } else {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 96.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(items = countdowns, key = { it.id }) { countdown ->
-                var visible by remember { mutableStateOf(false) }
-                LaunchedEffect(countdown.id) { visible = true }
-                AnimatedVisibility(
-                    visible = visible,
-                    enter = fadeIn(animationSpec = tween(300)) + expandVertically(animationSpec = tween(300, easing = FastOutSlowInEasing)),
-                    exit = fadeOut(animationSpec = tween(200)) + shrinkVertically(animationSpec = tween(200))
-                ) {
-                    Box(modifier = Modifier.fillMaxWidth().clickable { onCountdownClick(countdown) }) {
-                        CountdownCard(countdown = countdown)
-                    }
+        return
+    }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 96.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        if (filterMode == FilterMode.ALL) {
+            val futureItems = countdowns.filter { !it.isCountUp }
+            val pastItems = countdowns.filter { it.isCountUp }
+
+            if (futureItems.isNotEmpty()) {
+                item(key = "header_countdown") {
+                    SectionHeader(label = "Countdown", count = futureItems.size)
                 }
+                items(items = futureItems, key = { it.id }) { countdown ->
+                    AnimatedCountdownCard(countdown, onCountdownClick)
+                }
+            }
+
+            if (pastItems.isNotEmpty()) {
+                item(key = "header_countup") {
+                    SectionHeader(label = "Count-up", count = pastItems.size)
+                }
+                items(items = pastItems, key = { it.id }) { countdown ->
+                    AnimatedCountdownCard(countdown, onCountdownClick)
+                }
+            }
+        } else {
+            items(items = countdowns, key = { it.id }) { countdown ->
+                AnimatedCountdownCard(countdown, onCountdownClick)
             }
         }
     }
 }
 
 @Composable
+private fun SectionHeader(label: String, count: Int) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp, bottom = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Surface(
+            shape = MaterialTheme.shapes.small,
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+        ) {
+            Text(
+                text = "$count",
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Medium
+            )
+        }
+        HorizontalDivider(
+            modifier = Modifier.weight(1f),
+            color = MaterialTheme.colorScheme.outlineVariant
+        )
+    }
+}
+
+@Composable
+private fun AnimatedCountdownCard(countdown: Countdown, onCountdownClick: (Countdown) -> Unit) {
+    var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(countdown.id) { visible = true }
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(animationSpec = tween(300)) +
+                expandVertically(animationSpec = tween(300, easing = FastOutSlowInEasing)),
+        exit = fadeOut(animationSpec = tween(200)) +
+                shrinkVertically(animationSpec = tween(200))
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onCountdownClick(countdown) }
+        ) {
+            CountdownCard(countdown = countdown)
+        }
+    }
+}
+
+// ─── About-Seite ──────────────────────────────────────────────────────────────
+
+@Composable
 private fun AboutPageContent() {
     val scrollState = rememberScrollState()
     Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(scrollState).padding(24.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(scrollState)
+            .padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
         Box(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 32.dp),
             contentAlignment = Alignment.Center
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("NexTime", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    "NexTime",
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Bold
+                )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.primaryContainer) {
-                        Text("v${BuildConfig.VERSION_NAME}", modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), style = MaterialTheme.typography.labelMedium)
+                    Surface(
+                        shape = MaterialTheme.shapes.small,
+                        color = MaterialTheme.colorScheme.primaryContainer
+                    ) {
+                        Text(
+                            "v${BuildConfig.VERSION_NAME}",
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            style = MaterialTheme.typography.labelMedium
+                        )
                     }
                 }
             }
         }
-
-        // Gemeinsame Komponenten aus AboutDialog (kein Duplikat mehr)
         DeveloperCard()
         FeaturesCard()
         SupportActionsCard()
@@ -322,22 +482,29 @@ private fun AboutPageContent() {
 private fun SupportActionsCard() {
     val context = LocalContext.current
     val haptic = remember { HapticFeedback(context) }
-
     Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
             Text("Support", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            OutlinedButton(onClick = { haptic.click(); openPlayStore(context) }, modifier = Modifier.fillMaxWidth()) {
-                Text("⭐ App bewerten")
-            }
-            OutlinedButton(onClick = { haptic.click(); openKofi(context) }, modifier = Modifier.fillMaxWidth()) {
-                Text("☕ Buy me a Coffee")
-            }
-            OutlinedButton(onClick = { haptic.click(); reportBug(context) }, modifier = Modifier.fillMaxWidth()) {
-                Text("🐛 Fehler melden")
-            }
+            OutlinedButton(
+                onClick = { haptic.click(); openPlayStore(context) },
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("⭐ App bewerten") }
+            OutlinedButton(
+                onClick = { haptic.click(); openKofi(context) },
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("☕ Buy me a Coffee") }
+            OutlinedButton(
+                onClick = { haptic.click(); reportBug(context) },
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("🐛 Fehler melden") }
         }
     }
 }
+
+// ─── Einstellungen ────────────────────────────────────────────────────────────
 
 @Composable
 private fun SettingsPageContent(onThemeDialogOpen: () -> Unit) {
@@ -347,20 +514,38 @@ private fun SettingsPageContent(onThemeDialogOpen: () -> Unit) {
     val haptic = remember { HapticFeedback(context) }
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 16.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 24.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text("Design & Theme", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
         OutlinedButton(onClick = onThemeDialogOpen, modifier = Modifier.fillMaxWidth()) {
-            Icon(imageVector = Icons.Outlined.Settings, contentDescription = null, modifier = Modifier.size(18.dp))
+            Icon(
+                imageVector = Icons.Outlined.Settings,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
             Spacer(Modifier.width(8.dp))
             Text("🎨 Theme auswählen")
         }
         Spacer(Modifier.height(8.dp))
         Text("Helles/Dunkles Design", style = MaterialTheme.typography.titleMedium)
-        ThemeModeOption(label = "⚙️ Systemeinstellung", isSelected = themeMode == ThemeMode.SYSTEM, onClick = { haptic.tick(); scope.launch { ThemePreferences.setThemeMode(context, ThemeMode.SYSTEM) } })
-        ThemeModeOption(label = "🌞 Hell", isSelected = themeMode == ThemeMode.LIGHT, onClick = { haptic.tick(); scope.launch { ThemePreferences.setThemeMode(context, ThemeMode.LIGHT) } })
-        ThemeModeOption(label = "🌙 Dunkel", isSelected = themeMode == ThemeMode.DARK, onClick = { haptic.tick(); scope.launch { ThemePreferences.setThemeMode(context, ThemeMode.DARK) } })
+        ThemeModeOption(
+            label = "⚙️ Systemeinstellung",
+            isSelected = themeMode == ThemeMode.SYSTEM,
+            onClick = { haptic.tick(); scope.launch { ThemePreferences.setThemeMode(context, ThemeMode.SYSTEM) } }
+        )
+        ThemeModeOption(
+            label = "🌞 Hell",
+            isSelected = themeMode == ThemeMode.LIGHT,
+            onClick = { haptic.tick(); scope.launch { ThemePreferences.setThemeMode(context, ThemeMode.LIGHT) } }
+        )
+        ThemeModeOption(
+            label = "🌙 Dunkel",
+            isSelected = themeMode == ThemeMode.DARK,
+            onClick = { haptic.tick(); scope.launch { ThemePreferences.setThemeMode(context, ThemeMode.DARK) } }
+        )
     }
 }
 
@@ -369,25 +554,56 @@ private fun ThemeModeOption(label: String, isSelected: Boolean, onClick: () -> U
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.medium,
-        color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+        color = if (isSelected) MaterialTheme.colorScheme.primaryContainer
+        else MaterialTheme.colorScheme.surfaceVariant,
         onClick = onClick
     ) {
-        Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Text(label)
             RadioButton(selected = isSelected, onClick = onClick)
         }
     }
 }
 
+// ─── Dialoge ──────────────────────────────────────────────────────────────────
+
 @Composable
-private fun DeleteConfirmationDialog(countdown: Countdown, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+private fun DeleteConfirmationDialog(
+    countdown: Countdown,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        icon = { Icon(imageVector = Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+        icon = {
+            Icon(
+                imageVector = Icons.Default.Delete,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error
+            )
+        },
         title = { Text("Countdown löschen?") },
-        text = { Text("Möchtest du \"${countdown.title}\" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.", style = MaterialTheme.typography.bodyMedium) },
-        confirmButton = { Button(onClick = onConfirm, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) { Text("Löschen") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Abbrechen") } }
+        text = {
+            Text(
+                "Möchtest du \"${countdown.title}\" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
+                style = MaterialTheme.typography.bodyMedium
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+            ) { Text("Löschen") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Abbrechen") }
+        }
     )
 }
 
