@@ -2,6 +2,8 @@ package de.beigel.nextime.data.database
 
 import android.content.Context
 import androidx.room.*
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import de.beigel.nextime.data.model.Countdown
 import kotlinx.coroutines.flow.Flow
 import java.time.LocalDateTime
@@ -27,9 +29,18 @@ interface CountdownDao {
     suspend fun deleteCountdownById(id: Long)
 }
 
+// Migration von Version 4 auf 5: icon-Spalte hinzufügen
+val MIGRATION_4_5 = object : Migration(4, 5) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        database.execSQL(
+            "ALTER TABLE countdowns ADD COLUMN icon TEXT NOT NULL DEFAULT '⏰'"
+        )
+    }
+}
+
 @Database(
     entities = [Countdown::class],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -47,7 +58,7 @@ abstract class CountdownDatabase : RoomDatabase() {
                     CountdownDatabase::class.java,
                     "nextime_database"
                 )
-                    .fallbackToDestructiveMigration()  // Alte Daten werden gelöscht
+                    .addMigrations(MIGRATION_4_5)   // Saubere Migration — keine Datenverluste
                     .build()
                 INSTANCE = instance
                 instance

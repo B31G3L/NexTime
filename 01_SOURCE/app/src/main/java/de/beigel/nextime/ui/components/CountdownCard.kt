@@ -1,19 +1,18 @@
 package de.beigel.nextime.ui.components
 
-import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import de.beigel.nextime.data.model.Countdown
@@ -21,9 +20,10 @@ import de.beigel.nextime.data.model.CountdownDisplayFormat
 import de.beigel.nextime.data.model.CountdownInfo
 import de.beigel.nextime.data.model.calculateTimeRemaining
 import kotlinx.coroutines.delay
+import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CountdownCard(countdown: Countdown) {
     var timeInfo by remember { mutableStateOf(countdown.calculateTimeRemaining()) }
@@ -36,234 +36,265 @@ fun CountdownCard(countdown: Countdown) {
     }
 
     val baseColor = runCatching { Color(android.graphics.Color.parseColor(countdown.color)) }
-        .getOrElse { MaterialTheme.colorScheme.primary }
+        .getOrElse { Color(0xFFFF7043) }
 
+    val darkerBar = baseColor.copy(
+        red   = (baseColor.red * 0.7f).coerceIn(0f, 1f),
+        green = (baseColor.green * 0.7f).coerceIn(0f, 1f),
+        blue  = (baseColor.blue * 0.7f).coerceIn(0f, 1f)
+    )
+
+    // Fortschritt berechnen: von createdAt bis targetDateTime
+    val progress = remember(countdown) {
+        calculateProgress(countdown)
+    }
+
+    // Ist heute der Zieltag?
+    val isToday = remember(countdown) {
+        countdown.targetDateTime.toLocalDate() == LocalDate.now()
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = baseColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column {
+            // Balken oben (dunkel, fest)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(4.dp)
+                    .background(darkerBar)
+            )
+
+            // Karteninhalt
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                // Icon-Box links
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color.White.copy(alpha = 0.2f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = countdown.icon.ifBlank { "⏰" },
+                        fontSize = 26.sp
+                    )
+                }
+
+                // Text-Block
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(3.dp)
+                ) {
+                    // Titel + optional Heute-Badge
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = countdown.title,
+                            fontSize = 13.sp,
+                            color = Color.White.copy(alpha = 0.85f),
+                            maxLines = 1,
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
+                        if (isToday) {
+                            TodayBadge(cardColor = baseColor)
+                        }
+                    }
+
+                    // Hauptzähler
+                    CountdownMainDisplay(
+                        timeInfo = timeInfo,
+                        displayFormat = countdown.displayFormat
+                    )
+
+                    // Unterzeile: Zusatzinfo links, Datum rechts
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = if (isToday) "Heute ist es so weit!" else buildSubInfo(timeInfo, countdown.displayFormat),
+                            fontSize = 12.sp,
+                            color = Color.White.copy(alpha = 0.65f)
+                        )
+                        Text(
+                            text = countdown.targetDateTime.format(
+                                DateTimeFormatter.ofPattern("dd.MM.yyyy")
+                            ),
+                            fontSize = 12.sp,
+                            color = Color.White.copy(alpha = 0.65f)
+                        )
+                    }
+                }
+            }
+
+            // Fortschrittsbalken unten (ersetzt den unteren Farbstreifen)
+            ProgressBar(
+                progress = progress,
+                backgroundColor = darkerBar,
+                foregroundColor = Color.White.copy(alpha = 0.55f)
+            )
+        }
+    }
+}
+
+// ===== HEUTE-BADGE =====
+@Composable
+private fun TodayBadge(cardColor: Color) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(Color.White),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "HEUTE",
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold,
+            color = cardColor,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+        )
+    }
+}
+
+// ===== FORTSCHRITTSBALKEN =====
+@Composable
+private fun ProgressBar(
+    progress: Float,
+    backgroundColor: Color,
+    foregroundColor: Color
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(6.dp)
+            .background(backgroundColor)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(progress.coerceIn(0f, 1f))
+                .fillMaxHeight()
+                .background(foregroundColor)
+        )
+    }
+}
+
+// ===== HAUPTANZEIGE =====
+@Composable
+private fun CountdownMainDisplay(timeInfo: CountdownInfo, displayFormat: String) {
     val format = try {
-        CountdownDisplayFormat.valueOf(countdown.displayFormat)
+        CountdownDisplayFormat.valueOf(displayFormat)
     } catch (e: Exception) {
         CountdownDisplayFormat.DAYS_ONLY
     }
 
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(180.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = baseColor.copy(alpha = 0.08f)
-        ),
-    ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(4.dp)
-                    .background(baseColor)
-            )
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .weight(1f)
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Top
-                ) {
-                    Text(
-                        text = countdown.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.weight(1f),
-                        maxLines = 1
-                    )
+    val text = buildAnnotatedString {
+        when (format) {
+            CountdownDisplayFormat.DAYS_ONLY -> {
+                withStyle(SpanStyle(fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)) {
+                    append("${timeInfo.days}")
                 }
-
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    when (format) {
-                        CountdownDisplayFormat.DAYS_ONLY ->
-                            DaysOnlyDisplay(timeInfo, baseColor)
-                        CountdownDisplayFormat.WEEKS_DAYS ->
-                            WeeksDaysDisplay(timeInfo, baseColor)
-                        CountdownDisplayFormat.MONTHS_DAYS ->
-                            MonthsDaysDisplay(timeInfo, baseColor)
-                        CountdownDisplayFormat.YEARS_MONTHS_DAYS ->
-                            YearsMonthsDaysDisplay(timeInfo, baseColor)
+                withStyle(SpanStyle(fontSize = 18.sp, color = Color.White)) {
+                    append(if (timeInfo.days == 1L) " Tag" else " Tage")
+                }
+            }
+            CountdownDisplayFormat.WEEKS_DAYS -> {
+                withStyle(SpanStyle(fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)) {
+                    append("${timeInfo.weeks}")
+                }
+                withStyle(SpanStyle(fontSize = 18.sp, color = Color.White)) {
+                    append(if (timeInfo.weeks == 1L) " Woche, " else " Wochen, ")
+                }
+                withStyle(SpanStyle(fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)) {
+                    append("${timeInfo.remainingDaysAfterWeeks}")
+                }
+                withStyle(SpanStyle(fontSize = 18.sp, color = Color.White)) {
+                    append(if (timeInfo.remainingDaysAfterWeeks == 1L) " Tag" else " Tage")
+                }
+            }
+            CountdownDisplayFormat.MONTHS_DAYS -> {
+                withStyle(SpanStyle(fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)) {
+                    append("${timeInfo.months}")
+                }
+                withStyle(SpanStyle(fontSize = 18.sp, color = Color.White)) {
+                    append(if (timeInfo.months == 1L) " Monat, " else " Monate, ")
+                }
+                withStyle(SpanStyle(fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)) {
+                    append("${timeInfo.remainingDaysAfterMonths}")
+                }
+                withStyle(SpanStyle(fontSize = 18.sp, color = Color.White)) {
+                    append(if (timeInfo.remainingDaysAfterMonths == 1L) " Tag" else " Tage")
+                }
+            }
+            CountdownDisplayFormat.YEARS_MONTHS_DAYS -> {
+                if (timeInfo.years > 0) {
+                    withStyle(SpanStyle(fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)) {
+                        append("${timeInfo.years}")
+                    }
+                    withStyle(SpanStyle(fontSize = 18.sp, color = Color.White)) {
+                        append(if (timeInfo.years == 1L) " Jahr, " else " Jahre, ")
                     }
                 }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        Icons.Outlined.CalendarToday,
-                        contentDescription = null,
-                        modifier = Modifier.size(14.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        text = countdown.targetDateTime.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                withStyle(SpanStyle(fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)) {
+                    append("${timeInfo.remainingMonthsAfterYears}")
+                }
+                withStyle(SpanStyle(fontSize = 18.sp, color = Color.White)) {
+                    append(if (timeInfo.remainingMonthsAfterYears == 1L) " Monat" else " Monate")
                 }
             }
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(4.dp)
-                    .background(baseColor)
-            )
         }
     }
+
+    Text(text = text, lineHeight = 30.sp)
 }
 
-@Composable
-private fun DaysOnlyDisplay(timeInfo: CountdownInfo, color: Color) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = "${timeInfo.days}",
-            fontSize = 48.sp,
-            fontWeight = FontWeight.Bold,
-            color = color
-        )
-        Text(
-            text = if (timeInfo.days == 1L) "Tag" else "Tage",
-            fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+// ===== HILFSFUNKTIONEN =====
+
+private fun calculateProgress(countdown: Countdown): Float {
+    val now = LocalDate.now()
+    val start = countdown.createdAt.toLocalDate()
+    val end = countdown.targetDateTime.toLocalDate()
+
+    // Gesamtdauer von Erstellung bis Ziel
+    val totalDays = ChronoUnit.DAYS.between(start, end)
+    if (totalDays <= 0L) return 1f
+
+    // Bereits vergangene Tage seit Erstellung
+    val passedDays = ChronoUnit.DAYS.between(start, now)
+
+    return (passedDays.toFloat() / totalDays.toFloat()).coerceIn(0f, 1f)
+}
+
+private fun buildSubInfo(timeInfo: CountdownInfo, displayFormat: String): String {
+    if (timeInfo.isPast) return "bereits vergangen"
+
+    val format = try {
+        CountdownDisplayFormat.valueOf(displayFormat)
+    } catch (e: Exception) {
+        CountdownDisplayFormat.DAYS_ONLY
     }
-}
 
-@Composable
-private fun WeeksDaysDisplay(timeInfo: CountdownInfo, color: Color) {
-    Row(
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.Bottom
-    ) {
-        Text(
-            text = "${timeInfo.weeks}",
-            fontSize = 40.sp,
-            fontWeight = FontWeight.Bold,
-            color = color
-        )
-        Spacer(modifier = Modifier.width(4.dp))
-        Text(
-            text = if (timeInfo.weeks == 1L) "Woche" else "Wochen",
-            fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 4.dp)
-        )
-        Spacer(modifier = Modifier.width(12.dp))
-        Text(
-            text = "${timeInfo.remainingDaysAfterWeeks}",
-            fontSize = 32.sp,
-            fontWeight = FontWeight.Bold,
-            color = color.copy(alpha = 0.7f)
-        )
-        Spacer(modifier = Modifier.width(4.dp))
-        Text(
-            text = if (timeInfo.remainingDaysAfterWeeks == 1L) "Tag" else "Tage",
-            fontSize = 14.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 2.dp)
-        )
-    }
-}
-
-@Composable
-private fun MonthsDaysDisplay(timeInfo: CountdownInfo, color: Color) {
-    Row(
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.Bottom
-    ) {
-        Text(
-            text = "${timeInfo.months}",
-            fontSize = 40.sp,
-            fontWeight = FontWeight.Bold,
-            color = color
-        )
-        Spacer(modifier = Modifier.width(4.dp))
-        Text(
-            text = if (timeInfo.months == 1L) "Monat" else "Monate",
-            fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 4.dp)
-        )
-        if (timeInfo.remainingDaysAfterMonths > 0) {
-            Spacer(modifier = Modifier.width(12.dp))
-            Text(
-                text = "${timeInfo.remainingDaysAfterMonths}",
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Bold,
-                color = color.copy(alpha = 0.7f)
-            )
-            Spacer(modifier = Modifier.width(4.dp))
-            Text(
-                text = if (timeInfo.remainingDaysAfterMonths == 1L) "Tag" else "Tage",
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 2.dp)
-            )
-        }
-    }
-}
-
-@Composable
-private fun YearsMonthsDaysDisplay(timeInfo: CountdownInfo, color: Color) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Row(
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.Bottom
-        ) {
-            if (timeInfo.years > 0) {
-                Text(
-                    text = "${timeInfo.years}",
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = color
-                )
-                Text(
-                    text = "J ",
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = 2.dp)
-                )
-            }
-            if (timeInfo.remainingMonthsAfterYears > 0) {
-                Text(
-                    text = "${timeInfo.remainingMonthsAfterYears}",
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = color
-                )
-                Text(
-                    text = "M ",
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = 2.dp)
-                )
-            }
-            Text(
-                text = "${timeInfo.remainingDaysAfterYears}",
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Bold,
-                color = color
-            )
-            Text(
-                text = "T",
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 2.dp)
-            )
-        }
+    return when (format) {
+        CountdownDisplayFormat.DAYS_ONLY ->
+            "${timeInfo.weeks} ${if (timeInfo.weeks == 1L) "Woche" else "Wochen"}"
+        CountdownDisplayFormat.WEEKS_DAYS ->
+            "${timeInfo.days} ${if (timeInfo.days == 1L) "Tag" else "Tage"} gesamt"
+        CountdownDisplayFormat.MONTHS_DAYS ->
+            "${timeInfo.days} ${if (timeInfo.days == 1L) "Tag" else "Tage"} gesamt"
+        CountdownDisplayFormat.YEARS_MONTHS_DAYS ->
+            "${timeInfo.remainingDaysAfterYears} ${if (timeInfo.remainingDaysAfterYears == 1L) "Tag" else "Tage"}"
     }
 }

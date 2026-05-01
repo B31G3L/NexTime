@@ -33,6 +33,7 @@ data class Countdown(
     val displayFormat: String = CountdownDisplayFormat.DAYS_ONLY.name,
     val createdAt: LocalDateTime = LocalDateTime.now(),
     val color: String = "#FF7043",
+    val icon: String = "⏰",                // NEU: Emoji-Icon für die Karte
     val notificationEnabled: Boolean = false,
     val reminderOptions: String = "",
     val lastNotificationSent: String? = null,
@@ -60,10 +61,10 @@ fun Countdown.calculateTimeRemaining(): CountdownInfo {
     val start: LocalDate = if (isPast) targetDate else now
     val end: LocalDate   = if (isPast) now        else targetDate
 
-    val totalDays   = ChronoUnit.DAYS.between(start, end)
-    val totalWeeks  = ChronoUnit.WEEKS.between(start, end)
-    val totalMonths = ChronoUnit.MONTHS.between(start, end)
-    val totalYears  = ChronoUnit.YEARS.between(start, end)
+    val totalDays    = ChronoUnit.DAYS.between(start, end)
+    val totalWeeks   = ChronoUnit.WEEKS.between(start, end)
+    val totalMonths  = ChronoUnit.MONTHS.between(start, end)
+    val totalYears   = ChronoUnit.YEARS.between(start, end)
 
     val remainingDaysAfterMonths = ChronoUnit.DAYS.between(
         start.plusMonths(totalMonths), end
@@ -95,7 +96,6 @@ fun Countdown.getFormattedTime(timeInfo: CountdownInfo): String {
     } catch (e: Exception) {
         CountdownDisplayFormat.DAYS_ONLY
     }
-
     return when (format) {
         CountdownDisplayFormat.DAYS_ONLY ->
             "${timeInfo.days}"
