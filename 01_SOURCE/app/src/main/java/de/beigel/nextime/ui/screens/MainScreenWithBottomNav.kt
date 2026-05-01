@@ -20,12 +20,16 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Sort
+import androidx.compose.material.icons.outlined.AccessTime
 import androidx.compose.material.icons.outlined.AvTimer
+import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.SortByAlpha
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -310,22 +314,42 @@ private fun SortDropdownMenu(
 ) {
     DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
         listOf(
-            SortMode.DATE_ASC   to "📅 Datum (nächster zuerst)",
-            SortMode.DATE_DESC  to "📅 Datum (spätester zuerst)",
-            SortMode.TITLE_ASC  to "🔤 Titel A → Z",
-            SortMode.TITLE_DESC to "🔤 Titel Z → A",
-            SortMode.CREATED    to "🕐 Zuletzt erstellt"
-        ).forEach { (mode, label) ->
+            SortMode.DATE_ASC   to Pair(Icons.Outlined.CalendarToday, "Datum (nächster zuerst)"),
+            SortMode.DATE_DESC  to Pair(Icons.Outlined.CalendarToday, "Datum (spätester zuerst)"),
+            SortMode.TITLE_ASC  to Pair(Icons.Outlined.SortByAlpha,   "Titel A → Z"),
+            SortMode.TITLE_DESC to Pair(Icons.Outlined.SortByAlpha,   "Titel Z → A"),
+            SortMode.CREATED    to Pair(Icons.Outlined.AccessTime,     "Zuletzt erstellt")
+        ).forEach { (mode, iconAndLabel) ->
+            val (icon, label) = iconAndLabel
             DropdownMenuItem(
+                leadingIcon = {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = if (currentSort == mode) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                },
                 text = {
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(label)
+                        Text(
+                            text = label,
+                            fontWeight = if (currentSort == mode) FontWeight.SemiBold else FontWeight.Normal,
+                            color = if (currentSort == mode) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurface
+                        )
                         if (currentSort == mode) {
                             Spacer(Modifier.weight(1f))
-                            Text("✓", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
                         }
                     }
                 },

@@ -12,6 +12,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.outlined.ContentCopy
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -70,7 +72,7 @@ fun ExpandableFab(
             ) {
                 MiniFabItem(
                     label = "Vorlage verwenden",
-                    emoji = "📋",
+                    icon = Icons.Outlined.ContentCopy,
                     color = MaterialTheme.colorScheme.secondary,
                     onClick = {
                         haptic.click()
@@ -80,7 +82,7 @@ fun ExpandableFab(
                 )
                 MiniFabItem(
                     label = "Eigener Eintrag",
-                    emoji = "✏️",
+                    icon = Icons.Outlined.Edit,
                     color = MaterialTheme.colorScheme.primary,
                     onClick = {
                         haptic.click()
@@ -126,7 +128,7 @@ fun ExpandableFab(
 @Composable
 private fun MiniFabItem(
     label: String,
-    emoji: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
     color: Color,
     onClick: () -> Unit
 ) {
@@ -152,7 +154,12 @@ private fun MiniFabItem(
             containerColor = color,
             modifier = Modifier.size(48.dp)
         ) {
-            Text(text = emoji, fontSize = 20.sp)
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = Color.White,
+                modifier = Modifier.size(22.dp)
+            )
         }
     }
 }
@@ -220,7 +227,7 @@ private fun TemplatePickerDialog(
                         FilterChip(
                             selected = selectedCategory == category,
                             onClick = { haptic.tick(); selectedCategory = category },
-                            label = { Text("${category.emoji} ${category.label}") }
+                            label = { Text(category.label) }
                         )
                     }
                 }
@@ -240,7 +247,7 @@ private fun TemplatePickerDialog(
                             if (categoryTemplates.isNotEmpty()) {
                                 item(key = "header_${category.name}") {
                                     Text(
-                                        text = "${category.emoji} ${category.label}",
+                                        text = category.label,
                                         style = MaterialTheme.typography.titleSmall,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.primary,

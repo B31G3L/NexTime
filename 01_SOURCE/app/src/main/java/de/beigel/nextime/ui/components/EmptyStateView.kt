@@ -36,7 +36,7 @@ fun EmptyStateView(
                 color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
             ) {
                 Text(
-                    text = "Tippe auf + um zu starten",
+                    text = "Tippe unten rechts auf + um zu starten",
                     modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.primary,
