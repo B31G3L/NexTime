@@ -3,6 +3,8 @@ package de.beigel.nextime.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,6 +20,7 @@ import androidx.compose.ui.unit.sp
 import de.beigel.nextime.data.model.Countdown
 import de.beigel.nextime.data.model.CountdownDisplayFormat
 import de.beigel.nextime.data.model.CountdownInfo
+import de.beigel.nextime.data.model.RecurrenceType
 import de.beigel.nextime.data.model.calculateTimeRemaining
 import de.beigel.nextime.data.model.formatTime
 import kotlinx.coroutines.delay
@@ -27,7 +30,6 @@ import java.time.temporal.ChronoUnit
 
 @Composable
 fun CountdownCard(countdown: Countdown) {
-    // Sekundengenaues Update wenn includeTime aktiv, sonst jede Minute reicht
     var timeInfo by remember { mutableStateOf(countdown.calculateTimeRemaining()) }
 
     LaunchedEffect(countdown.id, countdown.includeTime) {
@@ -39,16 +41,14 @@ fun CountdownCard(countdown: Countdown) {
 
     val baseColor = runCatching { Color(android.graphics.Color.parseColor(countdown.color)) }
         .getOrElse { Color(0xFFFF7043) }
-
     val darkerBar = baseColor.copy(
         red   = (baseColor.red * 0.7f).coerceIn(0f, 1f),
         green = (baseColor.green * 0.7f).coerceIn(0f, 1f),
         blue  = (baseColor.blue * 0.7f).coerceIn(0f, 1f)
     )
-
     val progress = remember(countdown) { calculateProgress(countdown) }
     val isToday = remember(countdown) {
-        countdown.targetDateTime.toLocalDate() == LocalDate.now()
+        countdown.effectiveTarget.toLocalDate() == LocalDate.now()
     }
 
     Card(
@@ -81,9 +81,10 @@ fun CountdownCard(countdown: Countdown) {
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(3.dp)
                 ) {
+                    // Titel + Badges
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Text(
                             text = countdown.title,
@@ -92,18 +93,22 @@ fun CountdownCard(countdown: Countdown) {
                             maxLines = 1,
                             modifier = Modifier.weight(1f, fill = false)
                         )
+                        // Wiederholungs-Badge
+                        if (countdown.isRecurring) {
+                            RecurringBadge(
+                                recurrenceType = countdown.recurrenceType,
+                                cardColor = baseColor
+                            )
+                        }
+                        // Heute-Badge
                         if (isToday && !countdown.includeTime) {
                             TodayBadge(cardColor = baseColor)
                         }
                     }
 
-                    // Hauptzähler
-                    CountdownMainDisplay(
-                        timeInfo = timeInfo,
-                        displayFormat = countdown.displayFormat
-                    )
+                    CountdownMainDisplay(timeInfo = timeInfo, displayFormat = countdown.displayFormat)
 
-                    // Uhrzeit-Zeile wenn includeTime aktiv
+                    // Uhrzeit-Zeile
                     if (countdown.includeTime) {
                         Text(
                             text = timeInfo.formatTime(),
@@ -120,16 +125,19 @@ fun CountdownCard(countdown: Countdown) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = if (isToday && !countdown.includeTime) "Heute ist es so weit!"
-                            else buildSubInfo(timeInfo, countdown.displayFormat),
+                            text = when {
+                                isToday && !countdown.includeTime -> "Heute ist es so weit!"
+                                countdown.isRecurring -> "Nächste: ${countdown.effectiveTarget.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))}"
+                                else -> buildSubInfo(timeInfo, countdown.displayFormat)
+                            },
                             fontSize = 12.sp,
                             color = Color.White.copy(alpha = 0.65f)
                         )
                         Text(
                             text = if (countdown.includeTime)
-                                countdown.targetDateTime.format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"))
+                                countdown.effectiveTarget.format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"))
                             else
-                                countdown.targetDateTime.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")),
+                                countdown.effectiveTarget.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")),
                             fontSize = 12.sp,
                             color = Color.White.copy(alpha = 0.65f)
                         )
@@ -137,11 +145,7 @@ fun CountdownCard(countdown: Countdown) {
                 }
             }
 
-            ProgressBar(
-                progress = progress,
-                backgroundColor = darkerBar,
-                foregroundColor = Color.White.copy(alpha = 0.55f)
-            )
+            ProgressBar(progress = progress, backgroundColor = darkerBar, foregroundColor = Color.White.copy(alpha = 0.55f))
         }
     }
 }
@@ -154,23 +158,51 @@ private fun TodayBadge(cardColor: Color) {
     ) {
         Text(
             text = "HEUTE",
-            fontSize = 10.sp,
+            fontSize = 9.sp,
             fontWeight = FontWeight.Bold,
             color = cardColor,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
         )
+    }
+}
+
+@Composable
+private fun RecurringBadge(recurrenceType: RecurrenceType, cardColor: Color) {
+    Box(
+        modifier = Modifier.clip(RoundedCornerShape(20.dp)).background(Color.White.copy(alpha = 0.25f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(3.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.Repeat,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(10.dp)
+            )
+            Text(
+                text = when (recurrenceType) {
+                    RecurrenceType.DAILY   -> "tägl."
+                    RecurrenceType.WEEKLY  -> "wöch."
+                    RecurrenceType.MONTHLY -> "monatl."
+                    RecurrenceType.YEARLY  -> "jährl."
+                    RecurrenceType.NONE    -> ""
+                },
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+        }
     }
 }
 
 @Composable
 private fun ProgressBar(progress: Float, backgroundColor: Color, foregroundColor: Color) {
     Box(modifier = Modifier.fillMaxWidth().height(6.dp).background(backgroundColor)) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth(progress.coerceIn(0f, 1f))
-                .fillMaxHeight()
-                .background(foregroundColor)
-        )
+        Box(modifier = Modifier.fillMaxWidth(progress.coerceIn(0f, 1f)).fillMaxHeight().background(foregroundColor))
     }
 }
 
@@ -207,14 +239,13 @@ private fun CountdownMainDisplay(timeInfo: CountdownInfo, displayFormat: String)
             }
         }
     }
-
     Text(text = text, lineHeight = 30.sp)
 }
 
 private fun calculateProgress(countdown: Countdown): Float {
     val now = LocalDate.now()
     val start = countdown.createdAt.toLocalDate()
-    val end = countdown.targetDateTime.toLocalDate()
+    val end = countdown.effectiveTarget.toLocalDate()
     val totalDays = ChronoUnit.DAYS.between(start, end)
     if (totalDays <= 0L || start.isAfter(end)) return 1f
     val passedDays = ChronoUnit.DAYS.between(start, now)
@@ -226,9 +257,9 @@ private fun buildSubInfo(timeInfo: CountdownInfo, displayFormat: String): String
     val format = try { CountdownDisplayFormat.valueOf(displayFormat) }
     catch (e: Exception) { CountdownDisplayFormat.DAYS_ONLY }
     return when (format) {
-        CountdownDisplayFormat.DAYS_ONLY          -> "${timeInfo.weeks} ${if (timeInfo.weeks == 1L) "Woche" else "Wochen"}"
-        CountdownDisplayFormat.WEEKS_DAYS         -> "${timeInfo.days} ${if (timeInfo.days == 1L) "Tag" else "Tage"} gesamt"
-        CountdownDisplayFormat.MONTHS_DAYS        -> "${timeInfo.days} ${if (timeInfo.days == 1L) "Tag" else "Tage"} gesamt"
-        CountdownDisplayFormat.YEARS_MONTHS_DAYS  -> "${timeInfo.remainingDaysAfterYears} ${if (timeInfo.remainingDaysAfterYears == 1L) "Tag" else "Tage"}"
+        CountdownDisplayFormat.DAYS_ONLY         -> "${timeInfo.weeks} ${if (timeInfo.weeks == 1L) "Woche" else "Wochen"}"
+        CountdownDisplayFormat.WEEKS_DAYS        -> "${timeInfo.days} ${if (timeInfo.days == 1L) "Tag" else "Tage"} gesamt"
+        CountdownDisplayFormat.MONTHS_DAYS       -> "${timeInfo.days} ${if (timeInfo.days == 1L) "Tag" else "Tage"} gesamt"
+        CountdownDisplayFormat.YEARS_MONTHS_DAYS -> "${timeInfo.remainingDaysAfterYears} ${if (timeInfo.remainingDaysAfterYears == 1L) "Tag" else "Tage"}"
     }
 }

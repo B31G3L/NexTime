@@ -15,23 +15,33 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
+enum class SortMode {
+    DATE_ASC,    // Datum aufsteigend (Standard)
+    DATE_DESC,   // Datum absteigend
+    TITLE_ASC,   // Alphabetisch A→Z
+    TITLE_DESC,  // Alphabetisch Z→A
+    CREATED      // Erstellungsdatum
+}
+
 class CountdownViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository: CountdownRepository
     private val context = application.applicationContext
 
-    // Alle Einträge aus der DB (ungefiltert)
     private val _allCountdowns = MutableStateFlow<List<Countdown>>(emptyList())
 
-    // Aktuell gewählter Filtermodus
     private val _filterMode = MutableStateFlow(FilterMode.ALL)
     val filterMode: StateFlow<FilterMode> = _filterMode.asStateFlow()
 
-    // Gefilterte + sortierte Liste für die UI
+    private val _sortMode = MutableStateFlow(SortMode.DATE_ASC)
+    val sortMode: StateFlow<SortMode> = _sortMode.asStateFlow()
+
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
     private val _countdowns = MutableStateFlow<List<Countdown>>(emptyList())
     val countdowns: StateFlow<List<Countdown>> = _countdowns.asStateFlow()
 
-    // Für den Card-Dialog
     private val _selectedCountdown = MutableStateFlow<Countdown?>(null)
     val selectedCountdown: StateFlow<Countdown?> = _selectedCountdown.asStateFlow()
 
@@ -40,11 +50,10 @@ class CountdownViewModel(application: Application) : AndroidViewModel(applicatio
         repository = CountdownRepository(database.countdownDao())
 
         viewModelScope.launch {
-            // Kombiniere DB-Daten und Filtermodus reaktiv
-            combine(_allCountdowns, _filterMode) { all, filter ->
-                applyFilter(all, filter)
-            }.collect { filtered ->
-                _countdowns.value = filtered
+            combine(_allCountdowns, _filterMode, _sortMode, _searchQuery) { all, filter, sort, query ->
+                applyFilterSortSearch(all, filter, sort, query)
+            }.collect { result ->
+                _countdowns.value = result
                 WidgetUpdateWorker.updateNow(context)
             }
         }
@@ -56,37 +65,45 @@ class CountdownViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    // ─── Filter ───────────────────────────────────────────────────────────────
+    // ─── Filter / Sort / Search ───────────────────────────────────────────────
 
-    fun setFilterMode(mode: FilterMode) {
-        _filterMode.value = mode
-    }
+    fun setFilterMode(mode: FilterMode) { _filterMode.value = mode }
+    fun setSortMode(mode: SortMode) { _sortMode.value = mode }
+    fun setSearchQuery(query: String) { _searchQuery.value = query }
+    fun clearSearch() { _searchQuery.value = "" }
 
-    private fun applyFilter(list: List<Countdown>, filter: FilterMode): List<Countdown> {
-        return when (filter) {
-            FilterMode.COUNTDOWN -> {
-                // Nur zukünftige, sortiert nach Datum aufsteigend (nächster zuerst)
-                list
-                    .filter { !it.isCountUp }
-                    .sortedBy { it.targetDateTime }
-            }
-            FilterMode.COUNTUP -> {
-                // Nur vergangene, sortiert nach Datum absteigend (zuletzt vergangen zuerst)
-                list
-                    .filter { it.isCountUp }
-                    .sortedByDescending { it.targetDateTime }
-            }
-            FilterMode.ALL -> {
-                // Countdowns oben (aufsteigend), Count-ups unten (absteigend)
-                val countdowns = list
-                    .filter { !it.isCountUp }
-                    .sortedBy { it.targetDateTime }
-                val countups = list
-                    .filter { it.isCountUp }
-                    .sortedByDescending { it.targetDateTime }
-                countdowns + countups
-            }
+    private fun applyFilterSortSearch(
+        list: List<Countdown>,
+        filter: FilterMode,
+        sort: SortMode,
+        query: String
+    ): List<Countdown> {
+        // 1. Suche
+        val searched = if (query.isBlank()) list
+        else list.filter { it.title.contains(query.trim(), ignoreCase = true) }
+
+        // 2. Filter
+        val filtered = when (filter) {
+            FilterMode.COUNTDOWN -> searched.filter { !it.isCountUp }
+            FilterMode.COUNTUP   -> searched.filter { it.isCountUp }
+            FilterMode.ALL       -> searched
         }
+
+        // 3. Sortierung
+        val sorted = when (sort) {
+            SortMode.DATE_ASC  -> filtered.sortedBy { it.effectiveTarget }
+            SortMode.DATE_DESC -> filtered.sortedByDescending { it.effectiveTarget }
+            SortMode.TITLE_ASC -> filtered.sortedBy { it.title.lowercase() }
+            SortMode.TITLE_DESC -> filtered.sortedByDescending { it.title.lowercase() }
+            SortMode.CREATED   -> filtered.sortedByDescending { it.createdAt }
+        }
+
+        // 4. Bei ALL: Countdowns oben, Count-ups unten (innerhalb je sortiert)
+        return if (filter == FilterMode.ALL && query.isBlank()) {
+            val countdowns = sorted.filter { !it.isCountUp }
+            val countups   = sorted.filter { it.isCountUp }
+            countdowns + countups
+        } else sorted
     }
 
     // ─── CRUD ─────────────────────────────────────────────────────────────────
@@ -94,10 +111,8 @@ class CountdownViewModel(application: Application) : AndroidViewModel(applicatio
     fun addCountdown(countdown: Countdown) {
         viewModelScope.launch {
             val id = repository.insertCountdown(countdown)
-            val savedCountdown = repository.getCountdownById(id)
-            savedCountdown?.let {
-                NotificationScheduler.scheduleNotifications(context, it)
-            }
+            val saved = repository.getCountdownById(id)
+            saved?.let { NotificationScheduler.scheduleNotifications(context, it) }
             WidgetUpdateWorker.updateNow(context)
         }
     }
@@ -119,14 +134,11 @@ class CountdownViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    fun selectCountdown(countdown: Countdown?) {
-        _selectedCountdown.value = countdown
-    }
+    fun selectCountdown(countdown: Countdown?) { _selectedCountdown.value = countdown }
 
     fun getCountdownById(id: Long) {
         viewModelScope.launch {
-            val countdown = repository.getCountdownById(id)
-            _selectedCountdown.value = countdown
+            _selectedCountdown.value = repository.getCountdownById(id)
         }
     }
 }

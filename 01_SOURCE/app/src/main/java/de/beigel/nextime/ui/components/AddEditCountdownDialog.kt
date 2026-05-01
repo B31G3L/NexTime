@@ -1,9 +1,9 @@
 package de.beigel.nextime.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import de.beigel.nextime.data.model.Countdown
 import de.beigel.nextime.data.model.CountdownDisplayFormat
+import de.beigel.nextime.data.model.RecurrenceType
 import de.beigel.nextime.data.model.ReminderOption
 import de.beigel.nextime.utils.HapticFeedback
 import java.time.LocalDate
@@ -40,6 +41,26 @@ import java.time.format.DateTimeFormatter
 private val QUICK_EMOJIS = listOf(
     "⏰", "🎂", "✈️", "🎄", "🎃", "🎵", "🏖️", "💍",
     "🎓", "🏆", "🎉", "❤️", "🚀", "🌍", "🏠", "💼"
+)
+
+// Reminder-Optionen gruppiert für bessere Übersicht
+private val REMINDER_GROUPS = listOf(
+    "Zum Zeitpunkt" to listOf(ReminderOption.AT_TIME),
+    "Stunden vorher" to listOf(
+        ReminderOption.MINUTES_30,
+        ReminderOption.HOUR_1,
+        ReminderOption.HOURS_3,
+        ReminderOption.HOURS_6,
+        ReminderOption.HOURS_12
+    ),
+    "Tage/Wochen vorher" to listOf(
+        ReminderOption.DAY_1,
+        ReminderOption.DAYS_2,
+        ReminderOption.DAYS_3,
+        ReminderOption.WEEK_1,
+        ReminderOption.WEEKS_2,
+        ReminderOption.MONTH_1
+    )
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -62,6 +83,9 @@ fun AddEditCountdownScreen(
         mutableStateOf(countdown?.targetDateTime?.toLocalTime() ?: LocalTime.of(12, 0))
     }
     var includeTime by remember { mutableStateOf(countdown?.includeTime ?: false) }
+    var selectedRecurrence by remember {
+        mutableStateOf(countdown?.recurrenceType ?: RecurrenceType.NONE)
+    }
     var selectedFormat by remember {
         mutableStateOf(
             try { CountdownDisplayFormat.valueOf(countdown?.displayFormat ?: CountdownDisplayFormat.DAYS_ONLY.name) }
@@ -95,13 +119,8 @@ fun AddEditCountdownScreen(
         CountdownDisplayFormat.MONTHS_DAYS to "Monate + Tage",
         CountdownDisplayFormat.YEARS_MONTHS_DAYS to "Jahre + Monate + Tage"
     )
-    val availableReminders = listOf(
-        ReminderOption.AT_TIME, ReminderOption.DAY_1, ReminderOption.DAYS_2,
-        ReminderOption.DAYS_3, ReminderOption.WEEK_1, ReminderOption.WEEKS_2,
-        ReminderOption.MONTH_1
-    )
 
-    val previewCountdown by remember(title, icon, selectedDate, selectedTime, includeTime, selectedFormat, selectedColor) {
+    val previewCountdown by remember(title, icon, selectedDate, selectedTime, includeTime, selectedFormat, selectedColor, selectedRecurrence) {
         derivedStateOf {
             val targetDateTime = LocalDateTime.of(selectedDate, if (includeTime) selectedTime else LocalTime.MIDNIGHT)
             countdown?.copy(
@@ -110,14 +129,16 @@ fun AddEditCountdownScreen(
                 targetDateTime = targetDateTime,
                 displayFormat = selectedFormat.name,
                 color = selectedColor,
-                includeTime = includeTime
+                includeTime = includeTime,
+                recurrence = selectedRecurrence.name
             ) ?: Countdown(
                 title = title.ifBlank { "Vorschau" },
                 icon = icon.ifBlank { "⏰" },
                 targetDateTime = targetDateTime,
                 displayFormat = selectedFormat.name,
                 color = selectedColor,
-                includeTime = includeTime
+                includeTime = includeTime,
+                recurrence = selectedRecurrence.name
             )
         }
     }
@@ -132,7 +153,8 @@ fun AddEditCountdownScreen(
             color = selectedColor,
             notificationEnabled = notificationEnabled,
             reminderOptions = selectedReminders.joinToString(",") { it.name },
-            includeTime = includeTime
+            includeTime = includeTime,
+            recurrence = selectedRecurrence.name
         ) ?: Countdown(
             title = title,
             icon = icon.ifBlank { "⏰" },
@@ -141,7 +163,8 @@ fun AddEditCountdownScreen(
             color = selectedColor,
             notificationEnabled = notificationEnabled,
             reminderOptions = selectedReminders.joinToString(",") { it.name },
-            includeTime = includeTime
+            includeTime = includeTime,
+            recurrence = selectedRecurrence.name
         )
     }
 
@@ -284,7 +307,6 @@ fun AddEditCountdownScreen(
                 // Datum & Uhrzeit
                 SectionCardCompact(title = "Datum & Uhrzeit") {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        // Datum-Zeile
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             modifier = Modifier.fillMaxWidth()
@@ -301,33 +323,18 @@ fun AddEditCountdownScreen(
                                 Text("Heute")
                             }
                         }
-
-                        // Uhrzeit Toggle
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    Icons.Default.AccessTime,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                                Icon(Icons.Default.AccessTime, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                                 Spacer(Modifier.width(8.dp))
-                                Text(
-                                    "Uhrzeit einbeziehen",
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
+                                Text("Uhrzeit einbeziehen", style = MaterialTheme.typography.bodyMedium)
                             }
-                            Switch(
-                                checked = includeTime,
-                                onCheckedChange = { haptic.tick(); includeTime = it }
-                            )
+                            Switch(checked = includeTime, onCheckedChange = { haptic.tick(); includeTime = it })
                         }
-
-                        // Uhrzeit-Picker — nur sichtbar wenn includeTime aktiv
                         AnimatedVisibility(
                             visible = includeTime,
                             enter = fadeIn() + expandVertically(),
@@ -340,6 +347,87 @@ fun AddEditCountdownScreen(
                                 Icon(Icons.Default.Schedule, contentDescription = null, modifier = Modifier.size(18.dp))
                                 Spacer(Modifier.width(8.dp))
                                 Text(selectedTime.format(DateTimeFormatter.ofPattern("HH:mm")) + " Uhr")
+                            }
+                        }
+                    }
+                }
+
+                // Wiederholung
+                SectionCardCompact(title = "Wiederholung") {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = "Countdown automatisch wiederholen",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        RecurrenceType.values().forEach { type ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable { haptic.tick(); selectedRecurrence = type }
+                                    .padding(horizontal = 8.dp, vertical = 6.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    Text(
+                                        text = when (type) {
+                                            RecurrenceType.NONE    -> "🚫"
+                                            RecurrenceType.DAILY   -> "📅"
+                                            RecurrenceType.WEEKLY  -> "🗓️"
+                                            RecurrenceType.MONTHLY -> "📆"
+                                            RecurrenceType.YEARLY  -> "🎯"
+                                        },
+                                        fontSize = 18.sp
+                                    )
+                                    Text(
+                                        text = type.displayName,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = if (selectedRecurrence == type) FontWeight.Bold else FontWeight.Normal
+                                    )
+                                }
+                                if (selectedRecurrence == type) {
+                                    Icon(
+                                        Icons.Default.Check,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+                        }
+                        // Hinweis bei aktiver Wiederholung
+                        AnimatedVisibility(
+                            visible = selectedRecurrence != RecurrenceType.NONE,
+                            enter = fadeIn() + expandVertically(),
+                            exit = fadeOut() + shrinkVertically()
+                        ) {
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(10.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        Icons.Default.Info,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                    Text(
+                                        text = "Das Zieldatum wird automatisch auf das nächste Vorkommen gesetzt.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
                             }
                         }
                     }
@@ -361,10 +449,7 @@ fun AddEditCountdownScreen(
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.SemiBold
                         )
-                        Icon(
-                            if (formatExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                            contentDescription = null
-                        )
+                        Icon(if (formatExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, contentDescription = null)
                     }
                     AnimatedVisibility(visible = formatExpanded, enter = fadeIn(), exit = fadeOut()) {
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -378,16 +463,8 @@ fun AddEditCountdownScreen(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Column {
-                                        Text(
-                                            label,
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            fontWeight = if (selectedFormat == format) FontWeight.Bold else FontWeight.Normal
-                                        )
-                                        Text(
-                                            getFormatExample(format),
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
+                                        Text(label, style = MaterialTheme.typography.bodyMedium, fontWeight = if (selectedFormat == format) FontWeight.Bold else FontWeight.Normal)
+                                        Text(getFormatExample(format), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                     if (selectedFormat == format) {
                                         Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
@@ -416,13 +493,10 @@ fun AddEditCountdownScreen(
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Box(
-                                modifier = Modifier
-                                    .size(18.dp)
-                                    .clip(CircleShape)
-                                    .background(
-                                        try { Color(android.graphics.Color.parseColor(selectedColor)) }
-                                        catch (e: Exception) { MaterialTheme.colorScheme.primary }
-                                    )
+                                modifier = Modifier.size(18.dp).clip(CircleShape).background(
+                                    try { Color(android.graphics.Color.parseColor(selectedColor)) }
+                                    catch (e: Exception) { MaterialTheme.colorScheme.primary }
+                                )
                             )
                             Spacer(Modifier.width(8.dp))
                             Text("Eigene Farbe")
@@ -445,24 +519,36 @@ fun AddEditCountdownScreen(
                             }
                             Switch(checked = notificationEnabled, onCheckedChange = { haptic.tick(); notificationEnabled = it })
                         }
-                        if (notificationEnabled) {
-                            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                availableReminders.forEach { option ->
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clickable {
-                                                haptic.tick()
-                                                if (selectedReminders.contains(option)) selectedReminders.remove(option)
-                                                else selectedReminders.add(option)
+                        AnimatedVisibility(
+                            visible = notificationEnabled,
+                            enter = fadeIn() + expandVertically(),
+                            exit = fadeOut() + shrinkVertically()
+                        ) {
+                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                REMINDER_GROUPS.forEach { (groupLabel, options) ->
+                                    Text(
+                                        text = groupLabel,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.padding(top = 8.dp, bottom = 2.dp, start = 4.dp)
+                                    )
+                                    options.forEach { option ->
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clickable {
+                                                    haptic.tick()
+                                                    if (selectedReminders.contains(option)) selectedReminders.remove(option)
+                                                    else selectedReminders.add(option)
+                                                }
+                                                .padding(horizontal = 8.dp, vertical = 6.dp),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(option.displayName, style = MaterialTheme.typography.bodyMedium)
+                                            if (selectedReminders.contains(option)) {
+                                                Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
                                             }
-                                            .padding(8.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(option.displayName, style = MaterialTheme.typography.bodyMedium)
-                                        if (selectedReminders.contains(option)) {
-                                            Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
                                         }
                                     }
                                 }
@@ -476,9 +562,7 @@ fun AddEditCountdownScreen(
 
             // Buttons
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 TextButton(onClick = { haptic.tick(); onBack() }, modifier = Modifier.weight(1f)) {
@@ -534,9 +618,7 @@ fun AddEditCountdownScreen(
 
     // Date Picker
     if (showDatePicker) {
-        val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = selectedDate.toEpochDay() * 86400000
-        )
+        val datePickerState = rememberDatePickerState(initialSelectedDateMillis = selectedDate.toEpochDay() * 86400000)
         DatePickerDialog(
             onDismissRequest = { haptic.tick(); showDatePicker = false },
             confirmButton = {
@@ -549,9 +631,7 @@ fun AddEditCountdownScreen(
                 }) { Text("OK") }
             },
             dismissButton = { TextButton(onClick = { haptic.tick(); showDatePicker = false }) { Text("Abbrechen") } }
-        ) {
-            DatePicker(state = datePickerState)
-        }
+        ) { DatePicker(state = datePickerState) }
     }
 
     // Time Picker
@@ -565,10 +645,7 @@ fun AddEditCountdownScreen(
             onDismissRequest = { haptic.tick(); showTimePicker = false },
             title = { Text("Uhrzeit wählen") },
             text = {
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                     TimePicker(state = timePickerState)
                 }
             },
@@ -579,9 +656,7 @@ fun AddEditCountdownScreen(
                     showTimePicker = false
                 }) { Text("OK") }
             },
-            dismissButton = {
-                TextButton(onClick = { haptic.tick(); showTimePicker = false }) { Text("Abbrechen") }
-            }
+            dismissButton = { TextButton(onClick = { haptic.tick(); showTimePicker = false }) { Text("Abbrechen") } }
         )
     }
 }

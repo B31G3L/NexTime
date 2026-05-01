@@ -29,18 +29,23 @@ interface CountdownDao {
     suspend fun deleteCountdownById(id: Long)
 }
 
-// Migration von Version 4 auf 5: icon-Spalte hinzufügen
+// Migration v4 → v5: icon-Spalte
 val MIGRATION_4_5 = object : Migration(4, 5) {
     override fun migrate(database: SupportSQLiteDatabase) {
-        database.execSQL(
-            "ALTER TABLE countdowns ADD COLUMN icon TEXT NOT NULL DEFAULT '⏰'"
-        )
+        database.execSQL("ALTER TABLE countdowns ADD COLUMN icon TEXT NOT NULL DEFAULT '⏰'")
+    }
+}
+
+// Migration v5 → v6: recurrence-Spalte
+val MIGRATION_5_6 = object : Migration(5, 6) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        database.execSQL("ALTER TABLE countdowns ADD COLUMN recurrence TEXT NOT NULL DEFAULT 'NONE'")
     }
 }
 
 @Database(
     entities = [Countdown::class],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -58,7 +63,7 @@ abstract class CountdownDatabase : RoomDatabase() {
                     CountdownDatabase::class.java,
                     "nextime_database"
                 )
-                    .addMigrations(MIGRATION_4_5)   // Saubere Migration — keine Datenverluste
+                    .addMigrations(MIGRATION_4_5, MIGRATION_5_6)
                     .build()
                 INSTANCE = instance
                 instance
@@ -69,12 +74,8 @@ abstract class CountdownDatabase : RoomDatabase() {
 
 class Converters {
     @TypeConverter
-    fun fromTimestamp(value: String?): LocalDateTime? {
-        return value?.let { LocalDateTime.parse(it) }
-    }
+    fun fromTimestamp(value: String?): LocalDateTime? = value?.let { LocalDateTime.parse(it) }
 
     @TypeConverter
-    fun dateToTimestamp(date: LocalDateTime?): String? {
-        return date?.toString()
-    }
+    fun dateToTimestamp(date: LocalDateTime?): String? = date?.toString()
 }
