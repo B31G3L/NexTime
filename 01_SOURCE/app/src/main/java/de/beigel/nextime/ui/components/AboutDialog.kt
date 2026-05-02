@@ -4,7 +4,6 @@ import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -19,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -26,27 +26,19 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import de.beigel.nextime.BuildConfig
-
-// ─── Shared Composables (internal → nutzbar in MainScreenWithBottomNav) ───────
-
-@Composable
-internal fun DeveloperCard() {
-    // Wird in AboutPageContent nicht mehr separat gebraucht
-    // Bleibt für eventuelle andere Verwendung erhalten
-}
+import de.beigel.nextime.R
 
 @Composable
-internal fun FeaturesCard() {
-    // Bleibt für eventuelle andere Verwendung erhalten
-}
+internal fun DeveloperCard() {}
 
-// ─── About-Seite Hauptinhalt ──────────────────────────────────────────────────
+@Composable
+internal fun FeaturesCard() {}
 
 @Composable
 fun AboutPageContent() {
     val context = LocalContext.current
-
     val scrollState = androidx.compose.foundation.rememberScrollState()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -57,18 +49,15 @@ fun AboutPageContent() {
     ) {
         Spacer(modifier = Modifier.height(16.dp))
 
-        // App-Icon + Name + Version
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-
             Text(
                 text = "NexTime",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold
             )
-
             Surface(
                 shape = RoundedCornerShape(8.dp),
                 color = MaterialTheme.colorScheme.primaryContainer
@@ -82,16 +71,14 @@ fun AboutPageContent() {
             }
         }
 
-        // Kurzbeschreibung
         Text(
-            text = "Behalte wichtige Momente im Blick —\nCountdowns & Count-ups für alles was zählt.",
+            text = stringResource(R.string.about_tagline),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
             lineHeight = 22.sp
         )
 
-        // Solo-Entwickler Info
         Surface(
             shape = RoundedCornerShape(12.dp),
             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
@@ -101,16 +88,15 @@ fun AboutPageContent() {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text(text = "👨‍💻", fontSize = 18.sp)
+                Text(text = "👨\u200d💻", fontSize = 18.sp)
                 Text(
-                    text = "Solo-Entwickler • Mit ❤️ und ☕ gebaut",
+                    text = stringResource(R.string.about_solo_dev),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
 
-        // Kostenlos-Hinweis
         Surface(
             shape = RoundedCornerShape(12.dp),
             color = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
@@ -122,9 +108,8 @@ fun AboutPageContent() {
             ) {
                 Text(
                     text = buildAnnotatedString {
-                        append("NexTime ist und bleibt für ")
                         withStyle(androidx.compose.ui.text.SpanStyle(fontWeight = FontWeight.Bold)) {
-                            append("immer kostenlos")
+                            append(stringResource(R.string.about_free))
                         }
                     },
                     style = MaterialTheme.typography.bodySmall,
@@ -135,9 +120,8 @@ fun AboutPageContent() {
 
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
-        // Support-Aktionen
         Text(
-            text = "Support",
+            text = stringResource(R.string.about_support_title),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
@@ -148,38 +132,37 @@ fun AboutPageContent() {
             SupportButton(
                 icon = Icons.Outlined.Star,
                 iconColor = Color(0xFFFFC107),
-                title = "App bewerten",
-                subtitle = "Deine Bewertung hilft anderen Nutzern die App zu finden",
+                title = stringResource(R.string.support_rate),
+                subtitle = stringResource(R.string.about_rate_subtitle),
                 onClick = { openPlayStore(context) }
             )
             SupportButton(
                 icon = Icons.Outlined.Coffee,
                 iconColor = Color(0xFF795548),
-                title = "Buy me a Coffee",
-                subtitle = "Als Solo-Entwickler freue ich mich über jede Unterstützung ☕",
+                title = stringResource(R.string.support_coffee),
+                subtitle = stringResource(R.string.about_coffee_subtitle),
                 onClick = { openKofi(context) }
             )
             SupportButton(
                 icon = Icons.Outlined.BugReport,
                 iconColor = MaterialTheme.colorScheme.error,
-                title = "Fehler melden",
-                subtitle = "Etwas stimmt nicht? Schreib mir direkt — ich kümmere mich darum",
+                title = stringResource(R.string.support_bug),
+                subtitle = stringResource(R.string.about_bug_subtitle),
                 onClick = { reportBug(context) }
             )
             SupportButton(
                 icon = Icons.Outlined.Lightbulb,
                 iconColor = Color(0xFF4CAF50),
-                title = "Idee oder Wunsch",
-                subtitle = "Du hast eine Idee für ein neues Feature? Ich freue mich über jede Nachricht!",
+                title = stringResource(R.string.support_feature),
+                subtitle = stringResource(R.string.about_feature_subtitle),
                 onClick = { suggestFeature(context) }
             )
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Fußzeile
         Text(
-            text = "Entwickelt mit ❤️ von Beigel",
+            text = stringResource(R.string.about_footer),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
@@ -212,12 +195,7 @@ private fun SupportButton(
                 modifier = Modifier.size(44.dp)
             ) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = iconColor,
-                        modifier = Modifier.size(22.dp)
-                    )
+                    Icon(imageVector = icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(22.dp))
                 }
             }
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -227,8 +205,6 @@ private fun SupportButton(
         }
     }
 }
-
-// ─── Shared Helper Functions ──────────────────────────────────────────────────
 
 internal fun openPlayStore(context: android.content.Context) {
     val packageName = context.packageName
@@ -264,7 +240,6 @@ internal fun reportBug(context: android.content.Context) {
         Erwartetes / Tatsächliches Verhalten:
         
     """.trimIndent()
-
     val intent = Intent(Intent.ACTION_SENDTO).apply {
         data = Uri.parse("mailto:")
         putExtra(Intent.EXTRA_EMAIL, arrayOf("beigel.dev@gmail.com"))
@@ -272,9 +247,9 @@ internal fun reportBug(context: android.content.Context) {
         putExtra(Intent.EXTRA_TEXT, body)
     }
     try {
-        context.startActivity(Intent.createChooser(intent, "Bug melden via..."))
+        context.startActivity(Intent.createChooser(intent, context.getString(R.string.support_bug)))
     } catch (e: ActivityNotFoundException) {
-        android.widget.Toast.makeText(context, "Keine E-Mail App gefunden", android.widget.Toast.LENGTH_SHORT).show()
+        android.widget.Toast.makeText(context, context.getString(R.string.no_email_app), android.widget.Toast.LENGTH_SHORT).show()
     }
 }
 
@@ -286,8 +261,8 @@ internal fun suggestFeature(context: android.content.Context) {
         putExtra(Intent.EXTRA_TEXT, "Hallo,\n\nich habe eine Idee für NexTime:\n\n")
     }
     try {
-        context.startActivity(Intent.createChooser(intent, "Feature vorschlagen via..."))
+        context.startActivity(Intent.createChooser(intent, context.getString(R.string.support_feature)))
     } catch (e: ActivityNotFoundException) {
-        android.widget.Toast.makeText(context, "Keine E-Mail App gefunden", android.widget.Toast.LENGTH_SHORT).show()
+        android.widget.Toast.makeText(context, context.getString(R.string.no_email_app), android.widget.Toast.LENGTH_SHORT).show()
     }
 }

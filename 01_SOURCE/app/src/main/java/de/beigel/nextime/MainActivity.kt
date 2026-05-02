@@ -31,6 +31,7 @@ import de.beigel.nextime.ui.theme.ThemeMode
 import de.beigel.nextime.ui.theme.ThemePreferences
 import de.beigel.nextime.ui.screens.MainScreenWithBottomNav
 import de.beigel.nextime.ui.theme.CustomTheme
+import de.beigel.nextime.R
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -40,10 +41,10 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) {
-            Toast.makeText(this, "✅ Benachrichtigungen aktiviert", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.perm_notif_ok), Toast.LENGTH_SHORT).show()
             checkExactAlarmPermission()
         } else {
-            Toast.makeText(this, "⚠️ Benachrichtigungen deaktiviert", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.perm_notif_denied), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -72,8 +73,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    MainScreenWithBottomNav(
-                    )
+                    MainScreenWithBottomNav()
                 }
             }
         }
@@ -120,39 +120,33 @@ class MainActivity : ComponentActivity() {
 
     private fun showExactAlarmPermissionDialog() {
         androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle("⏰ Exakte Alarme")
-            .setMessage(
-                "NexTime benötigt die Berechtigung für exakte Alarme, um dich pünktlich an deine Countdowns zu erinnern.\n\n" +
-                        "Bitte erlaube \"Alarme und Erinnerungen\" in den Einstellungen."
-            )
-            .setPositiveButton("Zu Einstellungen") { _, _ ->
+            .setTitle(getString(R.string.alarm_dialog_title))
+            .setMessage(getString(R.string.alarm_dialog_msg))
+            .setPositiveButton(getString(R.string.alarm_to_settings)) { _, _ ->
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                     try {
                         startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
                             data = Uri.parse("package:$packageName")
                         })
                     } catch (e: Exception) {
-                        Toast.makeText(this, "Bitte erlaube Alarme in den App-Einstellungen", Toast.LENGTH_LONG).show()
+                        Toast.makeText(this, getString(R.string.alarm_fallback), Toast.LENGTH_LONG).show()
                     }
                 }
             }
-            .setNegativeButton("Später") { dialog, _ -> dialog.dismiss() }
+            .setNegativeButton(getString(R.string.alarm_later)) { dialog, _ -> dialog.dismiss() }
             .show()
     }
 
     private fun showPermissionRationaleDialog() {
         androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle("📬 Benachrichtigungen")
-            .setMessage(
-                "NexTime möchte dir Erinnerungen für deine Countdowns senden.\n\n" +
-                        "Du wirst rechtzeitig an wichtige Termine erinnert!"
-            )
-            .setPositiveButton("Erlauben") { _, _ ->
+            .setTitle(getString(R.string.notif_dialog_title))
+            .setMessage(getString(R.string.notif_dialog_msg))
+            .setPositiveButton(getString(R.string.notif_allow)) { _, _ ->
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                 }
             }
-            .setNegativeButton("Später") { dialog, _ -> dialog.dismiss() }
+            .setNegativeButton(getString(R.string.alarm_later)) { dialog, _ -> dialog.dismiss() }
             .show()
     }
 }

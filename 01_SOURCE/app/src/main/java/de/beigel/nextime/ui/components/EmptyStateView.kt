@@ -6,9 +6,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import de.beigel.nextime.R
 
 @Composable
 fun EmptyStateView(
@@ -24,7 +26,7 @@ fun EmptyStateView(
             modifier = Modifier.padding(32.dp)
         ) {
             Text(
-                text = "Noch keine Einträge",
+                text = stringResource(R.string.empty_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -36,7 +38,7 @@ fun EmptyStateView(
                 color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
             ) {
                 Text(
-                    text = "Tippe unten rechts auf + um zu starten",
+                    text = stringResource(R.string.empty_hint),
                     modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.primary,

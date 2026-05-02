@@ -9,6 +9,7 @@ import de.beigel.nextime.data.model.FilterMode
 import de.beigel.nextime.data.repository.CountdownRepository
 import de.beigel.nextime.notifications.NotificationScheduler
 import de.beigel.nextime.widget.WidgetUpdateWorker
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,11 +17,11 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
 enum class SortMode {
-    DATE_ASC,    // Datum aufsteigend (Standard)
-    DATE_DESC,   // Datum absteigend
-    TITLE_ASC,   // Alphabetisch A→Z
-    TITLE_DESC,  // Alphabetisch Z→A
-    CREATED      // Erstellungsdatum
+    DATE_ASC,
+    DATE_DESC,
+    TITLE_ASC,
+    TITLE_DESC,
+    CREATED
 }
 
 class CountdownViewModel(application: Application) : AndroidViewModel(application) {
@@ -45,10 +46,22 @@ class CountdownViewModel(application: Application) : AndroidViewModel(applicatio
     private val _selectedCountdown = MutableStateFlow<Countdown?>(null)
     val selectedCountdown: StateFlow<Countdown?> = _selectedCountdown.asStateFlow()
 
+    // ─── Zentraler Ticker ────────────────────────────────────────────────────
+    // Statt dass jede CountdownCard einen eigenen Timer hat, gibt es hier
+    // einen einzigen Tick-Flow. Composables die Sekunden benötigen,
+    // können tickSeconds abonnieren; die, die nur Minuten benötigen, tickMinutes.
+
+    private val _tickSeconds = MutableStateFlow(0L)
+    val tickSeconds: StateFlow<Long> = _tickSeconds.asStateFlow()
+
+    private val _tickMinutes = MutableStateFlow(0L)
+    val tickMinutes: StateFlow<Long> = _tickMinutes.asStateFlow()
+
     init {
         val database = CountdownDatabase.getDatabase(application)
         repository = CountdownRepository(database.countdownDao())
 
+        // Filter/Sort/Search kombinieren
         viewModelScope.launch {
             combine(_allCountdowns, _filterMode, _sortMode, _searchQuery) { all, filter, sort, query ->
                 applyFilterSortSearch(all, filter, sort, query)
@@ -58,9 +71,24 @@ class CountdownViewModel(application: Application) : AndroidViewModel(applicatio
             }
         }
 
+        // Countdowns aus DB laden
         viewModelScope.launch {
             repository.allCountdowns.collect { list ->
                 _allCountdowns.value = list
+            }
+        }
+
+        // Sekundenticker — eine einzige Coroutine für die gesamte App
+        viewModelScope.launch {
+            var tick = 0L
+            while (true) {
+                delay(1_000L)
+                tick++
+                _tickSeconds.value = tick
+                // Minuten-Tick nur alle 60 Sekunden
+                if (tick % 60L == 0L) {
+                    _tickMinutes.value = tick / 60L
+                }
             }
         }
     }
@@ -78,27 +106,23 @@ class CountdownViewModel(application: Application) : AndroidViewModel(applicatio
         sort: SortMode,
         query: String
     ): List<Countdown> {
-        // 1. Suche
         val searched = if (query.isBlank()) list
         else list.filter { it.title.contains(query.trim(), ignoreCase = true) }
 
-        // 2. Filter
         val filtered = when (filter) {
             FilterMode.COUNTDOWN -> searched.filter { !it.isCountUp }
             FilterMode.COUNTUP   -> searched.filter { it.isCountUp }
             FilterMode.ALL       -> searched
         }
 
-        // 3. Sortierung
         val sorted = when (sort) {
-            SortMode.DATE_ASC  -> filtered.sortedBy { it.effectiveTarget }
-            SortMode.DATE_DESC -> filtered.sortedByDescending { it.effectiveTarget }
-            SortMode.TITLE_ASC -> filtered.sortedBy { it.title.lowercase() }
+            SortMode.DATE_ASC   -> filtered.sortedBy { it.effectiveTarget }
+            SortMode.DATE_DESC  -> filtered.sortedByDescending { it.effectiveTarget }
+            SortMode.TITLE_ASC  -> filtered.sortedBy { it.title.lowercase() }
             SortMode.TITLE_DESC -> filtered.sortedByDescending { it.title.lowercase() }
-            SortMode.CREATED   -> filtered.sortedByDescending { it.createdAt }
+            SortMode.CREATED    -> filtered.sortedByDescending { it.createdAt }
         }
 
-        // 4. Bei ALL: Countdowns oben, Count-ups unten (innerhalb je sortiert)
         return if (filter == FilterMode.ALL && query.isBlank()) {
             val countdowns = sorted.filter { !it.isCountUp }
             val countups   = sorted.filter { it.isCountUp }

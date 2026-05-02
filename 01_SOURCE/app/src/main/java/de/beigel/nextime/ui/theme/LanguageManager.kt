@@ -1,9 +1,6 @@
 package de.beigel.nextime.ui.theme
 
-import android.app.LocaleManager
 import android.content.Context
-import android.os.Build
-import android.os.LocaleList
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import androidx.datastore.preferences.core.edit
@@ -14,8 +11,8 @@ import kotlinx.coroutines.flow.map
 // ─── Unterstützte Sprachen ────────────────────────────────────────────────────
 
 enum class AppLanguage(
-    val tag: String,        // BCP-47 Sprach-Tag
-    val displayName: String // Anzeigename in der App
+    val tag: String,
+    val displayName: String
 ) {
     SYSTEM("", "Systemsprache"),
     GERMAN("de", "Deutsch"),
@@ -38,39 +35,41 @@ object LanguageManager {
             AppLanguage.values().find { it.tag == tag } ?: AppLanguage.SYSTEM
         }
 
-    // Sprache persistieren und sofort anwenden
+    // Sprache persistieren — applyLanguage MUSS auf dem Main-Thread laufen,
+    // daher hier NUR speichern; der Aufrufer ruft applyLanguage() separat auf.
     suspend fun setLanguage(context: Context, language: AppLanguage) {
+        // In DataStore speichern
         context.dataStore.edit { prefs ->
             prefs[LANGUAGE_KEY] = language.tag
         }
-        applyLanguage(language)
+        // Sync-Fallback für App-Start
+        persistLanguageSync(context, language)
     }
 
-    // Sprache beim App-Start anwenden (in Application.onCreate aufrufen)
+    // Sprache sofort anwenden — MUSS auf dem Main-Thread aufgerufen werden!
     fun applyLanguage(language: AppLanguage) {
-        if (language == AppLanguage.SYSTEM) {
-            // Systemsprache wiederherstellen
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                // Android 13+: Per-App Language Preferences API
-                // Wird über AppCompatDelegate gehandhabt
-            }
-            AppCompatDelegate.setApplicationLocales(LocaleListCompat.getEmptyLocaleList())
+        val localeList = if (language == AppLanguage.SYSTEM || language.tag.isEmpty()) {
+            LocaleListCompat.getEmptyLocaleList()
         } else {
-            val localeList = LocaleListCompat.forLanguageTags(language.tag)
-            AppCompatDelegate.setApplicationLocales(localeList)
+            LocaleListCompat.forLanguageTags(language.tag)
+        }
+        // AppCompatDelegate.setApplicationLocales() ist thread-safe und
+        // triggert automatisch einen Activity-Recreate auf dem Main-Thread
+        AppCompatDelegate.setApplicationLocales(localeList)
+    }
+
+    // Beim App-Start gespeicherte Sprache synchron anwenden
+    fun applyLanguageFromPrefs(context: Context) {
+        val prefs = context.getSharedPreferences("language_prefs", Context.MODE_PRIVATE)
+        val tag = prefs.getString("app_language_sync", null)
+        // Nur anwenden wenn explizit gesetzt — bei null/leer Systemsprache belassen
+        if (tag != null) {
+            val language = AppLanguage.values().find { it.tag == tag } ?: AppLanguage.SYSTEM
+            applyLanguage(language)
         }
     }
 
-    // Beim App-Start gespeicherte Sprache aus SharedPreferences lesen und anwenden
-    // (DataStore ist async — für den Start brauchen wir einen sync-Fallback)
-    fun applyLanguageFromPrefs(context: Context) {
-        val prefs = context.getSharedPreferences("language_prefs", Context.MODE_PRIVATE)
-        val tag = prefs.getString("app_language_sync", "") ?: ""
-        val language = AppLanguage.values().find { it.tag == tag } ?: AppLanguage.SYSTEM
-        applyLanguage(language)
-    }
-
-    // Sprache auch in SharedPreferences speichern (für sync-Zugriff beim Start)
+    // Sync-Speicherung für App-Start (SharedPreferences, da DataStore async ist)
     fun persistLanguageSync(context: Context, language: AppLanguage) {
         context.getSharedPreferences("language_prefs", Context.MODE_PRIVATE)
             .edit()

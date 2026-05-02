@@ -23,7 +23,7 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:configChanges="uiMode"
+            android:configChanges="uiMode|locale"
             android:theme="@style/Theme.NexTime">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -31,7 +31,7 @@
             </intent-filter>
         </activity>
 
-        <!-- ========== WIDGET CONFIG ACTIVITY (NEU!) ========== -->
+        <!-- Widget Config Activity -->
         <activity
             android:name=".widget.WidgetConfigActivity"
             android:exported="true"
@@ -47,7 +47,7 @@
             android:enabled="true"
             android:exported="false" />
 
-        <!-- ========== WIDGET RECEIVER ========== -->
+        <!-- Widget Receiver -->
         <receiver
             android:name=".widget.CountdownWidgetReceiver"
             android:exported="true"
@@ -61,7 +61,7 @@
                 android:resource="@xml/countdown_widget_info" />
         </receiver>
 
-        <!-- ========== THEME CHANGE RECEIVER ========== -->
+        <!-- Theme Change Receiver -->
         <receiver
             android:name=".widget.ThemeChangeReceiver"
             android:enabled="true"

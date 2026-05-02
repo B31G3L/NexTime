@@ -23,7 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.automirrored.filled.Sort
+import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.outlined.AccessTime
 import androidx.compose.material.icons.outlined.AvTimer
 import androidx.compose.material.icons.outlined.CalendarToday
@@ -45,6 +45,8 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import de.beigel.nextime.R
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import de.beigel.nextime.data.model.Countdown
@@ -79,9 +81,9 @@ private data class NavItem(
 )
 
 private val NAV_ITEMS = listOf(
-    NavItem(Icons.Outlined.Info, "Info", 0),
-    NavItem(Icons.Outlined.AvTimer, "Timer", 1),
-    NavItem(Icons.Outlined.Settings, "Einstellungen", 2)
+    NavItem(Icons.Outlined.Info, "nav_label_info", 0),
+    NavItem(Icons.Outlined.AvTimer, "nav_label_timer", 1),
+    NavItem(Icons.Outlined.Settings, "nav_label_settings", 2)
 )
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -180,10 +182,10 @@ fun MainScreenWithBottomNav(
                                     } else {
                                         Text(
                                             when (pagerState.currentPage) {
-                                                0 -> "Info & Support"
-                                                1 -> "NexTime"
+                                                0 -> stringResource(R.string.topbar_info)
+                                                1 -> stringResource(R.string.topbar_nextime)
                                                 2 -> "Einstellungen"
-                                                else -> "NexTime"
+                                                else -> stringResource(R.string.topbar_nextime)
                                             }
                                         )
                                     }
@@ -195,7 +197,7 @@ fun MainScreenWithBottomNav(
                                         }
                                         Box {
                                             IconButton(onClick = { haptic.tick(); showSortMenu = true }) {
-                                                Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = "Sortieren")
+                                                Icon(Icons.Default.Sort, contentDescription = "Sortieren")
                                             }
                                             SortDropdownMenu(
                                                 expanded = showSortMenu,
@@ -287,11 +289,12 @@ fun MainScreenWithBottomNav(
                                         haptic.success()
                                         Toast.makeText(
                                             context,
-                                            "Theme geändert zu ${getThemeConfig(newTheme).name}",
+                                            context.getString(R.string.theme_changed, getThemeConfig(newTheme).name),
                                             Toast.LENGTH_SHORT
                                         ).show()
                                     },
-                                    currentTheme = selectedCustomTheme
+                                    currentTheme = selectedCustomTheme,
+                                    isVisible = pagerState.currentPage == 2
                                 )
                             }
                         }
@@ -390,7 +393,11 @@ private fun BeautifulBottomNav(
                             exit = fadeOut(tween(100)) + shrinkVertically(tween(100))
                         ) {
                             Text(
-                                text = item.label,
+                                text = when(item.label) {
+                                    "nav_label_info" -> stringResource(R.string.nav_label_info)
+                                    "nav_label_timer" -> stringResource(R.string.nav_label_timer)
+                                    else -> stringResource(R.string.nav_label_settings)
+                                },
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSecondaryContainer,
                                 fontSize = 11.sp,
@@ -416,7 +423,7 @@ private fun SearchField(query: String, onQueryChange: (String) -> Unit, onClose:
     OutlinedTextField(
         value = query,
         onValueChange = onQueryChange,
-        placeholder = { Text("Countdown suchen...") },
+        placeholder = { Text(stringResource(R.string.search_placeholder)) },
         modifier = Modifier
             .fillMaxWidth()
             .focusRequester(focusRequester),
@@ -448,11 +455,11 @@ private fun SortDropdownMenu(
 ) {
     DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
         listOf(
-            SortMode.DATE_ASC   to Pair(Icons.Outlined.CalendarToday, "Datum (nächster zuerst)"),
-            SortMode.DATE_DESC  to Pair(Icons.Outlined.CalendarToday, "Datum (spätester zuerst)"),
-            SortMode.TITLE_ASC  to Pair(Icons.Outlined.SortByAlpha,   "Titel A → Z"),
-            SortMode.TITLE_DESC to Pair(Icons.Outlined.SortByAlpha,   "Titel Z → A"),
-            SortMode.CREATED    to Pair(Icons.Outlined.AccessTime,     "Zuletzt erstellt")
+            SortMode.DATE_ASC   to Pair(Icons.Outlined.CalendarToday, stringResource(R.string.sort_date_asc)),
+            SortMode.DATE_DESC  to Pair(Icons.Outlined.CalendarToday, stringResource(R.string.sort_date_desc)),
+            SortMode.TITLE_ASC  to Pair(Icons.Outlined.SortByAlpha,   stringResource(R.string.sort_title_asc)),
+            SortMode.TITLE_DESC to Pair(Icons.Outlined.SortByAlpha,   stringResource(R.string.sort_title_desc)),
+            SortMode.CREATED    to Pair(Icons.Outlined.AccessTime,     stringResource(R.string.sort_created))
         ).forEach { (mode, iconAndLabel) ->
             val (icon, label) = iconAndLabel
             DropdownMenuItem(
@@ -501,9 +508,9 @@ private fun FilterChipRow(currentMode: FilterMode, onModeSelected: (FilterMode) 
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        FilterChip(selected = currentMode == FilterMode.ALL, onClick = { onModeSelected(FilterMode.ALL) }, label = { Text("Alle") })
-        FilterChip(selected = currentMode == FilterMode.COUNTDOWN, onClick = { onModeSelected(FilterMode.COUNTDOWN) }, label = { Text("Countdown") })
-        FilterChip(selected = currentMode == FilterMode.COUNTUP, onClick = { onModeSelected(FilterMode.COUNTUP) }, label = { Text("Count-up") })
+        FilterChip(selected = currentMode == FilterMode.ALL, onClick = { onModeSelected(FilterMode.ALL) }, label = { Text(stringResource(R.string.filter_all)) })
+        FilterChip(selected = currentMode == FilterMode.COUNTDOWN, onClick = { onModeSelected(FilterMode.COUNTDOWN) }, label = { Text(stringResource(R.string.filter_countdown)) })
+        FilterChip(selected = currentMode == FilterMode.COUNTUP, onClick = { onModeSelected(FilterMode.COUNTUP) }, label = { Text(stringResource(R.string.filter_countup)) })
     }
 }
 
@@ -537,7 +544,7 @@ private fun MainListContent(
 
             if (futureItems.isNotEmpty()) {
                 item(key = "header_countdown") {
-                    SectionHeader(label = "Countdown", count = futureItems.size)
+                    SectionHeader(label = stringResource(R.string.section_countdown), count = futureItems.size)
                 }
                 items(items = futureItems, key = { it.id }) { countdown ->
                     AnimatedCountdownCard(countdown, onCountdownClick)
@@ -545,7 +552,7 @@ private fun MainListContent(
             }
             if (pastItems.isNotEmpty()) {
                 item(key = "header_countup") {
-                    SectionHeader(label = "Count-up", count = pastItems.size)
+                    SectionHeader(label = stringResource(R.string.section_countup), count = pastItems.size)
                 }
                 items(items = pastItems, key = { it.id }) { countdown ->
                     AnimatedCountdownCard(countdown, onCountdownClick)
@@ -572,16 +579,14 @@ private fun SectionHeader(label: String, count: Int) {
 
 @Composable
 private fun AnimatedCountdownCard(countdown: Countdown, onCountdownClick: (Countdown) -> Unit) {
-    var visible by remember { mutableStateOf(false) }
-    LaunchedEffect(countdown.id) { visible = true }
-    AnimatedVisibility(
-        visible = visible,
-        enter = fadeIn(animationSpec = tween(300)) + expandVertically(animationSpec = tween(300, easing = FastOutSlowInEasing)),
-        exit = fadeOut(animationSpec = tween(200)) + shrinkVertically(animationSpec = tween(200))
+    // Kein extra visible-State nötig — LazyColumn mit key= verwaltet
+    // das Ein-/Ausblenden selbst. AnimatedVisibility wird direkt mit true gestartet.
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onCountdownClick(countdown) }
     ) {
-        Box(modifier = Modifier.fillMaxWidth().clickable { onCountdownClick(countdown) }) {
-            CountdownCard(countdown = countdown)
-        }
+        CountdownCard(countdown = countdown)
     }
 }
 
@@ -591,8 +596,12 @@ private fun AnimatedCountdownCard(countdown: Countdown, onCountdownClick: (Count
 @Composable
 private fun SettingsPageContent(
     onThemeChanged: (CustomTheme) -> Unit,
-    currentTheme: CustomTheme
+    currentTheme: CustomTheme,
+    isVisible: Boolean = true
 ) {
+    // Lazy-Guard: Einstellungen werden nur gerendert wenn der Tab aktiv ist.
+    // So laufen die collectAsState-Flows nicht wenn der Nutzer auf Tab 0 oder 2 ist.
+    if (!isVisible) return
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val haptic = remember { HapticFeedback(context) }
@@ -619,9 +628,9 @@ private fun SettingsPageContent(
     ) {
 
         // ── Theme-Auswahl (Inline-Grid, kein Dialog) ──────────────────────────
-        SettingsSectionTitle("Farbschema")
+        SettingsSectionTitle(stringResource(R.string.settings_color_scheme))
         Text(
-            text = "Tippe auf ein Theme, um es sofort zu übernehmen.",
+            text = stringResource(R.string.settings_color_hint),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -636,7 +645,7 @@ private fun SettingsPageContent(
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
         // ── Hell / Dunkel ─────────────────────────────────────────────────────
-        SettingsSectionTitle("Helles / Dunkles Design")
+        SettingsSectionTitle(stringResource(R.string.settings_light_dark))
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             ThemeModeOption("⚙️  Systemeinstellung", themeMode == ThemeMode.SYSTEM) {
                 haptic.tick(); scope.launch { ThemePreferences.setThemeMode(context, ThemeMode.SYSTEM) }
@@ -652,44 +661,49 @@ private fun SettingsPageContent(
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
         // ── Sprache ───────────────────────────────────────────────────────────
-        SettingsSectionTitle("Sprache")
+        SettingsSectionTitle(stringResource(R.string.settings_language))
         LanguagePickerSection(
             onLanguageSelected = { language ->
                 haptic.tick()
+                // persistLanguageSync sofort auf Main-Thread
+                LanguageManager.persistLanguageSync(context, language)
+                // DataStore async speichern
                 scope.launch {
                     LanguageManager.setLanguage(context, language)
-                    LanguageManager.persistLanguageSync(context, language)
                 }
+                // applyLanguage MUSS auf Main-Thread sein → direkt aufrufen
+                // triggert automatisch Activity-Recreate
+                LanguageManager.applyLanguage(language)
             }
         )
 
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
         // ── Standard-Einstellungen ────────────────────────────────────────────
-        SettingsSectionTitle("Standard für neue Einträge")
+        SettingsSectionTitle(stringResource(R.string.settings_defaults))
         Text(
-            text = "Diese Werte werden beim Erstellen neuer Einträge vorausgefüllt.",
+            text = stringResource(R.string.settings_defaults_hint),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         SettingsRow(
-            label = "Anzeigeformat",
+            label = stringResource(R.string.settings_format_label),
             value = when (defaultFormat) {
-                de.beigel.nextime.data.model.CountdownDisplayFormat.DAYS_ONLY         -> "Nur Tage"
-                de.beigel.nextime.data.model.CountdownDisplayFormat.WEEKS_DAYS        -> "Wochen + Tage"
-                de.beigel.nextime.data.model.CountdownDisplayFormat.MONTHS_DAYS       -> "Monate + Tage"
-                de.beigel.nextime.data.model.CountdownDisplayFormat.YEARS_MONTHS_DAYS -> "Jahre + Monate + Tage"
+                de.beigel.nextime.data.model.CountdownDisplayFormat.DAYS_ONLY         -> stringResource(R.string.settings_format_days)
+                de.beigel.nextime.data.model.CountdownDisplayFormat.WEEKS_DAYS        -> stringResource(R.string.settings_format_weeks)
+                de.beigel.nextime.data.model.CountdownDisplayFormat.MONTHS_DAYS       -> stringResource(R.string.settings_format_months)
+                de.beigel.nextime.data.model.CountdownDisplayFormat.YEARS_MONTHS_DAYS -> stringResource(R.string.settings_format_years)
             },
             onClick = { haptic.tick(); showFormatMenu = true }
         )
         SettingsRowColor(
-            label = "Farbe",
+            label = stringResource(R.string.settings_color_label),
             color = defaultColor,
             onClick = { haptic.tick(); showColorPicker = true }
         )
         SettingsRow(
-            label = "Uhrzeit (wenn aktiv)",
+            label = stringResource(R.string.settings_time_label),
             value = defaultTime.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")) + " Uhr",
             onClick = { haptic.tick(); showTimePicker = true }
         )
@@ -701,14 +715,14 @@ private fun SettingsPageContent(
     if (showFormatMenu) {
         AlertDialog(
             onDismissRequest = { showFormatMenu = false },
-            title = { Text("Standard-Anzeigeformat") },
+            title = { Text(stringResource(R.string.dialog_default_format)) },
             text = {
                 Column {
                     listOf(
-                        de.beigel.nextime.data.model.CountdownDisplayFormat.DAYS_ONLY to "Nur Tage",
-                        de.beigel.nextime.data.model.CountdownDisplayFormat.WEEKS_DAYS to "Wochen + Tage",
-                        de.beigel.nextime.data.model.CountdownDisplayFormat.MONTHS_DAYS to "Monate + Tage",
-                        de.beigel.nextime.data.model.CountdownDisplayFormat.YEARS_MONTHS_DAYS to "Jahre + Monate + Tage"
+                        de.beigel.nextime.data.model.CountdownDisplayFormat.DAYS_ONLY to stringResource(R.string.settings_format_days),
+                        de.beigel.nextime.data.model.CountdownDisplayFormat.WEEKS_DAYS to stringResource(R.string.settings_format_weeks),
+                        de.beigel.nextime.data.model.CountdownDisplayFormat.MONTHS_DAYS to stringResource(R.string.settings_format_months),
+                        de.beigel.nextime.data.model.CountdownDisplayFormat.YEARS_MONTHS_DAYS to stringResource(R.string.settings_format_years)
                     ).forEach { (format, label) ->
                         Row(
                             modifier = Modifier
@@ -730,7 +744,7 @@ private fun SettingsPageContent(
                     }
                 }
             },
-            confirmButton = { TextButton(onClick = { showFormatMenu = false }) { Text("Schließen") } }
+            confirmButton = { TextButton(onClick = { showFormatMenu = false }) { Text(stringResource(R.string.close)) } }
         )
     }
 
@@ -744,7 +758,7 @@ private fun SettingsPageContent(
 
         AlertDialog(
             onDismissRequest = { showColorPicker = false },
-            title = { Text("Standard-Farbe") },
+            title = { Text(stringResource(R.string.dialog_default_color)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
@@ -798,7 +812,7 @@ private fun SettingsPageContent(
         )
         AlertDialog(
             onDismissRequest = { showTimePicker = false },
-            title = { Text("Standard-Uhrzeit") },
+            title = { Text(stringResource(R.string.dialog_default_time)) },
             text = {
                 Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                     TimePicker(state = timePickerState)
