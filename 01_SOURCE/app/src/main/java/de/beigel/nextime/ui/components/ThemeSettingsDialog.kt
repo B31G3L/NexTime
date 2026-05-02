@@ -2,113 +2,18 @@ package de.beigel.nextime.ui.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import de.beigel.nextime.ui.theme.*
-import de.beigel.nextime.utils.HapticFeedback
-import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ThemeSettingsDialog(
-    onDismiss: () -> Unit,
-    currentTheme: CustomTheme,
-    onThemeChanged: (CustomTheme) -> Unit
-) {
-    val context = LocalContext.current
-    val haptic = remember { HapticFeedback(context) }
-    val scope = rememberCoroutineScope()
-    val scrollState = rememberScrollState()
 
-    var selectedTheme by remember { mutableStateOf(currentTheme) }
-
-    AlertDialog(
-        onDismissRequest = {
-            haptic.tick()
-            onDismiss()
-        },
-        title = {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Palette,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Text("Theme auswählen")
-            }
-        },
-        text = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(scrollState),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                // Beschreibung
-                Text(
-                    text = "Wähle eines der vordefinierten Farbschemas für deine App",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Divider(modifier = Modifier.padding(vertical = 8.dp))
-
-                // Theme Options
-                CustomTheme.values().forEach { theme ->
-                    ThemeOptionCard(
-                        theme = theme,
-                        isSelected = selectedTheme == theme,
-                        onClick = {
-                            haptic.tick()
-                            selectedTheme = theme
-                        }
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    haptic.click()
-                    scope.launch {
-                        CustomThemePreferences.setCustomTheme(context, selectedTheme)
-                        onThemeChanged(selectedTheme)  // ← Callback für sofortiges Update
-                        onDismiss()
-                    }
-                    onDismiss()
-                }
-            ) {
-                Text("Speichern")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = {
-                haptic.tick()
-                onDismiss()
-            }) {
-                Text("Abbrechen")
-            }
-        },
-        containerColor = MaterialTheme.colorScheme.surface
-    )
-}
 
 @Composable
 private fun ThemeOptionCard(

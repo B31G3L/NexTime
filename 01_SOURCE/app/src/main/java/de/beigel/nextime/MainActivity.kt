@@ -73,8 +73,6 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     MainScreenWithBottomNav(
-                        isDarkTheme = isDarkTheme,
-                        onThemeToggle = { }
                     )
                 }
             }

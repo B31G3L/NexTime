@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">NexTime</string>
+
+    <!-- Main Screen -->
+    <string name="add_countdown">Aggiungi conto alla rovescia</string>
+    <string name="no_countdowns">Nessun conto alla rovescia</string>
+    <string name="no_countdowns_hint">Tocca + per creare il tuo primo conto alla rovescia</string>
+
+    <!-- Navigation & Common -->
+    <string name="back">Indietro</string>
+    <string name="close">Chiudi</string>
+    <string name="save">Salva</string>
+    <string name="cancel">Annulla</string>
+    <string name="delete">Elimina</string>
+    <string name="edit">Modifica</string>
+    <string name="share">Condividi</string>
+    <string name="settings">Impostazioni</string>
+    <string name="info">Info e supporto</string>
+    <string name="ok">OK</string>
+    <string name="widget_dynamic_label">NexTime Countdown</string>
+    <string name="widget_dynamic_description">Mostra il conto alla rovescia — si adatta automaticamente alle dimensioni</string>
+
+    <!-- Add/Edit Dialog -->
+    <string name="create_countdown">Crea conto alla rovescia</string>
+    <string name="edit_countdown">Modifica conto alla rovescia</string>
+    <string name="title">Titolo</string>
+    <string name="title_hint">es. Compleanno, Vacanze…</string>
+    <string name="date">Data</string>
+    <string name="time">Ora</string>
+    <string name="include_time">Includi ora</string>
+    <string name="show_nights">Mostra notti</string>
+
+    <!-- Display Formats -->
+    <string name="display_format">Formato di visualizzazione</string>
+    <string name="format_days_only">Solo giorni</string>
+    <string name="format_days_only_example">42 giorni</string>
+    <string name="format_weeks_days">Settimane + Giorni</string>
+    <string name="format_weeks_days_example">6 settimane, 0 giorni</string>
+    <string name="format_months_days">Mesi + Giorni</string>
+    <string name="format_months_days_example">1 mese, 12 giorni</string>
+
+    <!-- Color -->
+    <string name="color">Colore</string>
+    <string name="custom_color">Colore personalizzato</string>
+
+    <!-- Notifications -->
+    <string name="notifications">Notifiche</string>
+    <string name="notifications_enable">Attiva</string>
+    <string name="reminders">Promemoria</string>
+
+    <!-- Reminder Options -->
+    <string name="reminder_none">Nessuno</string>
+    <string name="reminder_at_time">Al momento indicato</string>
+    <string name="reminder_30_minutes">30 minuti prima</string>
+    <string name="reminder_1_hour">1 ora prima</string>
+    <string name="reminder_3_hours">3 ore prima</string>
+    <string name="reminder_6_hours">6 ore prima</string>
+    <string name="reminder_12_hours">12 ore prima</string>
+    <string name="reminder_1_day">1 giorno prima</string>
+    <string name="reminder_2_days">2 giorni prima</string>
+    <string name="reminder_3_days">3 giorni prima</string>
+    <string name="reminder_1_week">1 settimana prima</string>
+    <string name="reminder_2_weeks">2 settimane prima</string>
+    <string name="reminder_1_month">1 mese prima</string>
+
+    <!-- Countdown Display -->
+    <string name="day">giorno</string>
+    <string name="days">giorni</string>
+    <string name="hour">ora</string>
+    <string name="hours">ore</string>
+    <string name="minute">minuto</string>
+    <string name="minutes">minuti</string>
+    <string name="second">secondo</string>
+    <string name="seconds">secondi</string>
+    <string name="week">settimana</string>
+    <string name="weeks">settimane</string>
+    <string name="month">mese</string>
+    <string name="months">mesi</string>
+    <string name="year">anno</string>
+    <string name="years">anni</string>
+    <string name="today">Oggi</string>
+    <string name="ago">fa</string>
+
+    <!-- Detail Screen -->
+    <string name="delete_confirmation">Eliminare il conto alla rovescia?</string>
+    <string name="delete_confirmation_message">Vuoi davvero eliminare \"%s\"? Questa azione non può essere annullata.</string>
+
+    <!-- Empty State -->
+    <string name="welcome_title">Benvenuto su NexTime</string>
+    <string name="welcome_hint">Tocca + per iniziare</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Impostazioni</string>
+    <string name="design_system">Impostazione di sistema</string>
+    <string name="design_light">Chiaro</string>
+    <string name="design_dark">Scuro</string>
+    <string name="default_time">Ora predefinita</string>
+
+    <!-- Language -->
+    <string name="language">Lingua</string>
+    <string name="language_system">Lingua del sistema</string>
+    <string name="language_de">Deutsch</string>
+    <string name="language_en">English</string>
+    <string name="language_fr">Français</string>
+    <string name="language_es">Español</string>
+    <string name="language_it">Italiano</string>
+
+    <!-- About -->
+    <string name="about">Informazioni</string>
+    <string name="support_rate">Valuta l\'app</string>
+    <string name="support_coffee">Offrimi un caffè</string>
+    <string name="support_bug">Segnala un bug</string>
+    <string name="support_feature">Suggerisci una funzione</string>
+
+    <!-- Widget -->
+    <string name="widget_config_title">Configura widget</string>
+    <string name="widget_no_countdowns">Nessun conto alla rovescia</string>
+    <string name="widget_no_countdowns_hint">Creane uno prima nell\'app</string>
+
+    <!-- Loading -->
+    <string name="loading">Caricamento…</string>
+
+    <!-- Errors -->
+    <string name="error_invalid_title">Inserisci un titolo valido</string>
+    <string name="error_invalid_date">Seleziona una data valida</string>
+
+    <!-- Success -->
+    <string name="success_created">Conto alla rovescia creato ✅</string>
+    <string name="success_updated">Conto alla rovescia aggiornato ✅</string>
+    <string name="success_deleted">Conto alla rovescia eliminato ✅</string>
+
+    <!-- Share -->
+    <string name="share_days_remaining">Ancora %s giorni</string>
+    <string name="share_days_ago">%s giorni fa</string>
+</resources>

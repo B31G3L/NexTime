@@ -23,7 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Sort
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.outlined.AccessTime
 import androidx.compose.material.icons.outlined.AvTimer
 import androidx.compose.material.icons.outlined.CalendarToday
@@ -34,15 +34,18 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import de.beigel.nextime.data.model.Countdown
 import de.beigel.nextime.data.model.FilterMode
@@ -53,24 +56,38 @@ import de.beigel.nextime.ui.components.CountdownCardDialog
 import de.beigel.nextime.ui.components.AboutPageContent
 import de.beigel.nextime.ui.components.EmptyStateView
 import de.beigel.nextime.ui.components.ExpandableFab
-import de.beigel.nextime.ui.components.ThemeSettingsDialog
 import de.beigel.nextime.ui.theme.CustomTheme
 import de.beigel.nextime.ui.theme.CustomThemePreferences
 import de.beigel.nextime.ui.theme.ThemeMode
 import de.beigel.nextime.ui.theme.ThemePreferences
 import de.beigel.nextime.ui.theme.getThemeConfig
+import de.beigel.nextime.ui.theme.LanguageManager
+import de.beigel.nextime.ui.theme.AppLanguage
 import de.beigel.nextime.ui.viewmodel.CountdownViewModel
 import de.beigel.nextime.ui.viewmodel.SortMode
 import de.beigel.nextime.utils.HapticFeedback
 import kotlinx.coroutines.launch
 import java.time.format.DateTimeFormatter
+import kotlin.math.absoluteValue
+
+// ─── Nav-Item Datenklasse ─────────────────────────────────────────────────────
+
+private data class NavItem(
+    val icon: ImageVector,
+    val label: String,
+    val page: Int
+)
+
+private val NAV_ITEMS = listOf(
+    NavItem(Icons.Outlined.Info, "Info", 0),
+    NavItem(Icons.Outlined.AvTimer, "Timer", 1),
+    NavItem(Icons.Outlined.Settings, "Einstellungen", 2)
+)
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun MainScreenWithBottomNav(
-    viewModel: CountdownViewModel = viewModel(),
-    isDarkTheme: Boolean,
-    onThemeToggle: () -> Unit
+    viewModel: CountdownViewModel = viewModel()
 ) {
     val context = LocalContext.current
     val haptic = remember { HapticFeedback(context) }
@@ -84,7 +101,6 @@ fun MainScreenWithBottomNav(
     var showAddEditScreen by remember { mutableStateOf(false) }
     var editingCountdown by remember { mutableStateOf<Countdown?>(null) }
     var dialogCountdown by remember { mutableStateOf<Countdown?>(null) }
-    var showThemeDialog by remember { mutableStateOf(false) }
     var showSortMenu by remember { mutableStateOf(false) }
     var showSearch by remember { mutableStateOf(false) }
     var selectedCustomTheme by remember { mutableStateOf(CustomTheme.NEXTIME) }
@@ -95,6 +111,7 @@ fun MainScreenWithBottomNav(
         }
     }
 
+    // Pager startet auf Seite 1 (Timer-Liste)
     val pagerState = rememberPagerState(initialPage = 1, pageCount = { 3 })
 
     val currentScreen = when {
@@ -106,15 +123,23 @@ fun MainScreenWithBottomNav(
         targetState = currentScreen,
         transitionSpec = {
             if (targetState != "main") {
-                slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(400, easing = FastOutSlowInEasing)) +
-                        fadeIn(animationSpec = tween(400)) togetherWith
-                        slideOutHorizontally(targetOffsetX = { -it / 3 }, animationSpec = tween(400, easing = FastOutSlowInEasing)) +
-                        fadeOut(animationSpec = tween(300))
+                slideInHorizontally(
+                    initialOffsetX = { it },
+                    animationSpec = tween(380, easing = FastOutSlowInEasing)
+                ) + fadeIn(tween(380)) togetherWith
+                        slideOutHorizontally(
+                            targetOffsetX = { -it / 3 },
+                            animationSpec = tween(380, easing = FastOutSlowInEasing)
+                        ) + fadeOut(tween(280))
             } else {
-                slideInHorizontally(initialOffsetX = { -it / 3 }, animationSpec = tween(400, easing = FastOutSlowInEasing)) +
-                        fadeIn(animationSpec = tween(400)) togetherWith
-                        slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(400, easing = FastOutSlowInEasing)) +
-                        fadeOut(animationSpec = tween(300))
+                slideInHorizontally(
+                    initialOffsetX = { -it / 3 },
+                    animationSpec = tween(380, easing = FastOutSlowInEasing)
+                ) + fadeIn(tween(380)) togetherWith
+                        slideOutHorizontally(
+                            targetOffsetX = { it },
+                            animationSpec = tween(380, easing = FastOutSlowInEasing)
+                        ) + fadeOut(tween(280))
             }
         },
         label = "screen_navigation"
@@ -124,7 +149,8 @@ fun MainScreenWithBottomNav(
                 AddEditCountdownScreen(
                     countdown = editingCountdown,
                     onSave = { countdown: Countdown ->
-                        if (editingCountdown != null) viewModel.updateCountdown(countdown)
+                        // id == 0L → neuer Eintrag (auch Vorlagen), sonst Update
+                        if (countdown.id != 0L) viewModel.updateCountdown(countdown)
                         else viewModel.addCountdown(countdown)
                         showAddEditScreen = false
                         editingCountdown = null
@@ -142,7 +168,6 @@ fun MainScreenWithBottomNav(
                         Column {
                             TopAppBar(
                                 title = {
-                                    // Suchfeld oder Titel
                                     if (showSearch && pagerState.currentPage == 1) {
                                         SearchField(
                                             query = searchQuery,
@@ -165,14 +190,12 @@ fun MainScreenWithBottomNav(
                                 },
                                 actions = {
                                     if (pagerState.currentPage == 1 && !showSearch) {
-                                        // Suche
                                         IconButton(onClick = { haptic.tick(); showSearch = true }) {
                                             Icon(Icons.Default.Search, contentDescription = "Suchen")
                                         }
-                                        // Sortierung
                                         Box {
                                             IconButton(onClick = { haptic.tick(); showSortMenu = true }) {
-                                                Icon(Icons.Default.Sort, contentDescription = "Sortieren")
+                                                Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = "Sortieren")
                                             }
                                             SortDropdownMenu(
                                                 expanded = showSortMenu,
@@ -198,8 +221,9 @@ fun MainScreenWithBottomNav(
                         }
                     },
                     bottomBar = {
-                        BottomNavigationBar(
-                            selectedPage = pagerState.currentPage,
+                        // ── Schöne BottomNav ──────────────────────────────────
+                        BeautifulBottomNav(
+                            pagerState = pagerState,
                             onPageSelected = { page ->
                                 haptic.tick()
                                 scope.launch { pagerState.animateScrollToPage(page) }
@@ -223,22 +247,53 @@ fun MainScreenWithBottomNav(
                     },
                     floatingActionButtonPosition = FabPosition.End
                 ) { paddingValues ->
+                    // ── HorizontalPager mit Parallax-Effekt ───────────────────
                     HorizontalPager(
                         state = pagerState,
-                        modifier = Modifier.fillMaxSize().padding(paddingValues)
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(paddingValues)
                     ) { page ->
-                        when (page) {
-                            0 -> AboutPageContent()
-                            1 -> MainListContent(
-                                countdowns = countdowns,
-                                filterMode = filterMode,
-                                searchQuery = searchQuery,
-                                onCountdownClick = { countdown -> haptic.tick(); dialogCountdown = countdown },
-                                onCountdownEdit = { countdown -> editingCountdown = countdown },
-                                onCountdownDelete = { countdown -> viewModel.deleteCountdown(countdown) },
-                                onAddCountdown = { showAddEditScreen = true }
-                            )
-                            2 -> SettingsPageContent(onThemeDialogOpen = { haptic.tick(); showThemeDialog = true })
+                        // Leichte Parallax-Transformation je nach Scroll-Offset
+                        val pageOffset = (
+                                (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
+                                ).absoluteValue
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .graphicsLayer {
+                                    alpha = 1f - (pageOffset * 0.25f).coerceIn(0f, 0.25f)
+                                    translationX = pageOffset * 40f * (
+                                            if (page < pagerState.currentPage) -1f else 1f
+                                            )
+                                }
+                        ) {
+                            when (page) {
+                                0 -> AboutPageContent()
+                                1 -> MainListContent(
+                                    countdowns = countdowns,
+                                    filterMode = filterMode,
+                                    searchQuery = searchQuery,
+                                    onCountdownClick = { countdown -> haptic.tick(); dialogCountdown = countdown },
+                                    onAddCountdown = { showAddEditScreen = true }
+                                )
+                                2 -> SettingsPageContent(
+                                    onThemeChanged = { newTheme ->
+                                        selectedCustomTheme = newTheme
+                                        scope.launch {
+                                            CustomThemePreferences.setCustomTheme(context, newTheme)
+                                        }
+                                        haptic.success()
+                                        Toast.makeText(
+                                            context,
+                                            "Theme geändert zu ${getThemeConfig(newTheme).name}",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    },
+                                    currentTheme = selectedCustomTheme
+                                )
+                            }
                         }
                     }
                 }
@@ -255,18 +310,97 @@ fun MainScreenWithBottomNav(
             onShare = { c -> shareCountdown(context, c) }
         )
     }
+}
 
-    if (showThemeDialog) {
-        ThemeSettingsDialog(
-            onDismiss = { showThemeDialog = false },
-            currentTheme = selectedCustomTheme,
-            onThemeChanged = { newTheme: CustomTheme ->
-                haptic.success()
-                selectedCustomTheme = newTheme
-                scope.launch { CustomThemePreferences.setCustomTheme(context, newTheme) }
-                Toast.makeText(context, "Theme geändert zu ${getThemeConfig(newTheme).name}", Toast.LENGTH_SHORT).show()
+// ─── Schöne BottomNav ─────────────────────────────────────────────────────────
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun BeautifulBottomNav(
+    pagerState: androidx.compose.foundation.pager.PagerState,
+    onPageSelected: (Int) -> Unit
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        tonalElevation = 3.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .height(68.dp)
+                .padding(horizontal = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            NAV_ITEMS.forEach { item ->
+                val isSelected = pagerState.currentPage == item.page
+
+                val scale by animateFloatAsState(
+                    targetValue = if (isSelected) 1f else 0.88f,
+                    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+                    label = "nav_scale_${item.page}"
+                )
+
+                val pillWidth by animateDpAsState(
+                    targetValue = if (isSelected) 64.dp else 0.dp,
+                    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+                    label = "pill_${item.page}"
+                )
+
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clip(MaterialTheme.shapes.large)
+                        .clickable { onPageSelected(item.page) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                        modifier = Modifier.graphicsLayer { scaleX = scale; scaleY = scale }
+                    ) {
+                        // Pill-Indicator + Icon
+                        Box(contentAlignment = Alignment.Center) {
+                            // Animierte Pill im Hintergrund
+                            Box(
+                                modifier = Modifier
+                                    .width(pillWidth)
+                                    .height(32.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        MaterialTheme.colorScheme.secondaryContainer
+                                    )
+                            )
+                            Icon(
+                                imageVector = item.icon,
+                                contentDescription = item.label,
+                                tint = if (isSelected)
+                                    MaterialTheme.colorScheme.onSecondaryContainer
+                                else
+                                    MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                        // Label
+                        AnimatedVisibility(
+                            visible = isSelected,
+                            enter = fadeIn(tween(150)) + expandVertically(tween(150)),
+                            exit = fadeOut(tween(100)) + shrinkVertically(tween(100))
+                        ) {
+                            Text(
+                                text = item.label,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                fontSize = 11.sp,
+                                modifier = Modifier.padding(top = 2.dp)
+                            )
+                        }
+                    }
+                }
             }
-        )
+        }
     }
 }
 
@@ -373,17 +507,6 @@ private fun FilterChipRow(currentMode: FilterMode, onModeSelected: (FilterMode) 
     }
 }
 
-// ─── Navigation ───────────────────────────────────────────────────────────────
-
-@Composable
-private fun BottomNavigationBar(selectedPage: Int, onPageSelected: (Int) -> Unit) {
-    NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainer, modifier = Modifier.height(70.dp)) {
-        NavigationBarItem(selected = selectedPage == 0, onClick = { onPageSelected(0) }, icon = { Icon(Icons.Outlined.Info, contentDescription = "Info", modifier = Modifier.size(26.dp)) }, label = null, alwaysShowLabel = false)
-        NavigationBarItem(selected = selectedPage == 1, onClick = { onPageSelected(1) }, icon = { Icon(Icons.Outlined.AvTimer, contentDescription = "Liste", modifier = Modifier.size(26.dp)) }, label = null, alwaysShowLabel = false)
-        NavigationBarItem(selected = selectedPage == 2, onClick = { onPageSelected(2) }, icon = { Icon(Icons.Outlined.Settings, contentDescription = "Einstellungen", modifier = Modifier.size(26.dp)) }, label = null, alwaysShowLabel = false)
-    }
-}
-
 // ─── Hauptliste ───────────────────────────────────────────────────────────────
 
 @Composable
@@ -392,8 +515,6 @@ private fun MainListContent(
     filterMode: FilterMode,
     searchQuery: String,
     onCountdownClick: (Countdown) -> Unit,
-    onCountdownEdit: (Countdown) -> Unit,
-    onCountdownDelete: (Countdown) -> Unit,
     onAddCountdown: () -> Unit = {}
 ) {
     if (countdowns.isEmpty()) {
@@ -406,7 +527,6 @@ private fun MainListContent(
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 96.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Bei aktiver Suche: keine Sektions-Trenner
         if (searchQuery.isNotBlank() || filterMode != FilterMode.ALL) {
             items(items = countdowns, key = { it.id }) { countdown ->
                 AnimatedCountdownCard(countdown, onCountdownClick)
@@ -465,22 +585,20 @@ private fun AnimatedCountdownCard(countdown: Countdown, onCountdownClick: (Count
     }
 }
 
-// ─── About-Seite → kommt aus AboutDialog.kt ───────────────────────────────────
-
 // ─── Einstellungen ────────────────────────────────────────────────────────────
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-private fun SettingsPageContent(onThemeDialogOpen: () -> Unit) {
+private fun SettingsPageContent(
+    onThemeChanged: (CustomTheme) -> Unit,
+    currentTheme: CustomTheme
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val haptic = remember { HapticFeedback(context) }
     val scrollState = rememberScrollState()
 
-    // Theme
     val themeMode by ThemePreferences.getThemeMode(context).collectAsState(initial = ThemeMode.SYSTEM)
-
-    // Standard-Einstellungen
     val defaultFormat by de.beigel.nextime.ui.theme.AppPreferences
         .getDefaultFormat(context).collectAsState(initial = de.beigel.nextime.data.model.CountdownDisplayFormat.DAYS_ONLY)
     val defaultColor by de.beigel.nextime.ui.theme.AppPreferences
@@ -496,33 +614,65 @@ private fun SettingsPageContent(onThemeDialogOpen: () -> Unit) {
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(scrollState)
-            .padding(horizontal = 24.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(horizontal = 20.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        // ── Design ────────────────────────────────────────────────────────────
-        Text("Design & Theme", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-        OutlinedButton(onClick = onThemeDialogOpen, modifier = Modifier.fillMaxWidth()) {
-            Icon(imageVector = Icons.Outlined.Settings, contentDescription = null, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.width(8.dp))
-            Text("🎨 Theme auswählen")
-        }
-        Spacer(Modifier.height(4.dp))
-        Text("Helles/Dunkles Design", style = MaterialTheme.typography.titleMedium)
-        ThemeModeOption("⚙️ Systemeinstellung", themeMode == ThemeMode.SYSTEM) { haptic.tick(); scope.launch { ThemePreferences.setThemeMode(context, ThemeMode.SYSTEM) } }
-        ThemeModeOption("🌞 Hell", themeMode == ThemeMode.LIGHT) { haptic.tick(); scope.launch { ThemePreferences.setThemeMode(context, ThemeMode.LIGHT) } }
-        ThemeModeOption("🌙 Dunkel", themeMode == ThemeMode.DARK) { haptic.tick(); scope.launch { ThemePreferences.setThemeMode(context, ThemeMode.DARK) } }
 
-        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp), color = MaterialTheme.colorScheme.outlineVariant)
+        // ── Theme-Auswahl (Inline-Grid, kein Dialog) ──────────────────────────
+        SettingsSectionTitle("Farbschema")
+        Text(
+            text = "Tippe auf ein Theme, um es sofort zu übernehmen.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        ThemePickerGrid(
+            currentTheme = currentTheme,
+            onThemeSelected = { theme ->
+                haptic.success()
+                onThemeChanged(theme)
+            }
+        )
+
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+        // ── Hell / Dunkel ─────────────────────────────────────────────────────
+        SettingsSectionTitle("Helles / Dunkles Design")
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            ThemeModeOption("⚙️  Systemeinstellung", themeMode == ThemeMode.SYSTEM) {
+                haptic.tick(); scope.launch { ThemePreferences.setThemeMode(context, ThemeMode.SYSTEM) }
+            }
+            ThemeModeOption("🌞  Hell", themeMode == ThemeMode.LIGHT) {
+                haptic.tick(); scope.launch { ThemePreferences.setThemeMode(context, ThemeMode.LIGHT) }
+            }
+            ThemeModeOption("🌙  Dunkel", themeMode == ThemeMode.DARK) {
+                haptic.tick(); scope.launch { ThemePreferences.setThemeMode(context, ThemeMode.DARK) }
+            }
+        }
+
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+        // ── Sprache ───────────────────────────────────────────────────────────
+        SettingsSectionTitle("Sprache")
+        LanguagePickerSection(
+            onLanguageSelected = { language ->
+                haptic.tick()
+                scope.launch {
+                    LanguageManager.setLanguage(context, language)
+                    LanguageManager.persistLanguageSync(context, language)
+                }
+            }
+        )
+
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
         // ── Standard-Einstellungen ────────────────────────────────────────────
-        Text("Standard für neue Einträge", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        SettingsSectionTitle("Standard für neue Einträge")
         Text(
             text = "Diese Werte werden beim Erstellen neuer Einträge vorausgefüllt.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        // Standard-Anzeigeformat
         SettingsRow(
             label = "Anzeigeformat",
             value = when (defaultFormat) {
@@ -533,23 +683,21 @@ private fun SettingsPageContent(onThemeDialogOpen: () -> Unit) {
             },
             onClick = { haptic.tick(); showFormatMenu = true }
         )
-
-        // Standard-Farbe
         SettingsRowColor(
             label = "Farbe",
             color = defaultColor,
             onClick = { haptic.tick(); showColorPicker = true }
         )
-
-        // Standard-Uhrzeit
         SettingsRow(
             label = "Uhrzeit (wenn aktiv)",
             value = defaultTime.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")) + " Uhr",
             onClick = { haptic.tick(); showTimePicker = true }
         )
+
+        Spacer(Modifier.height(16.dp))
     }
 
-    // Format-Picker
+    // ── Format-Picker ─────────────────────────────────────────────────────────
     if (showFormatMenu) {
         AlertDialog(
             onDismissRequest = { showFormatMenu = false },
@@ -586,7 +734,7 @@ private fun SettingsPageContent(onThemeDialogOpen: () -> Unit) {
         )
     }
 
-    // Farb-Picker
+    // ── Farb-Picker ───────────────────────────────────────────────────────────
     if (showColorPicker) {
         val initialColorInt = try { android.graphics.Color.parseColor(defaultColor) }
         catch (e: Exception) { android.graphics.Color.parseColor("#FF7043") }
@@ -599,7 +747,6 @@ private fun SettingsPageContent(onThemeDialogOpen: () -> Unit) {
             title = { Text("Standard-Farbe") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    // Schnellauswahl
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                         listOf("#FF7043","#EF5350","#EC407A","#AB47BC","#5C6BC0","#42A5F5","#26A69A","#66BB6A","#FFA726","#8D6E63").forEach { hex ->
                             val c = try { androidx.compose.ui.graphics.Color(android.graphics.Color.parseColor(hex)) }
@@ -622,7 +769,6 @@ private fun SettingsPageContent(onThemeDialogOpen: () -> Unit) {
                         }
                     }
                     HorizontalDivider()
-                    // RGB-Slider
                     Box(modifier = Modifier.size(40.dp).clip(CircleShape).background(androidx.compose.ui.graphics.Color(android.graphics.Color.rgb(r, g, b))))
                     Text("R: $r", style = MaterialTheme.typography.bodySmall)
                     Slider(value = r.toFloat(), onValueChange = { r = it.toInt() }, valueRange = 0f..255f)
@@ -643,7 +789,7 @@ private fun SettingsPageContent(onThemeDialogOpen: () -> Unit) {
         )
     }
 
-    // Zeit-Picker
+    // ── Zeit-Picker ───────────────────────────────────────────────────────────
     if (showTimePicker) {
         val timePickerState = rememberTimePickerState(
             initialHour = defaultTime.hour,
@@ -675,11 +821,169 @@ private fun SettingsPageContent(onThemeDialogOpen: () -> Unit) {
     }
 }
 
+// ─── Theme-Picker Grid (kein Dialog) ─────────────────────────────────────────
+
+@Composable
+private fun ThemePickerGrid(
+    currentTheme: CustomTheme,
+    onThemeSelected: (CustomTheme) -> Unit
+) {
+    // Themes in 2-Spalten-Grid
+    val themes = CustomTheme.values().toList()
+    val chunked = themes.chunked(2)
+
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        chunked.forEach { row ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                row.forEach { theme ->
+                    ThemePickerCard(
+                        theme = theme,
+                        isSelected = currentTheme == theme,
+                        onClick = { onThemeSelected(theme) },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                // Falls ungerade Anzahl, leere Box als Platzhalter
+                if (row.size == 1) {
+                    Box(modifier = Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ThemePickerCard(
+    theme: CustomTheme,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val config = getThemeConfig(theme)
+    val primaryLight = config.lightColorScheme.primary
+    val secondary = config.lightColorScheme.secondary
+    val tertiary = config.lightColorScheme.tertiary
+
+    val bgColor by animateColorAsState(
+        targetValue = if (isSelected)
+            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f)
+        else
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+        animationSpec = tween(200),
+        label = "bg_${theme.name}"
+    )
+
+    Surface(
+        modifier = modifier,
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+        color = bgColor,
+        border = androidx.compose.foundation.BorderStroke(
+            width = if (isSelected) 2.dp else 1.dp,
+            color = if (isSelected) MaterialTheme.colorScheme.primary
+            else MaterialTheme.colorScheme.outlineVariant
+        ),
+        onClick = onClick
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Farbstreifen
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(5.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Große primäre Farbe
+                Box(
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clip(CircleShape)
+                        .background(primaryLight)
+                )
+                // Sekundäre + Tertiär
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Box(
+                        modifier = Modifier
+                            .width(22.dp)
+                            .height(11.dp)
+                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(4.dp))
+                            .background(secondary)
+                    )
+                    Box(
+                        modifier = Modifier
+                            .width(22.dp)
+                            .height(11.dp)
+                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(4.dp))
+                            .background(tertiary)
+                    )
+                }
+                if (isSelected) {
+                    Spacer(Modifier.weight(1f))
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                            Text(
+                                "✓",
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Name
+            Text(
+                text = config.name.substringBefore(" ("),
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                color = if (isSelected) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.onSurface
+            )
+            // Untertitel
+            Text(
+                text = config.name.substringAfter("(").trimEnd(')'),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+// ─── Settings-Hilfsfunktionen ─────────────────────────────────────────────────
+
+@Composable
+private fun SettingsSectionTitle(title: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.onSurface
+    )
+}
+
 @Composable
 private fun ThemeModeOption(label: String, isSelected: Boolean, onClick: () -> Unit) {
-    Surface(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium, color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant, onClick = onClick) {
-        Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text(label)
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
+        color = if (isSelected) MaterialTheme.colorScheme.primaryContainer
+        else MaterialTheme.colorScheme.surfaceVariant,
+        onClick = onClick
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(14.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(label, style = MaterialTheme.typography.bodyMedium)
             RadioButton(selected = isSelected, onClick = onClick)
         }
     }
@@ -699,15 +1003,21 @@ private fun SettingsRow(label: String, value: String, onClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(label, style = MaterialTheme.typography.bodyMedium)
-            Text(value, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
+            Text(
+                value,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Medium
+            )
         }
     }
 }
 
 @Composable
 private fun SettingsRowColor(label: String, color: String, onClick: () -> Unit) {
-    val parsedColor = try { androidx.compose.ui.graphics.Color(android.graphics.Color.parseColor(color)) }
-    catch (e: Exception) { MaterialTheme.colorScheme.primary }
+    val parsedColor = try {
+        androidx.compose.ui.graphics.Color(android.graphics.Color.parseColor(color))
+    } catch (e: Exception) { MaterialTheme.colorScheme.primary }
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -747,4 +1057,75 @@ private fun shareCountdown(context: android.content.Context, countdown: Countdow
         putExtra(Intent.EXTRA_TEXT, shareText)
     }
     context.startActivity(Intent.createChooser(intent, "Countdown teilen"))
+}
+
+// ─── Sprachauswahl ────────────────────────────────────────────────────────────
+
+@Composable
+private fun LanguagePickerSection(
+    onLanguageSelected: (AppLanguage) -> Unit
+) {
+    val context = LocalContext.current
+    val currentLanguage by LanguageManager.getLanguage(context)
+        .collectAsState(initial = AppLanguage.SYSTEM)
+
+    // Flaggen-Emojis als Deko
+    val flags = mapOf(
+        AppLanguage.SYSTEM  to "🌐",
+        AppLanguage.GERMAN  to "🇩🇪",
+        AppLanguage.ENGLISH to "🇬🇧",
+        AppLanguage.FRENCH  to "🇫🇷",
+        AppLanguage.SPANISH to "🇪🇸",
+        AppLanguage.ITALIAN to "🇮🇹"
+    )
+
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        AppLanguage.values().forEach { language ->
+            val isSelected = currentLanguage == language
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.medium,
+                color = if (isSelected)
+                    MaterialTheme.colorScheme.primaryContainer
+                else
+                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                onClick = { onLanguageSelected(language) }
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 13.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = flags[language] ?: "🌐",
+                            fontSize = 20.sp
+                        )
+                        Text(
+                            text = language.displayName,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                            color = if (isSelected)
+                                MaterialTheme.colorScheme.onPrimaryContainer
+                            else
+                                MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    if (isSelected) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
+        }
+    }
 }
