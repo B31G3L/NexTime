@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "de.beigel.nextime"
+    namespace = "todo.beigelwick.de.todolist"
     compileSdk = 36
 
     defaultConfig {
