@@ -15,11 +15,12 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.flow.first
@@ -27,13 +28,14 @@ import kotlinx.coroutines.launch
 import todo.beigelwick.de.todolist.data.database.CountdownDatabase
 import todo.beigelwick.de.todolist.notifications.CountdownNotificationManager
 import todo.beigelwick.de.todolist.notifications.NotificationScheduler
-import todo.beigelwick.de.todolist.ui.screens.MainScreenWithBottomNav
+import todo.beigelwick.de.todolist.ui.navigation.AppNavigation
 import todo.beigelwick.de.todolist.ui.theme.CustomTheme
 import todo.beigelwick.de.todolist.ui.theme.CustomThemePreferences
+import todo.beigelwick.de.todolist.ui.theme.LanguageManager
 import todo.beigelwick.de.todolist.ui.theme.NexTimeTheme
 import todo.beigelwick.de.todolist.ui.theme.ThemeMode
 import todo.beigelwick.de.todolist.ui.theme.ThemePreferences
-import kotlin.collections.forEach
+import todo.beigelwick.de.todolist.widget.WidgetUpdateWorker
 
 class MainActivity : ComponentActivity() {
 
@@ -56,34 +58,36 @@ class MainActivity : ComponentActivity() {
         scheduleAllPendingNotifications()
 
         enableEdgeToEdge()
-        setContent {
-            val context = LocalContext.current
-            val themeMode by ThemePreferences.getThemeMode(context).collectAsState(initial = ThemeMode.SYSTEM)
-            val systemDarkTheme = isSystemInDarkTheme()
-            val customTheme by CustomThemePreferences.getCustomTheme(context).collectAsState(initial = CustomTheme.NEXTIME)
 
-            val isDarkTheme = when (themeMode) {
-                ThemeMode.SYSTEM -> systemDarkTheme
+        setContent {
+            val themeMode   by ThemePreferences.getThemeMode(this).collectAsState(initial = ThemeMode.SYSTEM)
+            val customTheme by CustomThemePreferences.getCustomTheme(this).collectAsState(initial = CustomTheme.NEXTIME)
+            val systemDark  = isSystemInDarkTheme()
+
+            val isDark = when (themeMode) {
+                ThemeMode.SYSTEM -> systemDark
                 ThemeMode.LIGHT  -> false
                 ThemeMode.DARK   -> true
             }
 
             NexTimeTheme(
-                darkTheme = isDarkTheme,
+                darkTheme   = isDark,
                 customTheme = customTheme
             ) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                    color    = MaterialTheme.colorScheme.background
                 ) {
-                    MainScreenWithBottomNav()
+                    AppNavigation()
                 }
             }
         }
     }
 
+    // ─── Benachrichtigungen beim Start neu planen ─────────────────────────────
+
     private fun scheduleAllPendingNotifications() {
-        val database = CountdownDatabase.Companion.getDatabase(this)
+        val database = CountdownDatabase.getDatabase(this)
         lifecycleScope.launch {
             val countdowns = database.countdownDao().getAllCountdowns().first()
             countdowns.forEach { countdown ->
@@ -94,10 +98,14 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    // ─── Berechtigungen ───────────────────────────────────────────────────────
+
     private fun requestNotificationPermissionIfNeeded() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             when {
-                ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED -> {
+                ContextCompat.checkSelfPermission(
+                    this, Manifest.permission.POST_NOTIFICATIONS
+                ) == PackageManager.PERMISSION_GRANTED -> {
                     checkExactAlarmPermission()
                 }
                 shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS) -> {
@@ -128,9 +136,11 @@ class MainActivity : ComponentActivity() {
             .setPositiveButton(getString(R.string.alarm_to_settings)) { _, _ ->
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                     try {
-                        startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
-                            data = Uri.parse("package:$packageName")
-                        })
+                        startActivity(
+                            Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                                data = Uri.parse("package:$packageName")
+                            }
+                        )
                     } catch (e: Exception) {
                         Toast.makeText(this, getString(R.string.alarm_fallback), Toast.LENGTH_LONG).show()
                     }

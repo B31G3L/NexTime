@@ -6,6 +6,8 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 
+// ─── Anzeigeformat ────────────────────────────────────────────────────────────
+
 enum class CountdownDisplayFormat {
     DAYS_ONLY,
     WEEKS_DAYS,
@@ -13,37 +15,43 @@ enum class CountdownDisplayFormat {
     YEARS_MONTHS_DAYS
 }
 
-// Erweiterte Reminder-Optionen inkl. Stunden
-enum class ReminderOption(val displayName: String, val minutes: Long) {
-    NONE("Keine", 0),
-    AT_TIME("Zum Zeitpunkt", 0),
-    MINUTES_30("30 Minuten vorher", 30),
-    HOUR_1("1 Stunde vorher", 60),
-    HOURS_3("3 Stunden vorher", 180),
-    HOURS_6("6 Stunden vorher", 360),
-    HOURS_12("12 Stunden vorher", 720),
-    DAY_1("1 Tag vorher", 1440),
-    DAYS_2("2 Tage vorher", 2880),
-    DAYS_3("3 Tage vorher", 4320),
-    WEEK_1("1 Woche vorher", 10080),
-    WEEKS_2("2 Wochen vorher", 20160),
-    MONTH_1("1 Monat vorher", 43200)
+// ─── Erinnerungsoptionen ──────────────────────────────────────────────────────
+
+enum class ReminderOption(val minutes: Long) {
+    NONE(0),
+    AT_TIME(0),
+    MINUTES_30(30),
+    HOUR_1(60),
+    HOURS_3(180),
+    HOURS_6(360),
+    HOURS_12(720),
+    DAY_1(1440),
+    DAYS_2(2880),
+    DAYS_3(4320),
+    WEEK_1(10080),
+    WEEKS_2(20160),
+    MONTH_1(43200)
 }
 
-// Wiederholungstyp
-enum class RecurrenceType(val displayName: String) {
-    NONE("Keine Wiederholung"),
-    DAILY("Täglich"),
-    WEEKLY("Wöchentlich"),
-    MONTHLY("Monatlich"),
-    YEARLY("Jährlich")
+// ─── Wiederholungstyp ─────────────────────────────────────────────────────────
+
+enum class RecurrenceType {
+    NONE,
+    DAILY,
+    WEEKLY,
+    MONTHLY,
+    YEARLY
 }
+
+// ─── Filtermodus ──────────────────────────────────────────────────────────────
 
 enum class FilterMode {
     ALL,
     COUNTDOWN,
     COUNTUP
 }
+
+// ─── Countdown Entity ─────────────────────────────────────────────────────────
 
 @Entity(tableName = "countdowns")
 data class Countdown(
@@ -60,19 +68,22 @@ data class Countdown(
     val lastNotificationSent: String? = null,
     val includeTime: Boolean = false,
     val showNights: Boolean = false,
-    // Neu in v6
     val recurrence: String = RecurrenceType.NONE.name
 ) {
     val isCountUp: Boolean
         get() = targetDateTime.isBefore(LocalDateTime.now())
 
     val recurrenceType: RecurrenceType
-        get() = try { RecurrenceType.valueOf(recurrence) } catch (e: Exception) { RecurrenceType.NONE }
+        get() = try {
+            RecurrenceType.valueOf(recurrence)
+        } catch (e: Exception) {
+            RecurrenceType.NONE
+        }
 
     val isRecurring: Boolean
         get() = recurrenceType != RecurrenceType.NONE
 
-    // Berechnet das nächste Zieldatum bei wiederkehrenden Einträgen
+    /** Nächstes Vorkommen bei wiederkehrenden Einträgen */
     fun nextOccurrence(): LocalDateTime {
         if (!isRecurring) return targetDateTime
         val now = LocalDateTime.now()
@@ -89,10 +100,12 @@ data class Countdown(
         return next
     }
 
-    // Effektives Zieldatum — bei Wiederholung das nächste, sonst das gespeicherte
+    /** Effektives Zieldatum – bei Wiederholung das nächste, sonst das gespeicherte */
     val effectiveTarget: LocalDateTime
         get() = if (isRecurring) nextOccurrence() else targetDateTime
 }
+
+// ─── CountdownInfo ────────────────────────────────────────────────────────────
 
 data class CountdownInfo(
     val days: Long,
@@ -110,15 +123,16 @@ data class CountdownInfo(
     val isPast: Boolean
 )
 
+// ─── Zeitberechnung ───────────────────────────────────────────────────────────
+
 fun Countdown.calculateTimeRemaining(): CountdownInfo {
-    val now = LocalDateTime.now()
-    // Bei wiederkehrenden Einträgen immer das nächste Vorkommen verwenden
+    val now    = LocalDateTime.now()
     val target = effectiveTarget
 
     return if (includeTime) {
         val isPast = target.isBefore(now)
-        val start: LocalDateTime = if (isPast) target else now
-        val end: LocalDateTime   = if (isPast) now else target
+        val start  = if (isPast) target else now
+        val end    = if (isPast) now else target
 
         val totalSeconds = ChronoUnit.SECONDS.between(start, end)
         val totalDays    = totalSeconds / 86400
@@ -129,11 +143,11 @@ fun Countdown.calculateTimeRemaining(): CountdownInfo {
 
         val startDate = start.toLocalDate()
         val endDate   = end.toLocalDate()
-        val totalMonths = ChronoUnit.MONTHS.between(startDate, endDate)
-        val totalYears  = ChronoUnit.YEARS.between(startDate, endDate)
+        val totalMonths              = ChronoUnit.MONTHS.between(startDate, endDate)
+        val totalYears               = ChronoUnit.YEARS.between(startDate, endDate)
         val remainingDaysAfterMonths = ChronoUnit.DAYS.between(startDate.plusMonths(totalMonths), endDate)
         val remainingMonthsAfterYears = ChronoUnit.MONTHS.between(startDate.plusYears(totalYears), endDate)
-        val remainingDaysAfterYears = ChronoUnit.DAYS.between(
+        val remainingDaysAfterYears  = ChronoUnit.DAYS.between(
             startDate.plusYears(totalYears).plusMonths(remainingMonthsAfterYears), endDate
         )
 
@@ -157,15 +171,15 @@ fun Countdown.calculateTimeRemaining(): CountdownInfo {
         val targetDate = target.toLocalDate()
         val isPast     = targetDate.isBefore(nowDate)
 
-        val start: LocalDate = if (isPast) targetDate else nowDate
-        val end: LocalDate   = if (isPast) nowDate else targetDate
+        val start = if (isPast) targetDate else nowDate
+        val end   = if (isPast) nowDate else targetDate
 
-        val totalDays   = ChronoUnit.DAYS.between(start, end)
-        val totalMonths = ChronoUnit.MONTHS.between(start, end)
-        val totalYears  = ChronoUnit.YEARS.between(start, end)
+        val totalDays                = ChronoUnit.DAYS.between(start, end)
+        val totalMonths              = ChronoUnit.MONTHS.between(start, end)
+        val totalYears               = ChronoUnit.YEARS.between(start, end)
         val remainingDaysAfterMonths = ChronoUnit.DAYS.between(start.plusMonths(totalMonths), end)
         val remainingMonthsAfterYears = ChronoUnit.MONTHS.between(start.plusYears(totalYears), end)
-        val remainingDaysAfterYears = ChronoUnit.DAYS.between(
+        val remainingDaysAfterYears  = ChronoUnit.DAYS.between(
             start.plusYears(totalYears).plusMonths(remainingMonthsAfterYears), end
         )
 
@@ -187,33 +201,10 @@ fun Countdown.calculateTimeRemaining(): CountdownInfo {
     }
 }
 
+// ─── Formatierungs-Extensions ─────────────────────────────────────────────────
+
 fun CountdownInfo.formatTime(): String =
     "%02d:%02d:%02d".format(hours, minutes, seconds)
-
-fun Countdown.getFormattedTime(timeInfo: CountdownInfo): String {
-    val format = try { CountdownDisplayFormat.valueOf(displayFormat) }
-    catch (e: Exception) { CountdownDisplayFormat.DAYS_ONLY }
-    return when (format) {
-        CountdownDisplayFormat.DAYS_ONLY         -> "${timeInfo.days}"
-        CountdownDisplayFormat.WEEKS_DAYS        -> "${timeInfo.weeks} Wochen, ${timeInfo.remainingDaysAfterWeeks} Tage"
-        CountdownDisplayFormat.MONTHS_DAYS       -> "${timeInfo.months} Monate, ${timeInfo.remainingDaysAfterMonths} Tage"
-        CountdownDisplayFormat.YEARS_MONTHS_DAYS -> "${timeInfo.years} Jahre, ${timeInfo.remainingMonthsAfterYears} Monate, ${timeInfo.remainingDaysAfterYears} Tage"
-    }
-}
-
-fun Countdown.getFormattedTimeLabel(timeInfo: CountdownInfo): String {
-    val format = try { CountdownDisplayFormat.valueOf(displayFormat) }
-    catch (e: Exception) { CountdownDisplayFormat.DAYS_ONLY }
-    return when (format) {
-        CountdownDisplayFormat.DAYS_ONLY -> if (timeInfo.days == 1L) "Tag" else "Tage"
-        else -> ""
-    }
-}
-
-fun CountdownInfo.toDisplayString(): String = buildString {
-    if (isPast) append("vor ")
-    if (days > 0) { append("$days Tag"); if (days > 1) append("e") }
-}
 
 fun Countdown.getReminderOptionsList(): List<ReminderOption> {
     if (reminderOptions.isEmpty()) return emptyList()

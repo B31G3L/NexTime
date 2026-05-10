@@ -4,27 +4,22 @@ import kotlinx.coroutines.flow.Flow
 import todo.beigelwick.de.todolist.data.database.CountdownDao
 import todo.beigelwick.de.todolist.data.model.Countdown
 
-class CountdownRepository(private val countdownDao: CountdownDao) {
+class CountdownRepository(private val dao: CountdownDao) {
 
-    val allCountdowns: Flow<List<Countdown>> = countdownDao.getAllCountdowns()
+    val allCountdowns: Flow<List<Countdown>> = dao.getAllCountdowns()
 
-    suspend fun getCountdownById(id: Long): Countdown? {
-        return countdownDao.getCountdownById(id)
-    }
+    suspend fun getCountdownById(id: Long): Countdown? =
+        dao.getCountdownById(id)
 
-    suspend fun insertCountdown(countdown: Countdown): Long {
-        return countdownDao.insertCountdown(countdown)
-    }
+    suspend fun insertCountdown(countdown: Countdown): Long =
+        dao.insertCountdown(countdown)
 
-    suspend fun updateCountdown(countdown: Countdown) {
-        countdownDao.updateCountdown(countdown)
-    }
+    suspend fun updateCountdown(countdown: Countdown) =
+        dao.updateCountdown(countdown)
 
-    suspend fun deleteCountdown(countdown: Countdown) {
-        countdownDao.deleteCountdown(countdown)
-    }
+    suspend fun deleteCountdown(countdown: Countdown) =
+        dao.deleteCountdown(countdown)
 
-    suspend fun deleteCountdownById(id: Long) {
-        countdownDao.deleteCountdownById(id)
-    }
+    suspend fun deleteCountdownById(id: Long) =
+        dao.deleteCountdownById(id)
 }

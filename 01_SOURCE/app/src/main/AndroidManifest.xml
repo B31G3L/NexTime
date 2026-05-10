@@ -6,7 +6,6 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
     <application
         android:name=".NexTimeApplication"
@@ -21,10 +20,11 @@
         android:localeConfig="@xml/locale_config"
         tools:targetApi="33">
 
+        <!-- Single Activity -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:configChanges="uiMode|locale"
+            android:configChanges="uiMode|locale|layoutDirection"
             android:theme="@style/Theme.NexTime">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -42,7 +42,7 @@
             </intent-filter>
         </activity>
 
-        <!-- Benachrichtigungen Receiver -->
+        <!-- Benachrichtigungs-Receiver -->
         <receiver
             android:name=".notifications.NotificationReceiver"
             android:enabled="true"
@@ -62,7 +62,7 @@
                 android:resource="@xml/countdown_widget_info" />
         </receiver>
 
-        <!-- Theme Change Receiver -->
+        <!-- Theme-Change Receiver (Widget-Aktualisierung bei Hell/Dunkel-Wechsel) -->
         <receiver
             android:name=".widget.ThemeChangeReceiver"
             android:enabled="true"
@@ -72,12 +72,13 @@
             </intent-filter>
         </receiver>
 
-        <!-- Services für Benachrichtigungen -->
+        <!-- WorkManager Foreground Service -->
         <service
             android:name="androidx.work.impl.foreground.SystemForegroundService"
             android:foregroundServiceType="shortService"
             tools:node="merge" />
-        <!-- Nach dem ThemeChangeReceiver, vor </application> -->
+
+        <!-- App Locales Metadata -->
         <service
             android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
             android:enabled="false"
@@ -86,6 +87,7 @@
                 android:name="autoStoreLocales"
                 android:value="true" />
         </service>
+
     </application>
 
 </manifest>

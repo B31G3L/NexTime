@@ -1,32 +1,33 @@
-# In proguard-rules.pro:
+# ── Room ──────────────────────────────────────────────────────────────────────
+-keep class todo.beigelwick.de.todolist.data.model.** { *; }
 
-# Keep Room entities
--keep class de.beigel.nextime.data.model.** { *; }
-
-# Keep Kotlin
+# ── Kotlin ────────────────────────────────────────────────────────────────────
 -keep class kotlin.** { *; }
 -keep class kotlinx.** { *; }
 -dontwarn kotlin.**
 -dontwarn kotlinx.**
 
-# Keep Compose
+# ── Compose ───────────────────────────────────────────────────────────────────
 -keep class androidx.compose.** { *; }
 -dontwarn androidx.compose.**
 
-# Keep DataStore
+# ── DataStore ─────────────────────────────────────────────────────────────────
 -keep class androidx.datastore.** { *; }
 
-# Keep Material3
+# ── Material3 ─────────────────────────────────────────────────────────────────
 -keep class androidx.compose.material3.** { *; }
 
-# Keep Coroutines
+# ── Coroutines ────────────────────────────────────────────────────────────────
 -keepnames class kotlinx.coroutines.internal.MainDispatcherFactory {}
 -keepnames class kotlinx.coroutines.CoroutineExceptionHandler {}
 
-# Keep BuildConfig
--keep class de.beigel.nextime.BuildConfig { *; }
+# ── Navigation ────────────────────────────────────────────────────────────────
+-keep class androidx.navigation.** { *; }
 
-# Optimization
+# ── BuildConfig ───────────────────────────────────────────────────────────────
+-keep class todo.beigelwick.de.todolist.BuildConfig { *; }
+
+# ── Optimierung ───────────────────────────────────────────────────────────────
 -optimizationpasses 5
 -dontusemixedcaseclassnames
 -dontskipnonpubliclibraryclasses

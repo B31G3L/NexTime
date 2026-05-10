@@ -12,22 +12,15 @@ class NotificationReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         val countdownId = intent.getLongExtra("countdown_id", -1L)
-        val isAtTime = intent.getBooleanExtra("is_at_time", false)
+        val isAtTime    = intent.getBooleanExtra("is_at_time", false)
 
         if (countdownId == -1L) return
 
-        // Countdown aus Datenbank laden
         CoroutineScope(Dispatchers.IO).launch {
-            val database = CountdownDatabase.Companion.getDatabase(context)
+            val database  = CountdownDatabase.getDatabase(context)
             val countdown = database.countdownDao().getCountdownById(countdownId)
-
             countdown?.let {
-                // Notification anzeigen
-                CountdownNotificationManager.showCountdownNotification(
-                    context,
-                    it,
-                    isAtTime
-                )
+                CountdownNotificationManager.showCountdownNotification(context, it, isAtTime)
             }
         }
     }

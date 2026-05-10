@@ -12,37 +12,36 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import todo.beigelwick.de.todolist.R
 
-
 @Composable
 fun EmptyStateView(
-    onAddCountdown: (() -> Unit)? = null
+    modifier       : Modifier = Modifier,
+    onAddCountdown : (() -> Unit)? = null
 ) {
     Box(
-        modifier = Modifier.fillMaxSize(),
+        modifier        = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(20.dp),
-            modifier = Modifier.padding(32.dp)
+            modifier            = Modifier.padding(32.dp)
         ) {
             Text(
-                text = stringResource(R.string.empty_title),
-                style = MaterialTheme.typography.titleMedium,
+                text       = stringResource(R.string.empty_title),
+                style      = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface,
-                textAlign = TextAlign.Center
+                color      = MaterialTheme.colorScheme.onSurface,
+                textAlign  = TextAlign.Center
             )
-
             Surface(
                 shape = RoundedCornerShape(24.dp),
                 color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
             ) {
                 Text(
-                    text = stringResource(R.string.empty_hint),
+                    text     = stringResource(R.string.empty_hint),
                     modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.primary,
+                    style    = MaterialTheme.typography.bodyLarge,
+                    color    = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Medium
                 )
             }

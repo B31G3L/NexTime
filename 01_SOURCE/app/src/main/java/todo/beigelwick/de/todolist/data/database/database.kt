@@ -8,8 +8,11 @@ import kotlinx.coroutines.flow.Flow
 import todo.beigelwick.de.todolist.data.model.Countdown
 import java.time.LocalDateTime
 
+// ─── DAO ──────────────────────────────────────────────────────────────────────
+
 @Dao
 interface CountdownDao {
+
     @Query("SELECT * FROM countdowns ORDER BY targetDateTime ASC")
     fun getAllCountdowns(): Flow<List<Countdown>>
 
@@ -29,27 +32,39 @@ interface CountdownDao {
     suspend fun deleteCountdownById(id: Long)
 }
 
-// Migration v4 → v5: icon-Spalte
-val MIGRATION_4_5 = object : Migration(4, 5) {
-    override fun migrate(database: SupportSQLiteDatabase) {
-        database.execSQL("ALTER TABLE countdowns ADD COLUMN icon TEXT NOT NULL DEFAULT '⏰'")
-    }
+// ─── Migrations ───────────────────────────────────────────────────────────────
+
+/** v1 → v2: Frisches Projekt, keine Migration nötig – Startversion ist 1 */
+
+// Für zukünftige Migrationen Beispiel:
+// val MIGRATION_1_2 = object : Migration(1, 2) {
+//     override fun migrate(database: SupportSQLiteDatabase) {
+//         database.execSQL("ALTER TABLE countdowns ADD COLUMN newColumn TEXT NOT NULL DEFAULT ''")
+//     }
+// }
+
+// ─── Type Converters ──────────────────────────────────────────────────────────
+
+class Converters {
+    @TypeConverter
+    fun fromTimestamp(value: String?): LocalDateTime? =
+        value?.let { LocalDateTime.parse(it) }
+
+    @TypeConverter
+    fun dateToTimestamp(date: LocalDateTime?): String? =
+        date?.toString()
 }
 
-// Migration v5 → v6: recurrence-Spalte
-val MIGRATION_5_6 = object : Migration(5, 6) {
-    override fun migrate(database: SupportSQLiteDatabase) {
-        database.execSQL("ALTER TABLE countdowns ADD COLUMN recurrence TEXT NOT NULL DEFAULT 'NONE'")
-    }
-}
+// ─── Database ─────────────────────────────────────────────────────────────────
 
 @Database(
     entities = [Countdown::class],
-    version = 6,
+    version  = 1,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
 abstract class CountdownDatabase : RoomDatabase() {
+
     abstract fun countdownDao(): CountdownDao
 
     companion object {
@@ -63,19 +78,11 @@ abstract class CountdownDatabase : RoomDatabase() {
                     CountdownDatabase::class.java,
                     "nextime_database"
                 )
-                    .addMigrations(MIGRATION_4_5, MIGRATION_5_6)
+                    // .addMigrations(MIGRATION_1_2)  ← hier zukünftige Migrationen eintragen
                     .build()
                 INSTANCE = instance
                 instance
             }
         }
     }
-}
-
-class Converters {
-    @TypeConverter
-    fun fromTimestamp(value: String?): LocalDateTime? = value?.let { LocalDateTime.parse(it) }
-
-    @TypeConverter
-    fun dateToTimestamp(date: LocalDateTime?): String? = date?.toString()
 }

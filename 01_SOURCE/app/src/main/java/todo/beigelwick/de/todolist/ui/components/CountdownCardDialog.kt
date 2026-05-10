@@ -13,9 +13,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import todo.beigelwick.de.todolist.R
 import todo.beigelwick.de.todolist.data.model.Countdown
 import todo.beigelwick.de.todolist.data.model.calculateTimeRemaining
 import todo.beigelwick.de.todolist.utils.HapticFeedback
@@ -23,47 +25,39 @@ import todo.beigelwick.de.todolist.utils.HapticFeedback
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CountdownCardDialog(
-    countdown: Countdown,
-    onDismiss: () -> Unit,
-    onEdit: (Countdown) -> Unit,
-    onDelete: (Countdown) -> Unit,
-    onShare: (Countdown) -> Unit
+    countdown : Countdown,
+    onDismiss : () -> Unit,
+    onEdit    : (Countdown) -> Unit,
+    onDelete  : (Countdown) -> Unit,
+    onShare   : (Countdown) -> Unit
 ) {
-    val context = LocalContext.current
-    val haptic = remember {
-        HapticFeedback(
-            context
-        )
-    }
-    var showDeleteConfirm by remember { mutableStateOf(false) }
-
+    val context    = LocalContext.current
+    val haptic     = remember { HapticFeedback(context) }
     val sheetState = rememberModalBottomSheetState()
 
-    // Prüfen ob Countdown abgelaufen ist → Konfetti
-    val timeInfo = remember { countdown.calculateTimeRemaining() }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+
+    val timeInfo     = remember { countdown.calculateTimeRemaining() }
     val showConfetti = remember { timeInfo.isPast && !countdown.isRecurring }
 
     ModalBottomSheet(
         onDismissRequest = { haptic.tick(); onDismiss() },
-        sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-        dragHandle = {
-            Box(
-                modifier = Modifier.padding(vertical = 12.dp),
-                contentAlignment = Alignment.Center
-            ) {
+        sheetState       = sheetState,
+        containerColor   = MaterialTheme.colorScheme.surface,
+        shape            = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        dragHandle       = {
+            Box(modifier = Modifier.padding(vertical = 12.dp), contentAlignment = Alignment.Center) {
                 Surface(
                     modifier = Modifier.width(40.dp).height(4.dp),
-                    shape = RoundedCornerShape(2.dp),
-                    color = MaterialTheme.colorScheme.outlineVariant
+                    shape    = RoundedCornerShape(2.dp),
+                    color    = MaterialTheme.colorScheme.outlineVariant
                 ) {}
             }
         }
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
             Column(
-                modifier = Modifier
+                modifier            = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
                     .padding(bottom = 32.dp),
@@ -73,21 +67,21 @@ fun CountdownCardDialog(
                 if (showConfetti) {
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                        shape    = RoundedCornerShape(12.dp),
+                        color    = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
                     ) {
                         Row(
-                            modifier = Modifier.padding(12.dp),
+                            modifier              = Modifier.padding(12.dp),
                             horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment     = Alignment.CenterVertically
                         ) {
                             Text(text = "🎉", fontSize = 20.sp)
                             Spacer(Modifier.width(8.dp))
                             Text(
-                                text = "Dieser Countdown ist abgelaufen!",
-                                style = MaterialTheme.typography.bodyMedium,
+                                text       = stringResource(R.string.dialog_expired_banner),
+                                style      = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.primary
+                                color      = MaterialTheme.colorScheme.primary
                             )
                             Spacer(Modifier.width(8.dp))
                             Text(text = "🎊", fontSize = 20.sp)
@@ -98,64 +92,64 @@ fun CountdownCardDialog(
                 // Card-Vorschau
                 CountdownCard(countdown = countdown)
 
-                // Aktionen
+                // Aktionsbuttons
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier              = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     CardActionButton(
-                        icon = Icons.Default.Share,
-                        label = "Teilen",
-                        color = MaterialTheme.colorScheme.primary,
+                        icon     = Icons.Default.Share,
+                        label    = stringResource(R.string.action_share),
+                        color    = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.weight(1f),
-                        onClick = { haptic.click(); onShare(countdown); onDismiss() }
+                        onClick  = { haptic.click(); onShare(countdown) }
                     )
                     CardActionButton(
-                        icon = Icons.Default.Edit,
-                        label = "Bearbeiten",
-                        color = MaterialTheme.colorScheme.secondary,
+                        icon     = Icons.Default.Edit,
+                        label    = stringResource(R.string.action_edit),
+                        color    = MaterialTheme.colorScheme.secondary,
                         modifier = Modifier.weight(1f),
-                        onClick = { haptic.click(); onEdit(countdown); onDismiss() }
+                        onClick  = { haptic.click(); onEdit(countdown) }
                     )
                     CardActionButton(
-                        icon = Icons.Default.Delete,
-                        label = "Löschen",
-                        color = MaterialTheme.colorScheme.error,
+                        icon     = Icons.Default.Delete,
+                        label    = stringResource(R.string.action_delete),
+                        color    = MaterialTheme.colorScheme.error,
                         modifier = Modifier.weight(1f),
-                        onClick = { haptic.tick(); showDeleteConfirm = true }
+                        onClick  = { haptic.tick(); showDeleteConfirm = true }
                     )
                 }
             }
 
-            // Konfetti-Overlay über dem Sheet-Inhalt
+            // Konfetti
             if (showConfetti) {
-                ConfettiOverlay(
-                    active = true,
-                    modifier = Modifier.matchParentSize()
-                )
+                ConfettiOverlay(active = true, modifier = Modifier.matchParentSize())
             }
         }
     }
 
+    // Löschen-Bestätigung
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { haptic.tick(); showDeleteConfirm = false },
-            icon = { Icon(imageVector = Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
-            title = { Text("Countdown löschen?") },
-            text = {
+            icon             = { Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+            title            = { Text(stringResource(R.string.confirm_delete_title)) },
+            text             = {
                 Text(
-                    "Möchtest du \"${countdown.title}\" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
+                    stringResource(R.string.confirm_delete_msg, countdown.title),
                     style = MaterialTheme.typography.bodyMedium
                 )
             },
-            confirmButton = {
+            confirmButton    = {
                 Button(
                     onClick = { haptic.heavy(); showDeleteConfirm = false; onDelete(countdown); onDismiss() },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                ) { Text("Löschen") }
+                    colors  = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) { Text(stringResource(R.string.delete)) }
             },
-            dismissButton = {
-                TextButton(onClick = { haptic.tick(); showDeleteConfirm = false }) { Text("Abbrechen") }
+            dismissButton    = {
+                TextButton(onClick = { haptic.tick(); showDeleteConfirm = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
             }
         )
     }
@@ -163,20 +157,20 @@ fun CountdownCardDialog(
 
 @Composable
 private fun CardActionButton(
-    icon: ImageVector,
-    label: String,
-    color: Color,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
+    icon     : ImageVector,
+    label    : String,
+    color    : Color,
+    modifier : Modifier = Modifier,
+    onClick  : () -> Unit
 ) {
     Surface(
         modifier = modifier.height(64.dp),
-        shape = RoundedCornerShape(16.dp),
-        color = color.copy(alpha = 0.1f),
-        onClick = onClick
+        shape    = RoundedCornerShape(16.dp),
+        color    = color.copy(alpha = 0.1f),
+        onClick  = onClick
     ) {
         Column(
-            modifier = Modifier.fillMaxSize(),
+            modifier            = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {

@@ -1,10 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-    Deklariert alle von NexTime unterstützten Sprachen.
-    Wird von Android 13+ (API 33) für die Per-App Language Preferences genutzt.
-    Einbinden in AndroidManifest.xml:
-        <application android:localeConfig="@xml/locale_config" ...>
--->
 <locale-config xmlns:android="http://schemas.android.com/apk/res/android">
     <locale android:name="de" />
     <locale android:name="en" />
