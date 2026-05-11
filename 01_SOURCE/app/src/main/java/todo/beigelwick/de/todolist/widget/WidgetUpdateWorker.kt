@@ -24,7 +24,7 @@ class WidgetUpdateWorker(
 
         fun enqueue(context: Context) {
             val workRequest = PeriodicWorkRequestBuilder<WidgetUpdateWorker>(
-                repeatInterval         = 15,
+                repeatInterval         = 1,
                 repeatIntervalTimeUnit = TimeUnit.MINUTES
             ).build()
 

@@ -60,7 +60,7 @@ class MainActivity : AppCompatActivity() {
 
         setContent {
             val themeMode   by ThemePreferences.getThemeMode(this).collectAsState(initial = ThemeMode.SYSTEM)
-            val customTheme by CustomThemePreferences.getCustomTheme(this).collectAsState(initial = CustomTheme.NEXTIME)
+            val customTheme by CustomThemePreferences.getCustomTheme(this).collectAsState(initial = CustomTheme.BURGUNDY)
             val systemDark  = isSystemInDarkTheme()
 
             val isDark = when (themeMode) {

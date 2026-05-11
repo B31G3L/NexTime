@@ -128,18 +128,18 @@ fun AddEditScreen(
     )
 
     // Vorschau-Countdown
-    val previewCountdown by remember(title, icon, selectedDate, selectedTime, includeTime, selectedFormat, selectedColor, selectedRecurrence) {
+    val previewCountdown by remember {
         derivedStateOf {
             val target = LocalDateTime.of(selectedDate, if (includeTime) selectedTime else LocalTime.MIDNIGHT)
             Countdown(
-                id            = existingCountdown?.id ?: 0L,
-                title         = title.ifBlank { "Vorschau" },
-                icon          = icon.ifBlank { "⏰" },
+                id             = existingCountdown?.id ?: 0L,
+                title          = title.ifBlank { "Vorschau" },
+                icon           = icon.ifBlank { "⏰" },
                 targetDateTime = target,
-                displayFormat = selectedFormat.name,
-                color         = selectedColor,
-                includeTime   = includeTime,
-                recurrence    = selectedRecurrence.name
+                displayFormat  = selectedFormat.name,
+                color          = selectedColor,
+                includeTime    = includeTime,
+                recurrence     = selectedRecurrence.name
             )
         }
     }

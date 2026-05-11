@@ -241,5 +241,16 @@
     <string name="success_created">Countdown created ✅</string>
     <string name="success_updated">Countdown updated ✅</string>
     <string name="success_deleted">Countdown deleted ✅</string>
-
+    <string name="theme_burgundy_name">Deep Burgundy</string>
+    <string name="theme_burgundy_desc">Burgundy &amp; Gold</string>
+    <string name="theme_sage_name">Soft Sage</string>
+    <string name="theme_sage_desc">Sage &amp; Deep Olive</string>
+    <string name="theme_pumpkin_name">Pumpkin</string>
+    <string name="theme_pumpkin_desc">Pumpkin &amp; Charcoal</string>
+    <string name="theme_ocean_name">Ocean Blue</string>
+    <string name="theme_ocean_desc">Cloudy Sky &amp; Ocean</string>
+    <string name="theme_violet_name">Ultra Violet</string>
+    <string name="theme_violet_desc">Lemon &amp; Violet</string>
+    <string name="theme_peach_name">Peach Ice</string>
+    <string name="theme_peach_desc">Peach &amp; Aqua Mist</string>
 </resources>

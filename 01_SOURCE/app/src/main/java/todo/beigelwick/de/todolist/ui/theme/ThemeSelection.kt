@@ -13,11 +13,7 @@ import kotlinx.coroutines.flow.map
 // ─── Theme Enum & Config ──────────────────────────────────────────────────────
 
 enum class CustomTheme {
-    PLANIT,
-    NEXTIME,
-    LEETSPEAK,
-    DAILYLIST,
-    UNKNOWN
+    BURGUNDY, SAGE, PUMPKIN, OCEAN, VIOLET, PEACH  // neu
 }
 
 data class ThemeConfig(
@@ -28,268 +24,322 @@ data class ThemeConfig(
 
 // ─── PlanIt (Teal) ────────────────────────────────────────────────────────────
 
-val PlanitLightTheme = lightColorScheme(
-    primary              = Color(0xFF00A896),
+val BurgundyLightTheme = lightColorScheme(
+    primary              = Color(0xFF5B0E14),
     onPrimary            = Color(0xFFFFFFFF),
-    primaryContainer     = Color(0xFF88FBE9),
-    onPrimaryContainer   = Color(0xFF00211D),
-    secondary            = Color(0xFF536360),
-    onSecondary          = Color(0xFFFFFFFF),
-    secondaryContainer   = Color(0xFFD6E8E4),
-    onSecondaryContainer = Color(0xFF101F1D),
-    tertiary             = Color(0xFF5062F0),
+    primaryContainer     = Color(0xFF8C2A33),
+    onPrimaryContainer   = Color(0xFFF1E194),
+    secondary            = Color(0xFFF1E194),
+    onSecondary          = Color(0xFF3A2E00),
+    secondaryContainer   = Color(0xFFD4C570),
+    onSecondaryContainer = Color(0xFF2A2200),
+    tertiary             = Color(0xFFB5860D),
     onTertiary           = Color(0xFFFFFFFF),
-    tertiaryContainer    = Color(0xFFE0E0FF),
-    onTertiaryContainer  = Color(0xFF070068),
-    background           = Color(0xFFFFFFFF),
-    onBackground         = Color(0xFF191C1C),
+    tertiaryContainer    = Color(0xFFF1E194),
+    onTertiaryContainer  = Color(0xFF3A2E00),
+    background           = Color(0xFFFFFBF0),
+    onBackground         = Color(0xFF1E1209),
     surface              = Color(0xFFFFFFFF),
-    onSurface            = Color(0xFF191C1C),
-    surfaceVariant       = Color(0xFFDAE5E2),
-    onSurfaceVariant     = Color(0xFF3F4947),
-    outline              = Color(0xFF6F7977),
-    error                = Color(0xFFBA1A1A),
-    onError              = Color(0xFFFFFFFF),
-    errorContainer       = Color(0xFFFFDAD6),
-    onErrorContainer     = Color(0xFF410002)
-)
-
-val PlanitDarkTheme = darkColorScheme(
-    primary              = Color(0xFF4DBCC6),
-    onPrimary            = Color(0xFF003730),
-    primaryContainer     = Color(0xFF005147),
-    onPrimaryContainer   = Color(0xFF88FBE9),
-    secondary            = Color(0xFFBCCBC8),
-    onSecondary          = Color(0xFF243230),
-    secondaryContainer   = Color(0xFF3B4947),
-    onSecondaryContainer = Color(0xFFD6E8E4),
-    tertiary             = Color(0xFFBFC2FF),
-    onTertiary           = Color(0xFF2130B9),
-    tertiaryContainer    = Color(0xFF3946D2),
-    onTertiaryContainer  = Color(0xFFE0E0FF),
-    background           = Color(0xFF111414),
-    onBackground         = Color(0xFFE0E3E3),
-    surface              = Color(0xFF191C1C),
-    onSurface            = Color(0xFFE0E3E3),
-    surfaceVariant       = Color(0xFF3F4947),
-    onSurfaceVariant     = Color(0xFFBFC9C6),
-    outline              = Color(0xFF899391),
-    error                = Color(0xFFFFB4AB),
-    onError              = Color(0xFF690005),
-    errorContainer       = Color(0xFF93000A),
-    onErrorContainer     = Color(0xFFFFDAD6)
-)
-
-// ─── NexTime (Orange) ─────────────────────────────────────────────────────────
-
-val NextimeLightTheme = lightColorScheme(
-    primary              = Color(0xFFFF9800),
-    onPrimary            = Color(0xFFFFFFFF),
-    primaryContainer     = Color(0xFFFFDCC0),
-    onPrimaryContainer   = Color(0xFF331C00),
-    secondary            = Color(0xFF934B00),
-    onSecondary          = Color(0xFFFFFFFF),
-    secondaryContainer   = Color(0xFFFFDBCF),
-    onSecondaryContainer = Color(0xFF301300),
-    tertiary             = Color(0xFFFFC107),
-    onTertiary           = Color(0xFF000000),
-    tertiaryContainer    = Color(0xFFFFE082),
-    onTertiaryContainer  = Color(0xFF201A00),
-    background           = Color(0xFFFFFBFF),
-    onBackground         = Color(0xFF1E1B16),
-    surface              = Color(0xFFFFFFFF),
-    onSurface            = Color(0xFF1E1B16),
+    onSurface            = Color(0xFF1E1209),
     surfaceVariant       = Color(0xFFF2E0D0),
-    onSurfaceVariant     = Color(0xFF4F4539),
-    outline              = Color(0xFF817568),
+    onSurfaceVariant     = Color(0xFF4F3A35),
+    outline              = Color(0xFF7A5A55),
     error                = Color(0xFFBA1A1A),
     onError              = Color(0xFFFFFFFF),
     errorContainer       = Color(0xFFFFDAD6),
     onErrorContainer     = Color(0xFF410002)
 )
 
-val NextimeDarkTheme = darkColorScheme(
-    primary              = Color(0xFFFFB763),
-    onPrimary            = Color(0xFF552D00),
-    primaryContainer     = Color(0xFF7A4500),
-    onPrimaryContainer   = Color(0xFFFFDCC0),
-    secondary            = Color(0xFFFFB78E),
-    onSecondary          = Color(0xFF512400),
-    secondaryContainer   = Color(0xFF723500),
-    onSecondaryContainer = Color(0xFFFFDBCF),
-    tertiary             = Color(0xFFE8C547),
-    onTertiary           = Color(0xFF3D3000),
-    tertiaryContainer    = Color(0xFF564700),
-    onTertiaryContainer  = Color(0xFFFFE082),
-    background           = Color(0xFF16130E),
-    onBackground         = Color(0xFFE9E1D9),
-    surface              = Color(0xFF1E1B16),
-    onSurface            = Color(0xFFE9E1D9),
-    surfaceVariant       = Color(0xFF4F4539),
-    onSurfaceVariant     = Color(0xFFD6C4B4),
-    outline              = Color(0xFF9C8F83),
+val BurgundyDarkTheme = darkColorScheme(
+    primary              = Color(0xFFFFB3B8),
+    onPrimary            = Color(0xFF5B0E14),
+    primaryContainer     = Color(0xFF8C2A33),
+    onPrimaryContainer   = Color(0xFFF1E194),
+    secondary            = Color(0xFFE8D880),
+    onSecondary          = Color(0xFF3A2E00),
+    secondaryContainer   = Color(0xFF564500),
+    onSecondaryContainer = Color(0xFFF1E194),
+    tertiary             = Color(0xFFD4C570),
+    onTertiary           = Color(0xFF3A2E00),
+    tertiaryContainer    = Color(0xFF564500),
+    onTertiaryContainer  = Color(0xFFF1E194),
+    background           = Color(0xFF16100A),
+    onBackground         = Color(0xFFEDE0D4),
+    surface              = Color(0xFF1E1510),
+    onSurface            = Color(0xFFEDE0D4),
+    surfaceVariant       = Color(0xFF4F3A35),
+    onSurfaceVariant     = Color(0xFFD6C0BB),
+    outline              = Color(0xFF9E8A85),
     error                = Color(0xFFFFB4AB),
     onError              = Color(0xFF690005),
     errorContainer       = Color(0xFF93000A),
     onErrorContainer     = Color(0xFFFFDAD6)
 )
 
-// ─── LeetSpeak (Purple) ───────────────────────────────────────────────────────
+// ─── Soft Sage + Deep Olive (Combo 02) ───────────────────────────────────────
 
-val LeetspeakLightTheme = lightColorScheme(
-    primary              = Color(0xFF673AB7),
+val SageLightTheme = lightColorScheme(
+    primary              = Color(0xFF1A2517),
+    onPrimary            = Color(0xFFFFFFFF),
+    primaryContainer     = Color(0xFF3A4F35),
+    onPrimaryContainer   = Color(0xFFACC8A2),
+    secondary            = Color(0xFFACC8A2),
+    onSecondary          = Color(0xFF1A2517),
+    secondaryContainer   = Color(0xFFCFE5C8),
+    onSecondaryContainer = Color(0xFF0E1E0C),
+    tertiary             = Color(0xFF557A50),
+    onTertiary           = Color(0xFFFFFFFF),
+    tertiaryContainer    = Color(0xFFACC8A2),
+    onTertiaryContainer  = Color(0xFF0E1E0C),
+    background           = Color(0xFFF5FAF3),
+    onBackground         = Color(0xFF151E14),
+    surface              = Color(0xFFFFFFFF),
+    onSurface            = Color(0xFF151E14),
+    surfaceVariant       = Color(0xFFDCEDD8),
+    onSurfaceVariant     = Color(0xFF404E3D),
+    outline              = Color(0xFF6F7E6B),
+    error                = Color(0xFFBA1A1A),
+    onError              = Color(0xFFFFFFFF),
+    errorContainer       = Color(0xFFFFDAD6),
+    onErrorContainer     = Color(0xFF410002)
+)
+
+val SageDarkTheme = darkColorScheme(
+    primary              = Color(0xFFACC8A2),
+    onPrimary            = Color(0xFF1A2517),
+    primaryContainer     = Color(0xFF2D4229),
+    onPrimaryContainer   = Color(0xFFACC8A2),
+    secondary            = Color(0xFF90B087),
+    onSecondary          = Color(0xFF1A2517),
+    secondaryContainer   = Color(0xFF2D4229),
+    onSecondaryContainer = Color(0xFFCFE5C8),
+    tertiary             = Color(0xFFACC8A2),
+    onTertiary           = Color(0xFF1A2517),
+    tertiaryContainer    = Color(0xFF3A4F35),
+    onTertiaryContainer  = Color(0xFFCFE5C8),
+    background           = Color(0xFF0E150D),
+    onBackground         = Color(0xFFDCEDD8),
+    surface              = Color(0xFF151E14),
+    onSurface            = Color(0xFFDCEDD8),
+    surfaceVariant       = Color(0xFF404E3D),
+    onSurfaceVariant     = Color(0xFFBFCDBB),
+    outline              = Color(0xFF8A9886),
+    error                = Color(0xFFFFB4AB),
+    onError              = Color(0xFF690005),
+    errorContainer       = Color(0xFF93000A),
+    onErrorContainer     = Color(0xFFFFDAD6)
+)
+
+// ─── Pumpkin + Charcoal (Combo 03) ───────────────────────────────────────────
+
+val PumpkinLightTheme = lightColorScheme(
+    primary              = Color(0xFFFD802E),
+    onPrimary            = Color(0xFFFFFFFF),
+    primaryContainer     = Color(0xFFFFB98A),
+    onPrimaryContainer   = Color(0xFF3A1800),
+    secondary            = Color(0xFF233D4C),
+    onSecondary          = Color(0xFFFFFFFF),
+    secondaryContainer   = Color(0xFF3D5F70),
+    onSecondaryContainer = Color(0xFFD0E8F5),
+    tertiary             = Color(0xFFF55F00),
+    onTertiary           = Color(0xFFFFFFFF),
+    tertiaryContainer    = Color(0xFFFFDBCA),
+    onTertiaryContainer  = Color(0xFF3A1800),
+    background           = Color(0xFFFFFBFF),
+    onBackground         = Color(0xFF201A17),
+    surface              = Color(0xFFFFFFFF),
+    onSurface            = Color(0xFF201A17),
+    surfaceVariant       = Color(0xFFEDDDD4),
+    onSurfaceVariant     = Color(0xFF4E403A),
+    outline              = Color(0xFF806F68),
+    error                = Color(0xFFBA1A1A),
+    onError              = Color(0xFFFFFFFF),
+    errorContainer       = Color(0xFFFFDAD6),
+    onErrorContainer     = Color(0xFF410002)
+)
+
+val PumpkinDarkTheme = darkColorScheme(
+    primary              = Color(0xFFFFB07A),
+    onPrimary            = Color(0xFF3A1800),
+    primaryContainer     = Color(0xFFBF5C10),
+    onPrimaryContainer   = Color(0xFFFFDBCA),
+    secondary            = Color(0xFFA8C8D8),
+    onSecondary          = Color(0xFF0F2530),
+    secondaryContainer   = Color(0xFF1A3545),
+    onSecondaryContainer = Color(0xFFD0E8F5),
+    tertiary             = Color(0xFFFFB07A),
+    onTertiary           = Color(0xFF3A1800),
+    tertiaryContainer    = Color(0xFFBF5C10),
+    onTertiaryContainer  = Color(0xFFFFDBCA),
+    background           = Color(0xFF171210),
+    onBackground         = Color(0xFFEDE0DA),
+    surface              = Color(0xFF201A17),
+    onSurface            = Color(0xFFEDE0DA),
+    surfaceVariant       = Color(0xFF4E403A),
+    onSurfaceVariant     = Color(0xFFD3C4BC),
+    outline              = Color(0xFF9C8E87),
+    error                = Color(0xFFFFB4AB),
+    onError              = Color(0xFF690005),
+    errorContainer       = Color(0xFF93000A),
+    onErrorContainer     = Color(0xFFFFDAD6)
+)
+
+// ─── Cloudy Sky + Ocean Blue (Combo 04) ──────────────────────────────────────
+
+val OceanLightTheme = lightColorScheme(
+    primary              = Color(0xFF2872A1),
+    onPrimary            = Color(0xFFFFFFFF),
+    primaryContainer     = Color(0xFFCBDDE9),
+    onPrimaryContainer   = Color(0xFF00344F),
+    secondary            = Color(0xFFCBDDE9),
+    onSecondary          = Color(0xFF00344F),
+    secondaryContainer   = Color(0xFFE5EFF6),
+    onSecondaryContainer = Color(0xFF001E2E),
+    tertiary             = Color(0xFF4A90C0),
+    onTertiary           = Color(0xFFFFFFFF),
+    tertiaryContainer    = Color(0xFFCBDDE9),
+    onTertiaryContainer  = Color(0xFF00344F),
+    background           = Color(0xFFF5F9FC),
+    onBackground         = Color(0xFF181C1F),
+    surface              = Color(0xFFFFFFFF),
+    onSurface            = Color(0xFF181C1F),
+    surfaceVariant       = Color(0xFFDCE8F0),
+    onSurfaceVariant     = Color(0xFF3D4D57),
+    outline              = Color(0xFF6D7D87),
+    error                = Color(0xFFBA1A1A),
+    onError              = Color(0xFFFFFFFF),
+    errorContainer       = Color(0xFFFFDAD6),
+    onErrorContainer     = Color(0xFF410002)
+)
+
+val OceanDarkTheme = darkColorScheme(
+    primary              = Color(0xFF8DC6E8),
+    onPrimary            = Color(0xFF00344F),
+    primaryContainer     = Color(0xFF005278),
+    onPrimaryContainer   = Color(0xFFCBDDE9),
+    secondary            = Color(0xFFB0CDD8),
+    onSecondary          = Color(0xFF001E2E),
+    secondaryContainer   = Color(0xFF002D42),
+    onSecondaryContainer = Color(0xFFCBDDE9),
+    tertiary             = Color(0xFF8DC6E8),
+    onTertiary           = Color(0xFF00344F),
+    tertiaryContainer    = Color(0xFF005278),
+    onTertiaryContainer  = Color(0xFFCBDDE9),
+    background           = Color(0xFF0F1417),
+    onBackground         = Color(0xFFDDE3E8),
+    surface              = Color(0xFF181C1F),
+    onSurface            = Color(0xFFDDE3E8),
+    surfaceVariant       = Color(0xFF3D4D57),
+    onSurfaceVariant     = Color(0xFFBDCAD5),
+    outline              = Color(0xFF87979F),
+    error                = Color(0xFFFFB4AB),
+    onError              = Color(0xFF690005),
+    errorContainer       = Color(0xFF93000A),
+    onErrorContainer     = Color(0xFFFFDAD6)
+)
+
+// ─── Lemon Chiffon + Ultra Violet (Combo 05) ─────────────────────────────────
+
+val VioletLightTheme = lightColorScheme(
+    primary              = Color(0xFF5F4A8B),
     onPrimary            = Color(0xFFFFFFFF),
     primaryContainer     = Color(0xFFEADDFF),
     onPrimaryContainer   = Color(0xFF21005D),
-    secondary            = Color(0xFF804FB3),
-    onSecondary          = Color(0xFFFFFFFF),
-    secondaryContainer   = Color(0xFFF2DAFF),
-    onSecondaryContainer = Color(0xFF32004B),
-    tertiary             = Color(0xFF00796B),
+    secondary            = Color(0xFFFEFACD),
+    onSecondary          = Color(0xFF3A3500),
+    secondaryContainer   = Color(0xFFFEFACD),
+    onSecondaryContainer = Color(0xFF3A3500),
+    tertiary             = Color(0xFF7C5FB5),
     onTertiary           = Color(0xFFFFFFFF),
-    tertiaryContainer    = Color(0xFF86F8E3),
-    onTertiaryContainer  = Color(0xFF00201B),
+    tertiaryContainer    = Color(0xFFEADDFF),
+    onTertiaryContainer  = Color(0xFF21005D),
     background           = Color(0xFFFFFBFF),
-    onBackground         = Color(0xFF1D1B20),
+    onBackground         = Color(0xFF1D1A22),
     surface              = Color(0xFFFFFFFF),
-    onSurface            = Color(0xFF1D1B20),
-    surfaceVariant       = Color(0xFFE7E0EB),
-    onSurfaceVariant     = Color(0xFF49454E),
-    outline              = Color(0xFF7A757F),
+    onSurface            = Color(0xFF1D1A22),
+    surfaceVariant       = Color(0xFFE9E0F0),
+    onSurfaceVariant     = Color(0xFF4A4454),
+    outline              = Color(0xFF7A7484),
     error                = Color(0xFFBA1A1A),
     onError              = Color(0xFFFFFFFF),
     errorContainer       = Color(0xFFFFDAD6),
     onErrorContainer     = Color(0xFF410002)
 )
 
-val LeetspeakDarkTheme = darkColorScheme(
-    primary              = Color(0xFFC9BCFF),
-    onPrimary            = Color(0xFF371777),
-    primaryContainer     = Color(0xFF4F318F),
+val VioletDarkTheme = darkColorScheme(
+    primary              = Color(0xFFCFBDFF),
+    onPrimary            = Color(0xFF38006D),
+    primaryContainer     = Color(0xFF4F3380),
     onPrimaryContainer   = Color(0xFFEADDFF),
-    secondary            = Color(0xFFE3B9FF),
-    onSecondary          = Color(0xFF4E1D7B),
-    secondaryContainer   = Color(0xFF663595),
-    onSecondaryContainer = Color(0xFFF2DAFF),
-    tertiary             = Color(0xFF6FE9D7),
-    onTertiary           = Color(0xFF003730),
-    tertiaryContainer    = Color(0xFF005147),
-    onTertiaryContainer  = Color(0xFF86F8E3),
-    background           = Color(0xFF111014),
-    onBackground         = Color(0xFFE6E1E6),
-    surface              = Color(0xFF1D1B20),
-    onSurface            = Color(0xFFE6E1E6),
-    surfaceVariant       = Color(0xFF49454E),
-    onSurfaceVariant     = Color(0xFFCAC4CF),
-    outline              = Color(0xFF948F99),
+    secondary            = Color(0xFFE8E090),
+    onSecondary          = Color(0xFF3A3500),
+    secondaryContainer   = Color(0xFF524D00),
+    onSecondaryContainer = Color(0xFFFEFACD),
+    tertiary             = Color(0xFFCFBDFF),
+    onTertiary           = Color(0xFF38006D),
+    tertiaryContainer    = Color(0xFF4F3380),
+    onTertiaryContainer  = Color(0xFFEADDFF),
+    background           = Color(0xFF131018),
+    onBackground         = Color(0xFFE6E1EB),
+    surface              = Color(0xFF1D1A22),
+    onSurface            = Color(0xFFE6E1EB),
+    surfaceVariant       = Color(0xFF4A4454),
+    onSurfaceVariant     = Color(0xFFCCC4D6),
+    outline              = Color(0xFF958F9F),
     error                = Color(0xFFFFB4AB),
     onError              = Color(0xFF690005),
     errorContainer       = Color(0xFF93000A),
     onErrorContainer     = Color(0xFFFFDAD6)
 )
 
-// ─── DailyList (Green) ────────────────────────────────────────────────────────
+// ─── Peach Ice + Aqua Mist (Combo 06) ────────────────────────────────────────
 
-val DailylistLightTheme = lightColorScheme(
-    primary              = Color(0xFFA5D63E),
-    onPrimary            = Color(0xFF000000),
-    primaryContainer     = Color(0xFFD6F996),
-    onPrimaryContainer   = Color(0xFF1E3600),
-    secondary            = Color(0xFF558B2F),
-    onSecondary          = Color(0xFFFFFFFF),
-    secondaryContainer   = Color(0xFFD6E8C0),
-    onSecondaryContainer = Color(0xFF101F00),
-    tertiary             = Color(0xFF8BC34A),
-    onTertiary           = Color(0xFFFFFFFF),
-    tertiaryContainer    = Color(0xFFC9F07E),
-    onTertiaryContainer  = Color(0xFF1D3500),
-    background           = Color(0xFFFFFFFF),
-    onBackground         = Color(0xFF1A1C16),
-    surface              = Color(0xFFFFFFFF),
-    onSurface            = Color(0xFF1A1C16),
-    surfaceVariant       = Color(0xFFE3E4D4),
-    onSurfaceVariant     = Color(0xFF45483D),
-    outline              = Color(0xFF76796E),
-    error                = Color(0xFFBA1A1A),
-    onError              = Color(0xFFFFFFFF),
-    errorContainer       = Color(0xFFFFDAD6),
-    onErrorContainer     = Color(0xFF410002)
-)
-
-val DailylistDarkTheme = darkColorScheme(
-    primary              = Color(0xFFB5E072),
-    onPrimary            = Color(0xFF2F4600),
-    primaryContainer     = Color(0xFF466600),
-    onPrimaryContainer   = Color(0xFFD6F996),
-    secondary            = Color(0xFFB3CC9C),
-    onSecondary          = Color(0xFF263319),
-    secondaryContainer   = Color(0xFF3C4A2E),
-    onSecondaryContainer = Color(0xFFD6E8C0),
-    tertiary             = Color(0xFFB5E072),
-    onTertiary           = Color(0xFF2F4600),
-    tertiaryContainer    = Color(0xFF466600),
-    onTertiaryContainer  = Color(0xFFC9F07E),
-    background           = Color(0xFF12140D),
-    onBackground         = Color(0xFFE3E4D4),
-    surface              = Color(0xFF1A1C16),
-    onSurface            = Color(0xFFE3E4D4),
-    surfaceVariant       = Color(0xFF45483D),
-    onSurfaceVariant     = Color(0xFFC5C8B8),
-    outline              = Color(0xFF909387),
-    error                = Color(0xFFFFB4AB),
-    onError              = Color(0xFF690005),
-    errorContainer       = Color(0xFF93000A),
-    onErrorContainer     = Color(0xFFFFDAD6)
-)
-
-// ─── Unknown (Red) ────────────────────────────────────────────────────────────
-
-val UnknownLightTheme = lightColorScheme(
-    primary              = Color(0xFFD32F2F),
+val PeachLightTheme = lightColorScheme(
+    primary              = Color(0xFF789A99),
     onPrimary            = Color(0xFFFFFFFF),
-    primaryContainer     = Color(0xFFFFDAD6),
-    onPrimaryContainer   = Color(0xFF410002),
-    secondary            = Color(0xFFC62828),
-    onSecondary          = Color(0xFFFFFFFF),
-    secondaryContainer   = Color(0xFFFFDAD6),
-    onSecondaryContainer = Color(0xFF410002),
-    tertiary             = Color(0xFF00B0FF),
-    onTertiary           = Color(0xFF000000),
-    tertiaryContainer    = Color(0xFFBFE9FF),
-    onTertiaryContainer  = Color(0xFF00334A),
-    background           = Color(0xFFFFFBFF),
-    onBackground         = Color(0xFF1D1B1C),
+    primaryContainer     = Color(0xFFFFD2C2),
+    onPrimaryContainer   = Color(0xFF2C1500),
+    secondary            = Color(0xFFFFD2C2),
+    onSecondary          = Color(0xFF2C1500),
+    secondaryContainer   = Color(0xFFFFEAE0),
+    onSecondaryContainer = Color(0xFF1A0A00),
+    tertiary             = Color(0xFF5A8180),
+    onTertiary           = Color(0xFFFFFFFF),
+    tertiaryContainer    = Color(0xFFB8D8D8),
+    onTertiaryContainer  = Color(0xFF002020),
+    background           = Color(0xFFFFF8F6),
+    onBackground         = Color(0xFF1E1B1A),
     surface              = Color(0xFFFFFFFF),
-    onSurface            = Color(0xFF1D1B1C),
-    surfaceVariant       = Color(0xFFF5DDDC),
-    onSurfaceVariant     = Color(0xFF524343),
-    outline              = Color(0xFF857373),
+    onSurface            = Color(0xFF1E1B1A),
+    surfaceVariant       = Color(0xFFEDD8D0),
+    onSurfaceVariant     = Color(0xFF4E3D3A),
+    outline              = Color(0xFF806C69),
     error                = Color(0xFFBA1A1A),
     onError              = Color(0xFFFFFFFF),
     errorContainer       = Color(0xFFFFDAD6),
     onErrorContainer     = Color(0xFF410002)
 )
 
-val UnknownDarkTheme = darkColorScheme(
-    primary              = Color(0xFFFFB4A9),
-    onPrimary            = Color(0xFF690005),
-    primaryContainer     = Color(0xFF93000A),
-    onPrimaryContainer   = Color(0xFFFFDAD6),
-    secondary            = Color(0xFFFFB4A9),
-    onSecondary          = Color(0xFF690005),
-    secondaryContainer   = Color(0xFF93000A),
-    onSecondaryContainer = Color(0xFFFFDAD6),
-    tertiary             = Color(0xFF78D7FF),
-    onTertiary           = Color(0xFF00334A),
-    tertiaryContainer    = Color(0xFF004B6A),
-    onTertiaryContainer  = Color(0xFFBFE9FF),
-    background           = Color(0xFF151212),
-    onBackground         = Color(0xFFE7E0E1),
-    surface              = Color(0xFF1D1B1C),
-    onSurface            = Color(0xFFE7E0E1),
-    surfaceVariant       = Color(0xFF524343),
-    onSurfaceVariant     = Color(0xFFD8C2C2),
-    outline              = Color(0xFFA08C8C),
+val PeachDarkTheme = darkColorScheme(
+    primary              = Color(0xFF9DBDBC),
+    onPrimary            = Color(0xFF002020),
+    primaryContainer     = Color(0xFF3D6666),
+    onPrimaryContainer   = Color(0xFFB8D8D8),
+    secondary            = Color(0xFFFFB59A),
+    onSecondary          = Color(0xFF2C1500),
+    secondaryContainer   = Color(0xFF4A2800),
+    onSecondaryContainer = Color(0xFFFFD2C2),
+    tertiary             = Color(0xFF9DBDBC),
+    onTertiary           = Color(0xFF002020),
+    tertiaryContainer    = Color(0xFF3D6666),
+    onTertiaryContainer  = Color(0xFFB8D8D8),
+    background           = Color(0xFF161210),
+    onBackground         = Color(0xFFEDE0DC),
+    surface              = Color(0xFF1E1B1A),
+    onSurface            = Color(0xFFEDE0DC),
+    surfaceVariant       = Color(0xFF4E3D3A),
+    onSurfaceVariant     = Color(0xFFD3C2BE),
+    outline              = Color(0xFF9C8C89),
     error                = Color(0xFFFFB4AB),
     onError              = Color(0xFF690005),
     errorContainer       = Color(0xFF93000A),
@@ -299,11 +349,12 @@ val UnknownDarkTheme = darkColorScheme(
 // ─── Theme Config Selector ────────────────────────────────────────────────────
 
 fun getThemeConfig(theme: CustomTheme): ThemeConfig = when (theme) {
-    CustomTheme.PLANIT    -> ThemeConfig("PlanIt (Teal)",     PlanitLightTheme,    PlanitDarkTheme)
-    CustomTheme.NEXTIME   -> ThemeConfig("NexTime (Orange)",  NextimeLightTheme,   NextimeDarkTheme)
-    CustomTheme.LEETSPEAK -> ThemeConfig("Leetspeak (Purple)", LeetspeakLightTheme, LeetspeakDarkTheme)
-    CustomTheme.DAILYLIST -> ThemeConfig("DailyList (Green)", DailylistLightTheme, DailylistDarkTheme)
-    CustomTheme.UNKNOWN   -> ThemeConfig("Unknown (Red)",     UnknownLightTheme,   UnknownDarkTheme)
+    CustomTheme.BURGUNDY -> ThemeConfig("Deep Burgundy", BurgundyLightTheme, BurgundyDarkTheme)
+    CustomTheme.SAGE     -> ThemeConfig("Soft Sage",      SageLightTheme,     SageDarkTheme)
+    CustomTheme.PUMPKIN  -> ThemeConfig("Pumpkin",        PumpkinLightTheme,  PumpkinDarkTheme)
+    CustomTheme.OCEAN    -> ThemeConfig("Ocean Blue",     OceanLightTheme,    OceanDarkTheme)
+    CustomTheme.VIOLET   -> ThemeConfig("Ultra Violet",   VioletLightTheme,   VioletDarkTheme)
+    CustomTheme.PEACH    -> ThemeConfig("Peach Ice",      PeachLightTheme,    PeachDarkTheme)
 }
 
 // ─── CustomTheme Preferences ──────────────────────────────────────────────────
@@ -314,9 +365,9 @@ object CustomThemePreferences {
     fun getCustomTheme(context: Context): Flow<CustomTheme> =
         context.dataStore.data.map { prefs ->
             try {
-                CustomTheme.valueOf(prefs[CUSTOM_THEME] ?: CustomTheme.NEXTIME.name)
+                CustomTheme.valueOf(prefs[CUSTOM_THEME] ?: CustomTheme.BURGUNDY.name)
             } catch (e: Exception) {
-                CustomTheme.NEXTIME
+                CustomTheme.BURGUNDY
             }
         }
 

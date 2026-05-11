@@ -50,7 +50,7 @@ fun SettingsScreen(onBack: () -> Unit) {
     val scrollState = rememberScrollState()
 
     val themeMode     by ThemePreferences.getThemeMode(context).collectAsState(initial = ThemeMode.SYSTEM)
-    val customTheme   by CustomThemePreferences.getCustomTheme(context).collectAsState(initial = CustomTheme.NEXTIME)
+    val customTheme   by CustomThemePreferences.getCustomTheme(context).collectAsState(initial = CustomTheme.BURGUNDY)
     val defaultFormat by AppPreferences.getDefaultFormat(context).collectAsState(initial = CountdownDisplayFormat.DAYS_ONLY)
     val defaultColor  by AppPreferences.getDefaultColor(context).collectAsState(initial = "#FF7043")
     val defaultTime   by AppPreferences.getDefaultTime(context).collectAsState(initial = LocalTime.of(12, 0))
@@ -362,11 +362,12 @@ private fun ThemePickerCard(theme: CustomTheme, isSelected: Boolean, onClick: ()
             }
             // Theme-Name und Beschreibung aus strings.xml
             val (name, desc) = when (theme) {
-                CustomTheme.PLANIT    -> stringResource(R.string.theme_planit_name)    to stringResource(R.string.theme_planit_desc)
-                CustomTheme.NEXTIME   -> stringResource(R.string.theme_nextime_name)   to stringResource(R.string.theme_nextime_desc)
-                CustomTheme.LEETSPEAK -> stringResource(R.string.theme_leetspeak_name) to stringResource(R.string.theme_leetspeak_desc)
-                CustomTheme.DAILYLIST -> stringResource(R.string.theme_dailylist_name) to stringResource(R.string.theme_dailylist_desc)
-                CustomTheme.UNKNOWN   -> stringResource(R.string.theme_unknown_name)   to stringResource(R.string.theme_unknown_desc)
+                CustomTheme.BURGUNDY -> stringResource(R.string.theme_burgundy_name) to stringResource(R.string.theme_burgundy_desc)
+                CustomTheme.SAGE     -> stringResource(R.string.theme_sage_name)     to stringResource(R.string.theme_sage_desc)
+                CustomTheme.PUMPKIN  -> stringResource(R.string.theme_pumpkin_name)  to stringResource(R.string.theme_pumpkin_desc)
+                CustomTheme.OCEAN    -> stringResource(R.string.theme_ocean_name)    to stringResource(R.string.theme_ocean_desc)
+                CustomTheme.VIOLET   -> stringResource(R.string.theme_violet_name)   to stringResource(R.string.theme_violet_desc)
+                CustomTheme.PEACH    -> stringResource(R.string.theme_peach_name)    to stringResource(R.string.theme_peach_desc)
             }
             Text(text = name, style = MaterialTheme.typography.bodyMedium,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,

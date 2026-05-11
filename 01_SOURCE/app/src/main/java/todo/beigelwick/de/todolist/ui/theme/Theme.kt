@@ -68,7 +68,7 @@ private val AppTypography = Typography(
 @Composable
 fun NexTimeTheme(
     darkTheme   : Boolean     = isSystemInDarkTheme(),
-    customTheme : CustomTheme = CustomTheme.NEXTIME,
+    customTheme : CustomTheme = CustomTheme.BURGUNDY,
     content     : @Composable () -> Unit
 ) {
     val themeConfig  = getThemeConfig(customTheme)

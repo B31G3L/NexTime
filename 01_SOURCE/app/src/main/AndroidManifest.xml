@@ -47,7 +47,10 @@
             android:name=".notifications.NotificationReceiver"
             android:enabled="true"
             android:exported="false" />
-
+        <receiver
+            android:name=".widget.WidgetAlarmReceiver"
+            android:enabled="true"
+            android:exported="false" />
         <!-- Widget Receiver -->
         <receiver
             android:name=".widget.CountdownWidgetReceiver"
