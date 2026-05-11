@@ -9,11 +9,10 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
@@ -22,6 +21,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -31,13 +31,11 @@ import todo.beigelwick.de.todolist.notifications.NotificationScheduler
 import todo.beigelwick.de.todolist.ui.navigation.AppNavigation
 import todo.beigelwick.de.todolist.ui.theme.CustomTheme
 import todo.beigelwick.de.todolist.ui.theme.CustomThemePreferences
-import todo.beigelwick.de.todolist.ui.theme.LanguageManager
 import todo.beigelwick.de.todolist.ui.theme.NexTimeTheme
 import todo.beigelwick.de.todolist.ui.theme.ThemeMode
 import todo.beigelwick.de.todolist.ui.theme.ThemePreferences
-import todo.beigelwick.de.todolist.widget.WidgetUpdateWorker
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
 
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -53,11 +51,12 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Edge-to-Edge manuell setzen (ersetzt enableEdgeToEdge())
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+
         CountdownNotificationManager.createNotificationChannel(this)
         requestNotificationPermissionIfNeeded()
         scheduleAllPendingNotifications()
-
-        enableEdgeToEdge()
 
         setContent {
             val themeMode   by ThemePreferences.getThemeMode(this).collectAsState(initial = ThemeMode.SYSTEM)
@@ -84,8 +83,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    // ─── Benachrichtigungen beim Start neu planen ─────────────────────────────
-
     private fun scheduleAllPendingNotifications() {
         val database = CountdownDatabase.getDatabase(this)
         lifecycleScope.launch {
@@ -97,8 +94,6 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-
-    // ─── Berechtigungen ───────────────────────────────────────────────────────
 
     private fun requestNotificationPermissionIfNeeded() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {

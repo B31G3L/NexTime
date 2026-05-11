@@ -26,6 +26,7 @@ import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import kotlinx.coroutines.flow.first
 import todo.beigelwick.de.todolist.MainActivity
+import todo.beigelwick.de.todolist.R
 import todo.beigelwick.de.todolist.data.database.CountdownDatabase
 import todo.beigelwick.de.todolist.data.model.Countdown
 import todo.beigelwick.de.todolist.data.model.CountdownDisplayFormat
@@ -61,7 +62,7 @@ class CountdownWidget : GlanceAppWidget() {
                 .firstOrNull() ?: AppWidgetManager.INVALID_APPWIDGET_ID
         }
 
-        val database           = CountdownDatabase.getDatabase(context)
+        val database            = CountdownDatabase.getDatabase(context)
         val selectedCountdownId = WidgetConfigActivity.loadCountdownId(context, appWidgetId)
 
         val countdown = if (selectedCountdownId != null) {
@@ -75,7 +76,7 @@ class CountdownWidget : GlanceAppWidget() {
             val clickAction = actionStartActivity<MainActivity>()
 
             if (countdown == null) {
-                EmptyWidget(size, clickAction)
+                EmptyWidget(context, size, clickAction)
                 return@provideContent
             }
 
@@ -83,12 +84,12 @@ class CountdownWidget : GlanceAppWidget() {
             val accentColor = parseColor(countdown.color)
 
             when {
-                size.width >= SIZE_XLARGE.width                                          -> XLargeLayout(countdown, timeInfo, accentColor, clickAction)
-                size.width >= SIZE_LARGE.width                                           -> LargeLayout(countdown, timeInfo, accentColor, clickAction)
-                size.width >= SIZE_MEDIUM.width && size.height >= SIZE_MEDIUM.height     -> MediumLayout(countdown, timeInfo, accentColor, clickAction)
-                size.width >= SIZE_WIDE.width                                            -> WideLayout(countdown, timeInfo, accentColor, clickAction)
-                size.height >= SIZE_TALL.height                                          -> TallLayout(countdown, timeInfo, accentColor, clickAction)
-                else                                                                     -> SmallLayout(countdown, timeInfo, accentColor, clickAction)
+                size.width >= SIZE_XLARGE.width                                      -> XLargeLayout(context, countdown, timeInfo, accentColor, clickAction)
+                size.width >= SIZE_LARGE.width                                       -> LargeLayout(context, countdown, timeInfo, accentColor, clickAction)
+                size.width >= SIZE_MEDIUM.width && size.height >= SIZE_MEDIUM.height -> MediumLayout(context, countdown, timeInfo, accentColor, clickAction)
+                size.width >= SIZE_WIDE.width                                        -> WideLayout(context, countdown, timeInfo, accentColor, clickAction)
+                size.height >= SIZE_TALL.height                                      -> TallLayout(context, countdown, timeInfo, accentColor, clickAction)
+                else                                                                 -> SmallLayout(context, countdown, timeInfo, accentColor, clickAction)
             }
         }
     }
@@ -96,8 +97,19 @@ class CountdownWidget : GlanceAppWidget() {
     // ─── 1×1 ─────────────────────────────────────────────────────────────────
 
     @Composable
-    private fun SmallLayout(countdown: Countdown, timeInfo: CountdownInfo, accentColor: Color, clickAction: Action) {
-        val darker = darken(accentColor)
+    private fun SmallLayout(
+        context     : Context,
+        countdown   : Countdown,
+        timeInfo    : CountdownInfo,
+        accentColor : Color,
+        clickAction : Action
+    ) {
+        val darker   = darken(accentColor)
+        val dayLabel = if (timeInfo.days == 1L)
+            context.getString(R.string.day)
+        else
+            context.getString(R.string.days)
+
         Box(modifier = GlanceModifier.fillMaxSize().background(accentColor).cornerRadius(16.dp).clickable(clickAction), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalAlignment = Alignment.CenterVertically, modifier = GlanceModifier.fillMaxSize().padding(4.dp)) {
                 Box(modifier = GlanceModifier.fillMaxWidth().height(3.dp).background(darker)) {}
@@ -105,7 +117,7 @@ class CountdownWidget : GlanceAppWidget() {
                 Text(text = countdown.icon.ifBlank { "⏰" }, style = TextStyle(fontSize = 22.sp, textAlign = TextAlign.Center))
                 Spacer(GlanceModifier.height(2.dp))
                 Text(text = "${timeInfo.days}", style = TextStyle(fontSize = 22.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White), textAlign = TextAlign.Center))
-                Text(text = if (timeInfo.days == 1L) "Tag" else "Tage", style = TextStyle(fontSize = 9.sp, color = ColorProvider(Color.White.copy(alpha = 0.8f)), textAlign = TextAlign.Center))
+                Text(text = dayLabel, style = TextStyle(fontSize = 9.sp, color = ColorProvider(Color.White.copy(alpha = 0.8f)), textAlign = TextAlign.Center))
                 Spacer(GlanceModifier.defaultWeight())
                 Box(modifier = GlanceModifier.fillMaxWidth().height(3.dp).background(darker)) {}
             }
@@ -115,8 +127,19 @@ class CountdownWidget : GlanceAppWidget() {
     // ─── 1×2 ─────────────────────────────────────────────────────────────────
 
     @Composable
-    private fun TallLayout(countdown: Countdown, timeInfo: CountdownInfo, accentColor: Color, clickAction: Action) {
-        val darker = darken(accentColor)
+    private fun TallLayout(
+        context     : Context,
+        countdown   : Countdown,
+        timeInfo    : CountdownInfo,
+        accentColor : Color,
+        clickAction : Action
+    ) {
+        val darker   = darken(accentColor)
+        val dayLabel = if (timeInfo.days == 1L)
+            context.getString(R.string.day)
+        else
+            context.getString(R.string.days)
+
         Box(modifier = GlanceModifier.fillMaxSize().background(accentColor).cornerRadius(16.dp).clickable(clickAction)) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = GlanceModifier.fillMaxSize()) {
                 Box(modifier = GlanceModifier.fillMaxWidth().height(3.dp).background(darker)) {}
@@ -126,7 +149,7 @@ class CountdownWidget : GlanceAppWidget() {
                 Text(text = countdown.title, style = TextStyle(fontSize = 10.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White.copy(alpha = 0.85f)), textAlign = TextAlign.Center), maxLines = 1)
                 Spacer(GlanceModifier.height(6.dp))
                 Text(text = "${timeInfo.days}", style = TextStyle(fontSize = 28.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White), textAlign = TextAlign.Center))
-                Text(text = if (timeInfo.days == 1L) "Tag" else "Tage", style = TextStyle(fontSize = 10.sp, color = ColorProvider(Color.White.copy(alpha = 0.8f)), textAlign = TextAlign.Center))
+                Text(text = dayLabel, style = TextStyle(fontSize = 10.sp, color = ColorProvider(Color.White.copy(alpha = 0.8f)), textAlign = TextAlign.Center))
                 Spacer(GlanceModifier.defaultWeight())
                 Box(modifier = GlanceModifier.fillMaxWidth().height(3.dp).background(darker)) {}
             }
@@ -136,8 +159,19 @@ class CountdownWidget : GlanceAppWidget() {
     // ─── 2×1 ─────────────────────────────────────────────────────────────────
 
     @Composable
-    private fun WideLayout(countdown: Countdown, timeInfo: CountdownInfo, accentColor: Color, clickAction: Action) {
-        val darker = darken(accentColor)
+    private fun WideLayout(
+        context     : Context,
+        countdown   : Countdown,
+        timeInfo    : CountdownInfo,
+        accentColor : Color,
+        clickAction : Action
+    ) {
+        val darker   = darken(accentColor)
+        val dayLabel = if (timeInfo.days == 1L)
+            context.getString(R.string.day)
+        else
+            context.getString(R.string.days)
+
         Box(modifier = GlanceModifier.fillMaxSize().background(accentColor).cornerRadius(16.dp).clickable(clickAction)) {
             Column(modifier = GlanceModifier.fillMaxSize()) {
                 Box(modifier = GlanceModifier.fillMaxWidth().height(3.dp).background(darker)) {}
@@ -149,7 +183,7 @@ class CountdownWidget : GlanceAppWidget() {
                     Column(modifier = GlanceModifier.defaultWeight()) {
                         Text(text = countdown.title, style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White.copy(alpha = 0.85f))), maxLines = 1)
                         Spacer(GlanceModifier.height(2.dp))
-                        Text(text = "${timeInfo.days} ${if (timeInfo.days == 1L) "Tag" else "Tage"}", style = TextStyle(fontSize = 22.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White)))
+                        Text(text = "${timeInfo.days} $dayLabel", style = TextStyle(fontSize = 22.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White)))
                         Text(text = countdown.effectiveTarget.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")), style = TextStyle(fontSize = 9.sp, color = ColorProvider(Color.White.copy(alpha = 0.65f))))
                     }
                 }
@@ -160,7 +194,13 @@ class CountdownWidget : GlanceAppWidget() {
     // ─── 2×2 ─────────────────────────────────────────────────────────────────
 
     @Composable
-    private fun MediumLayout(countdown: Countdown, timeInfo: CountdownInfo, accentColor: Color, clickAction: Action) {
+    private fun MediumLayout(
+        context     : Context,
+        countdown   : Countdown,
+        timeInfo    : CountdownInfo,
+        accentColor : Color,
+        clickAction : Action
+    ) {
         val darker = darken(accentColor)
         Box(modifier = GlanceModifier.fillMaxSize().background(accentColor).cornerRadius(16.dp).clickable(clickAction)) {
             Column(modifier = GlanceModifier.fillMaxSize()) {
@@ -175,7 +215,7 @@ class CountdownWidget : GlanceAppWidget() {
                     }
                     Spacer(GlanceModifier.defaultWeight())
                     Text(text = formatMainValue(timeInfo, countdown.displayFormat), style = TextStyle(fontSize = 28.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White)))
-                    Text(text = formatMainUnit(timeInfo, countdown.displayFormat),  style = TextStyle(fontSize = 13.sp, color = ColorProvider(Color.White.copy(alpha = 0.8f))))
+                    Text(text = formatMainUnit(context, timeInfo, countdown.displayFormat), style = TextStyle(fontSize = 13.sp, color = ColorProvider(Color.White.copy(alpha = 0.8f))))
                     if (countdown.includeTime) {
                         Text(text = timeInfo.formatTime(), style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White.copy(alpha = 0.9f))))
                     }
@@ -190,7 +230,13 @@ class CountdownWidget : GlanceAppWidget() {
     // ─── 3×2 ─────────────────────────────────────────────────────────────────
 
     @Composable
-    private fun LargeLayout(countdown: Countdown, timeInfo: CountdownInfo, accentColor: Color, clickAction: Action) {
+    private fun LargeLayout(
+        context     : Context,
+        countdown   : Countdown,
+        timeInfo    : CountdownInfo,
+        accentColor : Color,
+        clickAction : Action
+    ) {
         val darker = darken(accentColor)
         Box(modifier = GlanceModifier.fillMaxSize().background(accentColor).cornerRadius(16.dp).clickable(clickAction)) {
             Column(modifier = GlanceModifier.fillMaxSize()) {
@@ -204,7 +250,7 @@ class CountdownWidget : GlanceAppWidget() {
                         Text(text = countdown.title, style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White.copy(alpha = 0.85f))), maxLines = 1)
                         Spacer(GlanceModifier.height(4.dp))
                         Text(text = formatMainValue(timeInfo, countdown.displayFormat), style = TextStyle(fontSize = 32.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White)))
-                        Text(text = formatMainUnit(timeInfo, countdown.displayFormat),  style = TextStyle(fontSize = 14.sp, color = ColorProvider(Color.White.copy(alpha = 0.8f))))
+                        Text(text = formatMainUnit(context, timeInfo, countdown.displayFormat), style = TextStyle(fontSize = 14.sp, color = ColorProvider(Color.White.copy(alpha = 0.8f))))
                         if (countdown.includeTime) {
                             Spacer(GlanceModifier.height(2.dp))
                             Text(text = timeInfo.formatTime(), style = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White.copy(alpha = 0.9f))))
@@ -226,7 +272,13 @@ class CountdownWidget : GlanceAppWidget() {
     // ─── 4×2 ─────────────────────────────────────────────────────────────────
 
     @Composable
-    private fun XLargeLayout(countdown: Countdown, timeInfo: CountdownInfo, accentColor: Color, clickAction: Action) {
+    private fun XLargeLayout(
+        context     : Context,
+        countdown   : Countdown,
+        timeInfo    : CountdownInfo,
+        accentColor : Color,
+        clickAction : Action
+    ) {
         val darker = darken(accentColor)
         Box(modifier = GlanceModifier.fillMaxSize().background(accentColor).cornerRadius(16.dp).clickable(clickAction)) {
             Column(modifier = GlanceModifier.fillMaxSize()) {
@@ -240,7 +292,7 @@ class CountdownWidget : GlanceAppWidget() {
                         Text(text = countdown.title, style = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White.copy(alpha = 0.85f))), maxLines = 1)
                         Spacer(GlanceModifier.height(4.dp))
                         Text(text = formatMainValue(timeInfo, countdown.displayFormat), style = TextStyle(fontSize = 36.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White)))
-                        Text(text = formatMainUnit(timeInfo, countdown.displayFormat),  style = TextStyle(fontSize = 16.sp, color = ColorProvider(Color.White.copy(alpha = 0.8f))))
+                        Text(text = formatMainUnit(context, timeInfo, countdown.displayFormat), style = TextStyle(fontSize = 16.sp, color = ColorProvider(Color.White.copy(alpha = 0.8f))))
                         if (countdown.includeTime) {
                             Spacer(GlanceModifier.height(2.dp))
                             Text(text = timeInfo.formatTime(), style = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White.copy(alpha = 0.9f))))
@@ -258,7 +310,11 @@ class CountdownWidget : GlanceAppWidget() {
                             Text(text = "↻ ${countdown.recurrenceType.name.lowercase()}", style = TextStyle(fontSize = 10.sp, color = ColorProvider(Color.White.copy(alpha = 0.65f))))
                         }
                         Spacer(GlanceModifier.height(4.dp))
-                        Text(text = "${timeInfo.days} Tage gesamt", style = TextStyle(fontSize = 10.sp, color = ColorProvider(Color.White.copy(alpha = 0.6f))))
+                        val totalDaysLabel = if (timeInfo.days == 1L)
+                            context.getString(R.string.day)
+                        else
+                            context.getString(R.string.days)
+                        Text(text = "${timeInfo.days} $totalDaysLabel gesamt", style = TextStyle(fontSize = 10.sp, color = ColorProvider(Color.White.copy(alpha = 0.6f))))
                     }
                 }
                 Box(modifier = GlanceModifier.fillMaxWidth().height(3.dp).background(darker)) {}
@@ -269,7 +325,8 @@ class CountdownWidget : GlanceAppWidget() {
     // ─── Leer ─────────────────────────────────────────────────────────────────
 
     @Composable
-    private fun EmptyWidget(size: DpSize, clickAction: Action) {
+    private fun EmptyWidget(context: Context, size: DpSize, clickAction: Action) {
+        val noCountdownLabel = context.getString(R.string.widget_no_countdowns)
         Box(
             modifier         = GlanceModifier.fillMaxSize().background(Color(0xFF2A2A2A)).cornerRadius(16.dp).clickable(clickAction),
             contentAlignment = Alignment.Center
@@ -278,7 +335,7 @@ class CountdownWidget : GlanceAppWidget() {
                 Text(text = "⏰", style = TextStyle(fontSize = 24.sp, textAlign = TextAlign.Center))
                 if (size.height > 60.dp) {
                     Spacer(GlanceModifier.height(4.dp))
-                    Text(text = "Kein Countdown", style = TextStyle(fontSize = 10.sp, color = ColorProvider(Color(0xFF888888)), textAlign = TextAlign.Center))
+                    Text(text = noCountdownLabel, style = TextStyle(fontSize = 10.sp, color = ColorProvider(Color(0xFF888888)), textAlign = TextAlign.Center))
                 }
             }
         }
@@ -287,24 +344,73 @@ class CountdownWidget : GlanceAppWidget() {
     // ─── Hilfsfunktionen ──────────────────────────────────────────────────────
 
     private fun formatMainValue(timeInfo: CountdownInfo, displayFormat: String): String {
-        val format = try { CountdownDisplayFormat.valueOf(displayFormat) } catch (e: Exception) { CountdownDisplayFormat.DAYS_ONLY }
+        val format = try { CountdownDisplayFormat.valueOf(displayFormat) }
+        catch (e: Exception) { CountdownDisplayFormat.DAYS_ONLY }
         return when (format) {
             CountdownDisplayFormat.DAYS_ONLY         -> "${timeInfo.days}"
             CountdownDisplayFormat.WEEKS_DAYS        -> "${timeInfo.weeks}"
             CountdownDisplayFormat.MONTHS_DAYS       -> "${timeInfo.months}"
-            CountdownDisplayFormat.YEARS_MONTHS_DAYS -> if (timeInfo.years > 0) "${timeInfo.years}" else "${timeInfo.remainingMonthsAfterYears}"
+            CountdownDisplayFormat.YEARS_MONTHS_DAYS ->
+                if (timeInfo.years > 0) "${timeInfo.years}"
+                else "${timeInfo.remainingMonthsAfterYears}"
         }
     }
 
-    private fun formatMainUnit(timeInfo: CountdownInfo, displayFormat: String): String {
-        val format = try { CountdownDisplayFormat.valueOf(displayFormat) } catch (e: Exception) { CountdownDisplayFormat.DAYS_ONLY }
+    private fun formatMainUnit(context: Context, timeInfo: CountdownInfo, displayFormat: String): String {
+        val format = try { CountdownDisplayFormat.valueOf(displayFormat) }
+        catch (e: Exception) { CountdownDisplayFormat.DAYS_ONLY }
+
         return when (format) {
-            CountdownDisplayFormat.DAYS_ONLY         -> if (timeInfo.days == 1L) "Tag" else "Tage"
-            CountdownDisplayFormat.WEEKS_DAYS        -> "${if (timeInfo.weeks == 1L) "Woche" else "Wochen"}, ${timeInfo.remainingDaysAfterWeeks} T"
-            CountdownDisplayFormat.MONTHS_DAYS       -> "${if (timeInfo.months == 1L) "Monat" else "Monate"}, ${timeInfo.remainingDaysAfterMonths} T"
-            CountdownDisplayFormat.YEARS_MONTHS_DAYS -> if (timeInfo.years > 0)
-                "${if (timeInfo.years == 1L) "Jahr" else "Jahre"}, ${timeInfo.remainingMonthsAfterYears} M"
-            else "${if (timeInfo.remainingMonthsAfterYears == 1L) "Monat" else "Monate"}, ${timeInfo.remainingDaysAfterYears} T"
+            CountdownDisplayFormat.DAYS_ONLY ->
+                if (timeInfo.days == 1L) context.getString(R.string.day)
+                else context.getString(R.string.days)
+
+            CountdownDisplayFormat.WEEKS_DAYS -> {
+                val weekLabel = if (timeInfo.weeks == 1L)
+                    context.getString(R.string.week)
+                else
+                    context.getString(R.string.weeks)
+                val dayLabel = if (timeInfo.remainingDaysAfterWeeks == 1L)
+                    context.getString(R.string.day)
+                else
+                    context.getString(R.string.days)
+                "$weekLabel, ${timeInfo.remainingDaysAfterWeeks} $dayLabel"
+            }
+
+            CountdownDisplayFormat.MONTHS_DAYS -> {
+                val monthLabel = if (timeInfo.months == 1L)
+                    context.getString(R.string.month)
+                else
+                    context.getString(R.string.months)
+                val dayLabel = if (timeInfo.remainingDaysAfterMonths == 1L)
+                    context.getString(R.string.day)
+                else
+                    context.getString(R.string.days)
+                "$monthLabel, ${timeInfo.remainingDaysAfterMonths} $dayLabel"
+            }
+
+            CountdownDisplayFormat.YEARS_MONTHS_DAYS ->
+                if (timeInfo.years > 0) {
+                    val yearLabel = if (timeInfo.years == 1L)
+                        context.getString(R.string.year)
+                    else
+                        context.getString(R.string.years)
+                    val monthLabel = if (timeInfo.remainingMonthsAfterYears == 1L)
+                        context.getString(R.string.month)
+                    else
+                        context.getString(R.string.months)
+                    "$yearLabel, ${timeInfo.remainingMonthsAfterYears} $monthLabel"
+                } else {
+                    val monthLabel = if (timeInfo.remainingMonthsAfterYears == 1L)
+                        context.getString(R.string.month)
+                    else
+                        context.getString(R.string.months)
+                    val dayLabel = if (timeInfo.remainingDaysAfterYears == 1L)
+                        context.getString(R.string.day)
+                    else
+                        context.getString(R.string.days)
+                    "$monthLabel, ${timeInfo.remainingDaysAfterYears} $dayLabel"
+                }
         }
     }
 
