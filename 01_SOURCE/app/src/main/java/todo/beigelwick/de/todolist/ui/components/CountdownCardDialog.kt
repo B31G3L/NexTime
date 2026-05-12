@@ -38,8 +38,9 @@ fun CountdownCardDialog(
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
     val timeInfo     = remember { countdown.calculateTimeRemaining() }
-    val showConfetti = remember { timeInfo.isPast && !countdown.isRecurring }
-
+    val showConfetti = remember {
+        timeInfo.isPast && !countdown.isRecurring && countdown.createdAt < countdown.targetDateTime
+    }
     ModalBottomSheet(
         onDismissRequest = { haptic.tick(); onDismiss() },
         sheetState       = sheetState,

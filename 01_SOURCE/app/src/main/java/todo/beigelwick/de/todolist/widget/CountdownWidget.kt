@@ -57,13 +57,14 @@ class CountdownWidget : GlanceAppWidget() {
         val appWidgetId = try {
             glanceManager.getAppWidgetId(id)
         } catch (e: Exception) {
-            appWidgetManager
-                .getAppWidgetIds(ComponentName(context, CountdownWidgetReceiver::class.java))
-                .firstOrNull() ?: AppWidgetManager.INVALID_APPWIDGET_ID
+            AppWidgetManager.INVALID_APPWIDGET_ID
         }
 
+        val selectedCountdownId = if (appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
+            WidgetConfigActivity.loadCountdownId(context, appWidgetId)
+        } else null
+
         val database            = CountdownDatabase.getDatabase(context)
-        val selectedCountdownId = WidgetConfigActivity.loadCountdownId(context, appWidgetId)
 
         val countdown = if (selectedCountdownId != null) {
             database.countdownDao().getCountdownById(selectedCountdownId)
