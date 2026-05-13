@@ -41,6 +41,7 @@ fun CountdownCardDialog(
     val showConfetti = remember {
         timeInfo.isPast && !countdown.isRecurring && countdown.createdAt < countdown.targetDateTime
     }
+
     ModalBottomSheet(
         onDismissRequest = { haptic.tick(); onDismiss() },
         sheetState       = sheetState,
@@ -93,7 +94,7 @@ fun CountdownCardDialog(
                 // Card-Vorschau
                 CountdownCard(countdown = countdown)
 
-                // Aktionsbuttons
+                // Aktionsbuttons – alle drei in primary-Farbe, Delete in error
                 Row(
                     modifier              = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -108,7 +109,7 @@ fun CountdownCardDialog(
                     CardActionButton(
                         icon     = Icons.Default.Edit,
                         label    = stringResource(R.string.action_edit),
-                        color    = MaterialTheme.colorScheme.secondary,
+                        color    = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.weight(1f),
                         onClick  = { haptic.click(); onEdit(countdown) }
                     )
@@ -177,7 +178,13 @@ private fun CardActionButton(
         ) {
             Icon(imageVector = icon, contentDescription = label, tint = color, modifier = Modifier.size(24.dp))
             Spacer(modifier = Modifier.height(4.dp))
-            Text(text = label, style = MaterialTheme.typography.labelMedium, color = color, fontWeight = FontWeight.SemiBold, fontSize = 11.sp)
+            Text(
+                text       = label,
+                style      = MaterialTheme.typography.labelMedium,
+                color      = color,
+                fontWeight = FontWeight.SemiBold,
+                fontSize   = 11.sp
+            )
         }
     }
 }

@@ -342,7 +342,7 @@ private fun buildSubInfo(
         R.string.card_next_occurrence,
         countdown.effectiveTarget.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))
     )
-    if (timeInfo.isPast) return stringResource(R.string.card_already_past)
+    if (timeInfo.isPast) return ""
 
     val format = try { CountdownDisplayFormat.valueOf(countdown.displayFormat) }
     catch (e: Exception) { CountdownDisplayFormat.DAYS_ONLY }

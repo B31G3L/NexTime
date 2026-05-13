@@ -67,7 +67,7 @@ fun ExpandableFab(
                 MiniFabItem(
                     label   = stringResource(R.string.fab_template),
                     icon    = Icons.Outlined.ContentCopy,
-                    color   = MaterialTheme.colorScheme.secondary,
+                    color   = MaterialTheme.colorScheme.primary,
                     onClick = { haptic.click(); expanded = false; showTemplateDialog = true }
                 )
                 MiniFabItem(
@@ -80,9 +80,9 @@ fun ExpandableFab(
         }
 
         FloatingActionButton(
-            onClick          = { haptic.click(); expanded = !expanded },
-            containerColor   = MaterialTheme.colorScheme.primary,
-            modifier         = Modifier.size(64.dp)
+            onClick        = { haptic.click(); expanded = !expanded },
+            containerColor = MaterialTheme.colorScheme.primary,
+            modifier       = Modifier.size(64.dp)
         ) {
             Icon(
                 imageVector        = Icons.Default.Add,
@@ -112,11 +112,24 @@ private fun MiniFabItem(label: String, icon: ImageVector, color: Color, onClick:
         verticalAlignment     = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surface, shadowElevation = 4.dp) {
-            Text(text = label, modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
+        Surface(
+            shape           = RoundedCornerShape(20.dp),
+            color           = MaterialTheme.colorScheme.surface,
+            shadowElevation = 4.dp
+        ) {
+            Text(
+                text     = label,
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                style    = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                color    = MaterialTheme.colorScheme.onSurface
+            )
         }
-        SmallFloatingActionButton(onClick = onClick, containerColor = color, modifier = Modifier.size(48.dp)) {
+        SmallFloatingActionButton(
+            onClick        = onClick,
+            containerColor = color,
+            modifier       = Modifier.size(48.dp)
+        ) {
             Icon(imageVector = icon, contentDescription = label, tint = Color.White, modifier = Modifier.size(22.dp))
         }
     }
@@ -154,28 +167,41 @@ private fun TemplatePickerDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment     = Alignment.CenterVertically
                 ) {
-                    Text(text = stringResource(R.string.template_picker_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Text(
+                        text       = stringResource(R.string.template_picker_title),
+                        style      = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
                     IconButton(onClick = { haptic.tick(); onDismiss() }) {
                         Icon(Icons.Default.Close, contentDescription = stringResource(R.string.close))
                     }
                 }
 
                 // Kategorie-Filter
-                LazyRow(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                LazyRow(
+                    modifier            = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     item {
-                        FilterChip(selected = selectedCategory == null, onClick = { haptic.tick(); selectedCategory = null },
-                            label = { Text(stringResource(R.string.template_cat_all)) })
+                        FilterChip(
+                            selected = selectedCategory == null,
+                            onClick  = { haptic.tick(); selectedCategory = null },
+                            label    = { Text(stringResource(R.string.template_cat_all)) }
+                        )
                     }
                     items(TemplateCategory.values()) { category ->
                         val label = when (category) {
-                            TemplateCategory.FEIERTAGE   -> stringResource(R.string.template_cat_holidays)
+                            TemplateCategory.FEIERTAGE    -> stringResource(R.string.template_cat_holidays)
                             TemplateCategory.JAHRESZEITEN -> stringResource(R.string.template_cat_seasons)
                             TemplateCategory.SPORT        -> stringResource(R.string.template_cat_sports)
                             TemplateCategory.PERSOENLICH  -> stringResource(R.string.template_cat_personal)
                             TemplateCategory.SCHULE       -> stringResource(R.string.template_cat_school)
                         }
-                        FilterChip(selected = selectedCategory == category, onClick = { haptic.tick(); selectedCategory = category },
-                            label = { Text(label) })
+                        FilterChip(
+                            selected = selectedCategory == category,
+                            onClick  = { haptic.tick(); selectedCategory = category },
+                            label    = { Text(label) }
+                        )
                     }
                 }
 
@@ -184,9 +210,9 @@ private fun TemplatePickerDialog(
 
                 // Template-Liste
                 LazyColumn(
-                    modifier        = Modifier.fillMaxSize(),
-                    contentPadding  = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    modifier              = Modifier.fillMaxSize(),
+                    contentPadding        = PaddingValues(16.dp),
+                    verticalArrangement   = Arrangement.spacedBy(10.dp)
                 ) {
                     if (selectedCategory == null) {
                         TemplateCategory.values().forEach { category ->
@@ -194,23 +220,34 @@ private fun TemplatePickerDialog(
                             if (categoryTemplates.isNotEmpty()) {
                                 item(key = "header_${category.name}") {
                                     val label = when (category) {
-                                        TemplateCategory.FEIERTAGE   -> stringResource(R.string.template_cat_holidays)
+                                        TemplateCategory.FEIERTAGE    -> stringResource(R.string.template_cat_holidays)
                                         TemplateCategory.JAHRESZEITEN -> stringResource(R.string.template_cat_seasons)
                                         TemplateCategory.SPORT        -> stringResource(R.string.template_cat_sports)
                                         TemplateCategory.PERSOENLICH  -> stringResource(R.string.template_cat_personal)
                                         TemplateCategory.SCHULE       -> stringResource(R.string.template_cat_school)
                                     }
-                                    Text(text = label, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 8.dp, bottom = 2.dp))
+                                    Text(
+                                        text     = label,
+                                        style    = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color    = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.padding(top = 8.dp, bottom = 2.dp)
+                                    )
                                 }
                                 items(items = categoryTemplates, key = { "${category.name}_${it.titleKey}" }) { template ->
-                                    TemplateCard(template = template, onClick = { haptic.click(); onTemplateSelected(template) })
+                                    TemplateCard(
+                                        template = template,
+                                        onClick  = { haptic.click(); onTemplateSelected(template) }
+                                    )
                                 }
                             }
                         }
                     } else {
                         items(items = visibleTemplates, key = { it.titleKey }) { template ->
-                            TemplateCard(template = template, onClick = { haptic.click(); onTemplateSelected(template) })
+                            TemplateCard(
+                                template = template,
+                                onClick  = { haptic.click(); onTemplateSelected(template) }
+                            )
                         }
                     }
                 }
@@ -223,7 +260,8 @@ private fun TemplatePickerDialog(
 
 @Composable
 private fun TemplateCard(template: CountdownTemplate, onClick: () -> Unit) {
-    val cardColor  = try { Color(android.graphics.Color.parseColor(template.color)) } catch (e: Exception) { Color(0xFFFF7043) }
+    val cardColor = try { Color(android.graphics.Color.parseColor(template.color)) }
+    catch (e: Exception) { Color(0xFFFF7043) }
     val targetDate = remember { template.targetDateProvider() }
     val daysUntil  = remember { ChronoUnit.DAYS.between(LocalDate.now(), targetDate) }
 
@@ -238,21 +276,34 @@ private fun TemplateCard(template: CountdownTemplate, onClick: () -> Unit) {
             horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Box(
-                modifier         = Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)).background(cardColor.copy(alpha = 0.15f)),
+                modifier         = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(cardColor.copy(alpha = 0.15f)),
                 contentAlignment = Alignment.Center
             ) {
                 Text(text = template.icon, fontSize = 24.sp)
             }
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = template.titleKey, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Text(
+                    text       = template.titleKey,
+                    style      = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
                 Text(
                     text  = targetDate.format(DateTimeFormatter.ofPattern("dd. MMMM yyyy")),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Surface(shape = RoundedCornerShape(12.dp), color = cardColor.copy(alpha = 0.15f)) {
-                Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = cardColor.copy(alpha = 0.15f)
+            ) {
+                Column(
+                    modifier            = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
                     Text(
                         text       = if (daysUntil >= 0) "$daysUntil" else "${-daysUntil}",
                         style      = MaterialTheme.typography.titleMedium,
@@ -260,7 +311,8 @@ private fun TemplateCard(template: CountdownTemplate, onClick: () -> Unit) {
                         color      = cardColor
                     )
                     Text(
-                        text  = if (daysUntil >= 0) stringResource(R.string.template_days_label) else stringResource(R.string.template_past_label),
+                        text  = if (daysUntil >= 0) stringResource(R.string.template_days_label)
+                        else stringResource(R.string.template_past_label),
                         style = MaterialTheme.typography.labelSmall,
                         color = cardColor
                     )
