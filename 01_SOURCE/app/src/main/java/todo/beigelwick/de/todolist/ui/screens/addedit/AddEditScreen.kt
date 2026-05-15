@@ -23,7 +23,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.consumePositionChange
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -73,7 +72,6 @@ fun AddEditScreen(
     val haptic      = remember { HapticFeedback(context) }
     val scrollState = rememberScrollState()
 
-    // Bestehenden Countdown laden (falls Edit)
     var existingCountdown by remember { mutableStateOf<Countdown?>(null) }
     val isEdit = countdownId != -1L
 
@@ -83,12 +81,10 @@ fun AddEditScreen(
         }
     }
 
-    // Defaults aus AppPreferences
     val defaultFormat by AppPreferences.getDefaultFormat(context).collectAsState(initial = CountdownDisplayFormat.DAYS_ONLY)
     val defaultColor  by AppPreferences.getDefaultColor(context).collectAsState(initial = "#FF7043")
     val defaultTime   by AppPreferences.getDefaultTime(context).collectAsState(initial = LocalTime.of(12, 0))
 
-    // Formular-State
     var title              by remember { mutableStateOf("") }
     var icon               by remember { mutableStateOf("⏰") }
     var selectedDate       by remember { mutableStateOf(LocalDate.now().plusDays(1)) }
@@ -100,12 +96,10 @@ fun AddEditScreen(
     var notificationEnabled by remember { mutableStateOf(false) }
     val selectedReminders   = remember { mutableStateListOf<ReminderOption>() }
 
-    // FIX 1: initialized-Flag verhindert, dass Defaults die States nach erstem Load überschreiben
     val initialized = remember { mutableStateOf(false) }
 
     LaunchedEffect(existingCountdown, defaultFormat, defaultColor, defaultTime) {
         if (initialized.value) return@LaunchedEffect
-        // Beim Edit warten bis der Countdown geladen wurde
         if (isEdit && existingCountdown == null) return@LaunchedEffect
 
         val cd = existingCountdown
@@ -134,20 +128,16 @@ fun AddEditScreen(
         "#42A5F5","#26A69A","#66BB6A","#FFA726","#8D6E63"
     )
 
-    // FIX 2: Count-up Detection – true wenn Datum in der Vergangenheit liegt
     val isCountUp = remember(selectedDate) {
         selectedDate.isBefore(LocalDate.now())
     }
 
-    // Wiederholung automatisch deaktivieren wenn Count-up
     LaunchedEffect(isCountUp) {
         if (isCountUp && selectedRecurrence != RecurrenceType.NONE) {
             selectedRecurrence = RecurrenceType.NONE
         }
     }
 
-    // Vorschau-Countdown – bewusst ohne remember/derivedStateOf,
-    // damit jede State-Änderung (Datum, Farbe, Titel …) sofort in der Preview sichtbar ist
     val previewCountdown = Countdown(
         id             = existingCountdown?.id ?: 0L,
         title          = title.ifBlank { "Vorschau" },
@@ -204,7 +194,9 @@ fun AddEditScreen(
                     detectHorizontalDragGestures(
                         onHorizontalDrag = { change, dragAmount ->
                             swipeOffset += dragAmount
-                            change.consumePositionChange()
+                            // BUG FIX: consumePositionChange() ist seit Compose 1.4 deprecated
+                            // → ersetzt durch change.consume()
+                            change.consume()
                         },
                         onDragEnd    = { if (swipeOffset > 150f) { haptic.tick(); onBack() }; swipeOffset = 0f },
                         onDragCancel = { swipeOffset = 0f }
@@ -356,7 +348,6 @@ fun AddEditScreen(
                 }
 
                 // ── Wiederholung ──────────────────────────────────────────────
-                // FIX 2: Ausgegraut + Hinweis wenn Count-up (Datum in der Vergangenheit)
                 SectionCard(stringResource(R.string.section_recurrence)) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
@@ -365,7 +356,6 @@ fun AddEditScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
 
-                        // Hinweis wenn Count-up
                         AnimatedVisibility(
                             visible = isCountUp,
                             enter   = fadeIn() + expandVertically(),
@@ -396,7 +386,6 @@ fun AddEditScreen(
                             }
                         }
 
-                        // Wiederholungsoptionen
                         RecurrenceType.values().forEach { type ->
                             val isDisabled = isCountUp && type != RecurrenceType.NONE
                             Row(
@@ -454,7 +443,6 @@ fun AddEditScreen(
                             }
                         }
 
-                        // Info-Banner (aktive Wiederholung, nur bei Countdown)
                         AnimatedVisibility(
                             visible = selectedRecurrence != RecurrenceType.NONE && !isCountUp,
                             enter   = fadeIn() + expandVertically(),
@@ -747,7 +735,6 @@ fun AddEditScreen(
     }
 
     if (showDatePicker) {
-        // UTC-Offset beim Initialisieren berücksichtigen
         val zoneOffset = java.time.ZoneId.systemDefault()
             .rules.getOffset(java.time.Instant.now()).totalSeconds * 1000L
         val datePickerState = rememberDatePickerState(
@@ -759,7 +746,6 @@ fun AddEditScreen(
                 TextButton(onClick = {
                     haptic.click()
                     datePickerState.selectedDateMillis?.let { millis ->
-                        // UTC-Millis korrekt in lokales Datum umwandeln
                         selectedDate = java.time.Instant.ofEpochMilli(millis)
                             .atZone(java.time.ZoneId.of("UTC"))
                             .toLocalDate()

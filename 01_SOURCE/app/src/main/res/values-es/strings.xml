@@ -197,4 +197,7 @@
     <string name="success_created">Cuenta atrás creada ✅</string>
     <string name="success_updated">Cuenta atrás actualizada ✅</string>
     <string name="success_deleted">Cuenta atrás eliminada ✅</string>
+
+    <string name="label_total">en total</string>
+
 </resources>

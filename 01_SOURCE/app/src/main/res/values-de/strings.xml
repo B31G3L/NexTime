@@ -255,4 +255,6 @@
     <string name="theme_violet_desc">Zitrone &amp; Violett</string>
     <string name="theme_peach_name">Peach Ice</string>
     <string name="theme_peach_desc">Pfirsich &amp; Aqua</string>
+    <string name="label_total">gesamt</string>
+
 </resources>

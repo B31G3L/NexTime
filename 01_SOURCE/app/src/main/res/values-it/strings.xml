@@ -197,4 +197,7 @@
     <string name="success_created">Conto alla rovescia creato ✅</string>
     <string name="success_updated">Conto alla rovescia aggiornato ✅</string>
     <string name="success_deleted">Conto alla rovescia eliminato ✅</string>
+
+    <string name="label_total">in totale</string>
+
 </resources>

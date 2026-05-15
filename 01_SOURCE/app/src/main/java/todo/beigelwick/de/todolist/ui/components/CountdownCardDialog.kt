@@ -38,8 +38,16 @@ fun CountdownCardDialog(
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
     val timeInfo     = remember { countdown.calculateTimeRemaining() }
+
+    // BUG FIX: Die alte Bedingung `countdown.createdAt < countdown.targetDateTime`
+    // verwendet Kotlin-Operator-Overloading auf LocalDateTime, was korrekt ist,
+    // aber bei nachträglich bearbeiteten Einträgen (wo createdAt > targetDateTime
+    // sein kann, weil das Zieldatum in die Vergangenheit verschoben wurde) nie
+    // true wird. isAfter() macht die Absicht explizit und ist robuster.
     val showConfetti = remember {
-        timeInfo.isPast && !countdown.isRecurring && countdown.createdAt < countdown.targetDateTime
+        timeInfo.isPast &&
+                !countdown.isRecurring &&
+                countdown.targetDateTime.isAfter(countdown.createdAt)
     }
 
     ModalBottomSheet(
@@ -94,7 +102,7 @@ fun CountdownCardDialog(
                 // Card-Vorschau
                 CountdownCard(countdown = countdown)
 
-                // Aktionsbuttons – alle drei in primary-Farbe, Delete in error
+                // Aktionsbuttons
                 Row(
                     modifier              = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)

@@ -253,4 +253,6 @@
     <string name="theme_violet_desc">Lemon &amp; Violet</string>
     <string name="theme_peach_name">Peach Ice</string>
     <string name="theme_peach_desc">Peach &amp; Aqua Mist</string>
+    <string name="label_total">total</string>
+
 </resources>

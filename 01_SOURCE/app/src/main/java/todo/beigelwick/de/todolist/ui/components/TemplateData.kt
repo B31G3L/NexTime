@@ -4,6 +4,7 @@ import todo.beigelwick.de.todolist.data.model.Countdown
 import todo.beigelwick.de.todolist.data.model.CountdownDisplayFormat
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.Month
 
 // ─── Template Datenklassen ────────────────────────────────────────────────────
@@ -105,15 +106,17 @@ val ALL_TEMPLATES: List<CountdownTemplate> = listOf(
 )
 
 // ─── Template → Countdown ─────────────────────────────────────────────────────
+// BUG FIX: defaultTime als Parameter statt LocalDateTime.now().toLocalTime(),
+// damit die in den Einstellungen konfigurierte Standard-Uhrzeit verwendet wird.
 
-fun CountdownTemplate.toCountdown(): Countdown {
+fun CountdownTemplate.toCountdown(defaultTime: LocalTime = LocalTime.of(12, 0)): Countdown {
     val date = targetDateProvider()
     return Countdown(
-        title         = titleKey,
-        icon          = icon,
-        color         = color,
-        displayFormat = displayFormat.name,
-        targetDateTime = LocalDateTime.of(date, LocalDateTime.now().toLocalTime())
+        title          = titleKey,
+        icon           = icon,
+        color          = color,
+        displayFormat  = displayFormat.name,
+        targetDateTime = LocalDateTime.of(date, defaultTime)
     )
 }
 

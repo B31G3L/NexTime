@@ -197,4 +197,7 @@
     <string name="success_created">Compte à rebours créé ✅</string>
     <string name="success_updated">Compte à rebours mis à jour ✅</string>
     <string name="success_deleted">Compte à rebours supprimé ✅</string>
+
+    <string name="label_total">au total</string>
+
 </resources>

@@ -29,7 +29,8 @@ import todo.beigelwick.de.todolist.data.model.formatTime
 import todo.beigelwick.de.todolist.ui.viewmodel.CountdownViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import java.time.temporal.ChronoUnit
+
+private val CardShape = RoundedCornerShape(16.dp)
 
 @Composable
 fun CountdownCard(
@@ -56,20 +57,19 @@ fun CountdownCard(
             blue  = (baseColor.blue  * 0.7f).coerceIn(0f, 1f)
         )
     }
-    val progress = remember(countdown.id, countdown.createdAt, countdown.effectiveTarget) {
-        calculateProgress(countdown)
-    }
     val isToday = remember(countdown.id, countdown.effectiveTarget) {
         countdown.effectiveTarget.toLocalDate() == LocalDate.now()
     }
 
-    Card(
-        modifier  = Modifier.fillMaxWidth(),
-        shape     = RoundedCornerShape(16.dp),
-        colors    = CardDefaults.cardColors(containerColor = baseColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    // Box + clip statt Card, damit der untere Balken nicht abgeschnitten wird
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(CardShape)
+            .background(baseColor)
     ) {
         Column {
+            // Akzentbalken oben
             Box(modifier = Modifier.fillMaxWidth().height(4.dp).background(darkerBar))
 
             Row(
@@ -156,11 +156,8 @@ fun CountdownCard(
                 }
             }
 
-            ProgressBar(
-                progress        = progress,
-                backgroundColor = darkerBar,
-                foregroundColor = Color.White.copy(alpha = 0.55f)
-            )
+            // Akzentbalken unten – identisch mit dem oberen
+            Box(modifier = Modifier.fillMaxWidth().height(4.dp).background(darkerBar))
         }
     }
 }
@@ -218,24 +215,6 @@ private fun RecurringBadge(recurrenceType: RecurrenceType, cardColor: Color) {
     }
 }
 
-// ─── Fortschrittsbalken ───────────────────────────────────────────────────────
-
-@Composable
-private fun ProgressBar(
-    progress        : Float,
-    backgroundColor : Color,
-    foregroundColor : Color
-) {
-    Box(modifier = Modifier.fillMaxWidth().height(6.dp).background(backgroundColor)) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth(progress.coerceIn(0f, 1f))
-                .fillMaxHeight()
-                .background(foregroundColor)
-        )
-    }
-}
-
 // ─── Hauptanzeige ─────────────────────────────────────────────────────────────
 
 @Composable
@@ -250,8 +229,8 @@ private fun CountdownMainDisplay(timeInfo: CountdownInfo, displayFormat: String)
     val monthLabel = stringResource(if (timeInfo.months == 1L) R.string.month else R.string.months)
     val yearLabel  = stringResource(if (timeInfo.years  == 1L) R.string.year  else R.string.years)
 
-    val remainingDaysLabel  = stringResource(
-        if (timeInfo.remainingDaysAfterWeeks  == 1L) R.string.day else R.string.days
+    val remainingDaysLabel = stringResource(
+        if (timeInfo.remainingDaysAfterWeeks == 1L) R.string.day else R.string.days
     )
     val remainingDaysAfterMonthsLabel = stringResource(
         if (timeInfo.remainingDaysAfterMonths == 1L) R.string.day else R.string.days
@@ -321,16 +300,6 @@ private fun CountdownMainDisplay(timeInfo: CountdownInfo, displayFormat: String)
 
 // ─── Hilfsfunktionen ──────────────────────────────────────────────────────────
 
-private fun calculateProgress(countdown: Countdown): Float {
-    val now       = LocalDate.now()
-    val start     = countdown.createdAt.toLocalDate()
-    val end       = countdown.effectiveTarget.toLocalDate()
-    val totalDays = ChronoUnit.DAYS.between(start, end)
-    if (totalDays <= 0L || start.isAfter(end)) return 1f
-    val passedDays = ChronoUnit.DAYS.between(start, now)
-    return (passedDays.toFloat() / totalDays.toFloat()).coerceIn(0f, 1f)
-}
-
 @Composable
 private fun buildSubInfo(
     timeInfo  : CountdownInfo,
@@ -349,14 +318,15 @@ private fun buildSubInfo(
 
     val weekLabel  = stringResource(if (timeInfo.weeks == 1L) R.string.week  else R.string.weeks)
     val dayLabel   = stringResource(if (timeInfo.days  == 1L) R.string.day   else R.string.days)
+    val totalLabel = stringResource(R.string.label_total)
     val remainingDaysAfterYearsLabel = stringResource(
         if (timeInfo.remainingDaysAfterYears == 1L) R.string.day else R.string.days
     )
 
     return when (format) {
         CountdownDisplayFormat.DAYS_ONLY         -> "${timeInfo.weeks} $weekLabel"
-        CountdownDisplayFormat.WEEKS_DAYS        -> "${timeInfo.days} $dayLabel gesamt"
-        CountdownDisplayFormat.MONTHS_DAYS       -> "${timeInfo.days} $dayLabel gesamt"
+        CountdownDisplayFormat.WEEKS_DAYS        -> "${timeInfo.days} $dayLabel $totalLabel"
+        CountdownDisplayFormat.MONTHS_DAYS       -> "${timeInfo.days} $dayLabel $totalLabel"
         CountdownDisplayFormat.YEARS_MONTHS_DAYS -> "${timeInfo.remainingDaysAfterYears} $remainingDaysAfterYearsLabel"
     }
 }

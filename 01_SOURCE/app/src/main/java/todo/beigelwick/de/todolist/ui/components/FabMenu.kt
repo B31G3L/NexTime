@@ -31,8 +31,10 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import todo.beigelwick.de.todolist.R
 import todo.beigelwick.de.todolist.data.model.Countdown
+import todo.beigelwick.de.todolist.ui.theme.AppPreferences
 import todo.beigelwick.de.todolist.utils.HapticFeedback
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 
@@ -47,6 +49,10 @@ fun ExpandableFab(
     val haptic   = remember { HapticFeedback(context) }
     var expanded by remember { mutableStateOf(false) }
     var showTemplateDialog by remember { mutableStateOf(false) }
+
+    // BUG FIX: Default-Zeit aus AppPreferences lesen, damit toCountdown() sie
+    // verwenden kann – statt der aktuellen Sekunde zur Laufzeit.
+    val defaultTime by AppPreferences.getDefaultTime(context).collectAsState(initial = LocalTime.of(12, 0))
 
     val rotation by animateFloatAsState(
         targetValue   = if (expanded) 45f else 0f,
@@ -98,7 +104,8 @@ fun ExpandableFab(
             onDismiss          = { showTemplateDialog = false },
             onTemplateSelected = { template ->
                 showTemplateDialog = false
-                onTemplateSelected(template.toCountdown())
+                // defaultTime weitergeben statt aktuelle Uhrzeit zu verwenden
+                onTemplateSelected(template.toCountdown(defaultTime))
             }
         )
     }
