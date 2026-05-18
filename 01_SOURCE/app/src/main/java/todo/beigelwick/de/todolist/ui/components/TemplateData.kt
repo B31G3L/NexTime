@@ -1,7 +1,8 @@
 package todo.beigelwick.de.todolist.ui.components
 
 import todo.beigelwick.de.todolist.data.model.Countdown
-import todo.beigelwick.de.todolist.data.model.CountdownDisplayFormat
+import todo.beigelwick.de.todolist.data.model.DisplayFormat
+import todo.beigelwick.de.todolist.data.model.DisplayUnit
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -13,7 +14,7 @@ data class CountdownTemplate(
     val titleKey          : String,
     val icon              : String,
     val color             : String,
-    val displayFormat     : CountdownDisplayFormat,
+    val displayUnits      : Set<DisplayUnit>,
     val category          : TemplateCategory,
     val targetDateProvider : () -> LocalDate
 )
@@ -31,83 +32,81 @@ enum class TemplateCategory {
 val ALL_TEMPLATES: List<CountdownTemplate> = listOf(
 
     // ── Feiertage ─────────────────────────────────────────────────────────────
-    CountdownTemplate("Weihnachten", "🎄", "#EF5350", CountdownDisplayFormat.DAYS_ONLY, TemplateCategory.FEIERTAGE) {
+    CountdownTemplate("Weihnachten", "🎄", "#EF5350", setOf(DisplayUnit.DAYS), TemplateCategory.FEIERTAGE) {
         val now = LocalDate.now(); val t = LocalDate.of(now.year, Month.DECEMBER, 24)
         if (now > t) LocalDate.of(now.year + 1, Month.DECEMBER, 24) else t
     },
-    CountdownTemplate("Silvester", "🎆", "#5C6BC0", CountdownDisplayFormat.DAYS_ONLY, TemplateCategory.FEIERTAGE) {
+    CountdownTemplate("Silvester", "🎆", "#5C6BC0", setOf(DisplayUnit.DAYS), TemplateCategory.FEIERTAGE) {
         val now = LocalDate.now(); val t = LocalDate.of(now.year, Month.DECEMBER, 31)
         if (now > t) LocalDate.of(now.year + 1, Month.DECEMBER, 31) else t
     },
-    CountdownTemplate("Neujahr", "🥂", "#FFA726", CountdownDisplayFormat.DAYS_ONLY, TemplateCategory.FEIERTAGE) {
+    CountdownTemplate("Neujahr", "🥂", "#FFA726", setOf(DisplayUnit.DAYS), TemplateCategory.FEIERTAGE) {
         val now = LocalDate.now(); val t = LocalDate.of(now.year, Month.JANUARY, 1)
         if (now >= t) LocalDate.of(now.year + 1, Month.JANUARY, 1) else t
     },
-    CountdownTemplate("Valentinstag", "💝", "#EC407A", CountdownDisplayFormat.DAYS_ONLY, TemplateCategory.FEIERTAGE) {
+    CountdownTemplate("Valentinstag", "💝", "#EC407A", setOf(DisplayUnit.DAYS), TemplateCategory.FEIERTAGE) {
         val now = LocalDate.now(); val t = LocalDate.of(now.year, Month.FEBRUARY, 14)
         if (now > t) LocalDate.of(now.year + 1, Month.FEBRUARY, 14) else t
     },
-    CountdownTemplate("Halloween", "🎃", "#FF7043", CountdownDisplayFormat.DAYS_ONLY, TemplateCategory.FEIERTAGE) {
+    CountdownTemplate("Halloween", "🎃", "#FF7043", setOf(DisplayUnit.DAYS), TemplateCategory.FEIERTAGE) {
         val now = LocalDate.now(); val t = LocalDate.of(now.year, Month.OCTOBER, 31)
         if (now > t) LocalDate.of(now.year + 1, Month.OCTOBER, 31) else t
     },
-    CountdownTemplate("Ostern", "🐣", "#66BB6A", CountdownDisplayFormat.DAYS_ONLY, TemplateCategory.FEIERTAGE) {
+    CountdownTemplate("Ostern", "🐣", "#66BB6A", setOf(DisplayUnit.DAYS), TemplateCategory.FEIERTAGE) {
         nextEaster()
     },
 
     // ── Jahreszeiten ──────────────────────────────────────────────────────────
-    CountdownTemplate("Sommeranfang", "☀️", "#FFA726", CountdownDisplayFormat.MONTHS_DAYS, TemplateCategory.JAHRESZEITEN) {
+    CountdownTemplate("Sommeranfang", "☀️", "#FFA726", setOf(DisplayUnit.MONTHS, DisplayUnit.DAYS), TemplateCategory.JAHRESZEITEN) {
         val now = LocalDate.now(); val t = LocalDate.of(now.year, Month.JUNE, 21)
         if (now > t) LocalDate.of(now.year + 1, Month.JUNE, 21) else t
     },
-    CountdownTemplate("Winteranfang", "❄️", "#42A5F5", CountdownDisplayFormat.MONTHS_DAYS, TemplateCategory.JAHRESZEITEN) {
+    CountdownTemplate("Winteranfang", "❄️", "#42A5F5", setOf(DisplayUnit.MONTHS, DisplayUnit.DAYS), TemplateCategory.JAHRESZEITEN) {
         val now = LocalDate.now(); val t = LocalDate.of(now.year, Month.DECEMBER, 21)
         if (now > t) LocalDate.of(now.year + 1, Month.DECEMBER, 21) else t
     },
-    CountdownTemplate("Frühlingsanfang", "🌸", "#EC407A", CountdownDisplayFormat.MONTHS_DAYS, TemplateCategory.JAHRESZEITEN) {
+    CountdownTemplate("Frühlingsanfang", "🌸", "#EC407A", setOf(DisplayUnit.MONTHS, DisplayUnit.DAYS), TemplateCategory.JAHRESZEITEN) {
         val now = LocalDate.now(); val t = LocalDate.of(now.year, Month.MARCH, 20)
         if (now > t) LocalDate.of(now.year + 1, Month.MARCH, 20) else t
     },
-    CountdownTemplate("Herbstanfang", "🍂", "#8D6E63", CountdownDisplayFormat.MONTHS_DAYS, TemplateCategory.JAHRESZEITEN) {
+    CountdownTemplate("Herbstanfang", "🍂", "#8D6E63", setOf(DisplayUnit.MONTHS, DisplayUnit.DAYS), TemplateCategory.JAHRESZEITEN) {
         val now = LocalDate.now(); val t = LocalDate.of(now.year, Month.SEPTEMBER, 22)
         if (now > t) LocalDate.of(now.year + 1, Month.SEPTEMBER, 22) else t
     },
 
     // ── Sport & Events ────────────────────────────────────────────────────────
-    CountdownTemplate("Nächste WM 2026", "⚽", "#26A69A", CountdownDisplayFormat.MONTHS_DAYS, TemplateCategory.SPORT) {
+    CountdownTemplate("Nächste WM 2026", "⚽", "#26A69A", setOf(DisplayUnit.MONTHS, DisplayUnit.DAYS), TemplateCategory.SPORT) {
         LocalDate.of(2026, Month.JUNE, 11)
     },
-    CountdownTemplate("Olympia 2028", "🏅", "#5C6BC0", CountdownDisplayFormat.YEARS_MONTHS_DAYS, TemplateCategory.SPORT) {
+    CountdownTemplate("Olympia 2028", "🏅", "#5C6BC0", setOf(DisplayUnit.YEARS, DisplayUnit.MONTHS, DisplayUnit.DAYS), TemplateCategory.SPORT) {
         LocalDate.of(2028, Month.JULY, 14)
     },
 
     // ── Persönlich ────────────────────────────────────────────────────────────
-    CountdownTemplate("Mein Geburtstag", "🎂", "#AB47BC", CountdownDisplayFormat.DAYS_ONLY, TemplateCategory.PERSOENLICH) {
+    CountdownTemplate("Mein Geburtstag", "🎂", "#AB47BC", setOf(DisplayUnit.DAYS), TemplateCategory.PERSOENLICH) {
         LocalDate.now().plusDays(30)
     },
-    CountdownTemplate("Urlaub", "✈️", "#42A5F5", CountdownDisplayFormat.WEEKS_DAYS, TemplateCategory.PERSOENLICH) {
+    CountdownTemplate("Urlaub", "✈️", "#42A5F5", setOf(DisplayUnit.WEEKS, DisplayUnit.DAYS), TemplateCategory.PERSOENLICH) {
         LocalDate.now().plusDays(60)
     },
-    CountdownTemplate("Hochzeit", "💍", "#EC407A", CountdownDisplayFormat.MONTHS_DAYS, TemplateCategory.PERSOENLICH) {
+    CountdownTemplate("Hochzeit", "💍", "#EC407A", setOf(DisplayUnit.MONTHS, DisplayUnit.DAYS), TemplateCategory.PERSOENLICH) {
         LocalDate.now().plusDays(180)
     },
 
     // ── Schule & Arbeit ───────────────────────────────────────────────────────
-    CountdownTemplate("Sommerferien", "🏖️", "#FFA726", CountdownDisplayFormat.WEEKS_DAYS, TemplateCategory.SCHULE) {
+    CountdownTemplate("Sommerferien", "🏖️", "#FFA726", setOf(DisplayUnit.WEEKS, DisplayUnit.DAYS), TemplateCategory.SCHULE) {
         val now = LocalDate.now(); val t = LocalDate.of(now.year, Month.JUNE, 27)
         if (now > t) LocalDate.of(now.year + 1, Month.JUNE, 27) else t
     },
-    CountdownTemplate("Prüfung", "📝", "#EF5350", CountdownDisplayFormat.DAYS_ONLY, TemplateCategory.SCHULE) {
+    CountdownTemplate("Prüfung", "📝", "#EF5350", setOf(DisplayUnit.DAYS), TemplateCategory.SCHULE) {
         LocalDate.now().plusDays(14)
     },
-    CountdownTemplate("Projektabgabe", "💼", "#8D6E63", CountdownDisplayFormat.DAYS_ONLY, TemplateCategory.SCHULE) {
+    CountdownTemplate("Projektabgabe", "💼", "#8D6E63", setOf(DisplayUnit.DAYS), TemplateCategory.SCHULE) {
         LocalDate.now().plusDays(7)
     }
 )
 
 // ─── Template → Countdown ─────────────────────────────────────────────────────
-// BUG FIX: defaultTime als Parameter statt LocalDateTime.now().toLocalTime(),
-// damit die in den Einstellungen konfigurierte Standard-Uhrzeit verwendet wird.
 
 fun CountdownTemplate.toCountdown(defaultTime: LocalTime = LocalTime.of(12, 0)): Countdown {
     val date = targetDateProvider()
@@ -115,7 +114,7 @@ fun CountdownTemplate.toCountdown(defaultTime: LocalTime = LocalTime.of(12, 0)):
         title          = titleKey,
         icon           = icon,
         color          = color,
-        displayFormat  = displayFormat.name,
+        displayFormat  = DisplayFormat.encode(displayUnits),
         targetDateTime = LocalDateTime.of(date, defaultTime)
     )
 }

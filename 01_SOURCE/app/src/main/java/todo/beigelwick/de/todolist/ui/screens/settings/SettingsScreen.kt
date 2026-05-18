@@ -28,7 +28,8 @@ import androidx.compose.ui.unit.sp
 import androidx.core.os.LocaleListCompat
 import kotlinx.coroutines.launch
 import todo.beigelwick.de.todolist.R
-import todo.beigelwick.de.todolist.data.model.CountdownDisplayFormat
+import todo.beigelwick.de.todolist.data.model.DisplayFormat
+import todo.beigelwick.de.todolist.data.model.DisplayUnit
 import todo.beigelwick.de.todolist.ui.theme.AppLanguage
 import todo.beigelwick.de.todolist.ui.theme.AppPreferences
 import todo.beigelwick.de.todolist.ui.theme.CustomTheme
@@ -49,16 +50,33 @@ fun SettingsScreen(onBack: () -> Unit) {
     val haptic      = remember { HapticFeedback(context) }
     val scrollState = rememberScrollState()
 
-    val themeMode     by ThemePreferences.getThemeMode(context).collectAsState(initial = ThemeMode.SYSTEM)
-    val customTheme   by CustomThemePreferences.getCustomTheme(context).collectAsState(initial = CustomTheme.BURGUNDY)
-    val defaultFormat by AppPreferences.getDefaultFormat(context).collectAsState(initial = CountdownDisplayFormat.DAYS_ONLY)
-    val defaultColor  by AppPreferences.getDefaultColor(context).collectAsState(initial = "#FF7043")
-    val defaultTime   by AppPreferences.getDefaultTime(context).collectAsState(initial = LocalTime.of(12, 0))
-    val currentLang   by LanguageManager.getLanguage(context).collectAsState(initial = AppLanguage.SYSTEM)
+    val themeMode    by ThemePreferences.getThemeMode(context).collectAsState(initial = ThemeMode.SYSTEM)
+    val customTheme  by CustomThemePreferences.getCustomTheme(context).collectAsState(initial = CustomTheme.BURGUNDY)
+    val defaultUnits by AppPreferences.getDefaultUnits(context).collectAsState(initial = setOf(DisplayUnit.DAYS))
+    val defaultColor by AppPreferences.getDefaultColor(context).collectAsState(initial = "#FF7043")
+    val defaultTime  by AppPreferences.getDefaultTime(context).collectAsState(initial = LocalTime.of(12, 0))
+    val currentLang  by LanguageManager.getLanguage(context).collectAsState(initial = AppLanguage.SYSTEM)
 
     var showTimePicker   by remember { mutableStateOf(false) }
     var showColorPicker  by remember { mutableStateOf(false) }
     var showFormatPicker by remember { mutableStateOf(false) }
+
+    // ── Einheits-Labels als Map im @Composable-Kontext aufbauen ──────────────
+    // stringResource() darf NICHT in joinToString/map/forEach-Lambdas aufgerufen
+    // werden – nur direkt in @Composable-Funktionen oder deren Content-Lambdas.
+    val unitLabelMap = mapOf(
+        DisplayUnit.YEARS   to stringResource(R.string.format_unit_years),
+        DisplayUnit.MONTHS  to stringResource(R.string.format_unit_months),
+        DisplayUnit.WEEKS   to stringResource(R.string.format_unit_weeks),
+        DisplayUnit.DAYS    to stringResource(R.string.format_unit_days),
+        DisplayUnit.HOURS   to stringResource(R.string.format_unit_hours),
+        DisplayUnit.MINUTES to stringResource(R.string.format_unit_minutes),
+        DisplayUnit.SECONDS to stringResource(R.string.format_unit_seconds),
+    )
+
+    // Jetzt normales joinToString ohne stringResource()-Aufruf darin
+    val formatSummary = DisplayFormat.sorted(defaultUnits)
+        .joinToString(" + ") { unit -> unitLabelMap[unit] ?: unit.name }
 
     Scaffold(
         topBar = {
@@ -83,11 +101,7 @@ fun SettingsScreen(onBack: () -> Unit) {
         ) {
             // ── Farbschema ────────────────────────────────────────────────────
             SettingsSectionTitle(stringResource(R.string.settings_color_scheme))
-            Text(
-                text  = stringResource(R.string.settings_color_hint),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Text(stringResource(R.string.settings_color_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             ThemePickerGrid(
                 currentTheme    = customTheme,
                 onThemeSelected = { theme ->
@@ -117,19 +131,15 @@ fun SettingsScreen(onBack: () -> Unit) {
             // ── Sprache ───────────────────────────────────────────────────────
             SettingsSectionTitle(stringResource(R.string.settings_language))
             LanguagePickerSection(
-                currentLanguage  = currentLang,
+                currentLanguage    = currentLang,
                 onLanguageSelected = { language ->
                     haptic.tick()
-                    // Synchron in SharedPreferences speichern (für App-Start)
                     LanguageManager.persistLanguageSync(context, language)
-                    // Asynchron in DataStore speichern
                     scope.launch { LanguageManager.setLanguage(context, language) }
-                    // Locale setzen – AppCompatDelegate kümmert sich selbst um den Neustart
-                    val localeList = if (language == AppLanguage.SYSTEM || language.tag.isEmpty()) {
+                    val localeList = if (language == AppLanguage.SYSTEM || language.tag.isEmpty())
                         LocaleListCompat.getEmptyLocaleList()
-                    } else {
+                    else
                         LocaleListCompat.forLanguageTags(language.tag)
-                    }
                     AppCompatDelegate.setApplicationLocales(localeList)
                 }
             )
@@ -138,19 +148,11 @@ fun SettingsScreen(onBack: () -> Unit) {
 
             // ── Standard-Einstellungen ────────────────────────────────────────
             SettingsSectionTitle(stringResource(R.string.settings_defaults))
-            Text(
-                text  = stringResource(R.string.settings_defaults_hint),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Text(stringResource(R.string.settings_defaults_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
             SettingsRow(
                 label   = stringResource(R.string.settings_format_label),
-                value   = when (defaultFormat) {
-                    CountdownDisplayFormat.DAYS_ONLY         -> stringResource(R.string.settings_format_days)
-                    CountdownDisplayFormat.WEEKS_DAYS        -> stringResource(R.string.settings_format_weeks)
-                    CountdownDisplayFormat.MONTHS_DAYS       -> stringResource(R.string.settings_format_months)
-                    CountdownDisplayFormat.YEARS_MONTHS_DAYS -> stringResource(R.string.settings_format_years)
-                },
+                value   = formatSummary,
                 onClick = { haptic.tick(); showFormatPicker = true }
             )
             SettingsRowColor(
@@ -170,39 +172,13 @@ fun SettingsScreen(onBack: () -> Unit) {
 
     // ── Format-Picker Dialog ──────────────────────────────────────────────────
     if (showFormatPicker) {
-        AlertDialog(
-            onDismissRequest = { showFormatPicker = false },
-            title = { Text(stringResource(R.string.dialog_default_format)) },
-            text  = {
-                Column {
-                    listOf(
-                        CountdownDisplayFormat.DAYS_ONLY         to stringResource(R.string.settings_format_days),
-                        CountdownDisplayFormat.WEEKS_DAYS        to stringResource(R.string.settings_format_weeks),
-                        CountdownDisplayFormat.MONTHS_DAYS       to stringResource(R.string.settings_format_months),
-                        CountdownDisplayFormat.YEARS_MONTHS_DAYS to stringResource(R.string.settings_format_years)
-                    ).forEach { (format, label) ->
-                        Row(
-                            modifier              = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    haptic.tick()
-                                    scope.launch { AppPreferences.setDefaultFormat(context, format) }
-                                    showFormatPicker = false
-                                }
-                                .padding(vertical = 12.dp, horizontal = 8.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment     = Alignment.CenterVertically
-                        ) {
-                            Text(label, style = MaterialTheme.typography.bodyMedium)
-                            if (defaultFormat == format) {
-                                Text("✓", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showFormatPicker = false }) { Text(stringResource(R.string.close)) }
+        FormatPickerDialog(
+            currentUnits = defaultUnits,
+            unitLabelMap = unitLabelMap,
+            onDismiss    = { showFormatPicker = false },
+            onConfirm    = { units ->
+                scope.launch { AppPreferences.setDefaultUnits(context, units) }
+                showFormatPicker = false
             }
         )
     }
@@ -220,24 +196,16 @@ fun SettingsScreen(onBack: () -> Unit) {
             title = { Text(stringResource(R.string.dialog_default_color)) },
             text  = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier              = Modifier.fillMaxWidth()
-                    ) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                         listOf("#FF7043","#EF5350","#EC407A","#AB47BC","#5C6BC0",
                             "#42A5F5","#26A69A","#66BB6A","#FFA726","#8D6E63"
                         ).forEach { hex ->
                             val c = try { Color(android.graphics.Color.parseColor(hex)) }
                             catch (e: Exception) { MaterialTheme.colorScheme.primary }
-                            Surface(
-                                modifier = Modifier.size(32.dp),
-                                shape    = CircleShape,
-                                color    = c,
-                                onClick  = {
-                                    scope.launch { AppPreferences.setDefaultColor(context, hex) }
-                                    showColorPicker = false
-                                }
-                            ) {
+                            Surface(modifier = Modifier.size(32.dp), shape = CircleShape, color = c, onClick = {
+                                scope.launch { AppPreferences.setDefaultColor(context, hex) }
+                                showColorPicker = false
+                            }) {
                                 if (defaultColor == hex) {
                                     Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                                         Text("✓", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
@@ -262,9 +230,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                     showColorPicker = false
                 }) { Text(stringResource(R.string.ok)) }
             },
-            dismissButton = {
-                TextButton(onClick = { showColorPicker = false }) { Text(stringResource(R.string.cancel)) }
-            }
+            dismissButton = { TextButton(onClick = { showColorPicker = false }) { Text(stringResource(R.string.cancel)) } }
         )
     }
 
@@ -285,15 +251,82 @@ fun SettingsScreen(onBack: () -> Unit) {
             },
             confirmButton = {
                 Button(onClick = {
-                    scope.launch {
-                        AppPreferences.setDefaultTime(context, LocalTime.of(timePickerState.hour, timePickerState.minute))
-                    }
+                    scope.launch { AppPreferences.setDefaultTime(context, LocalTime.of(timePickerState.hour, timePickerState.minute)) }
                     showTimePicker = false
                 }) { Text(stringResource(R.string.ok)) }
             },
-            dismissButton = {
-                TextButton(onClick = { showTimePicker = false }) { Text(stringResource(R.string.cancel)) }
+            dismissButton = { TextButton(onClick = { showTimePicker = false }) { Text(stringResource(R.string.cancel)) } }
+        )
+    }
+}
+
+// ─── Format-Picker Dialog ─────────────────────────────────────────────────────
+
+@Composable
+private fun FormatPickerDialog(
+    currentUnits : Set<DisplayUnit>,
+    unitLabelMap : Map<DisplayUnit, String>,
+    onDismiss    : () -> Unit,
+    onConfirm    : (Set<DisplayUnit>) -> Unit
+) {
+    val dialogUnits = remember { currentUnits.toMutableStateList() }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.dialog_default_format)) },
+        text  = {
+            Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
+                Text(
+                    text     = stringResource(R.string.format_checkbox_hint),
+                    style    = MaterialTheme.typography.bodySmall,
+                    color    = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                // Alle Einheiten in der kanonischen Reihenfolge
+                DisplayUnit.values().forEach { unit ->
+                    val label     = unitLabelMap[unit] ?: unit.name
+                    val isChecked = dialogUnits.contains(unit)
+                    FormatCheckboxRow(
+                        label     = label,
+                        isChecked = isChecked,
+                        onToggle  = {
+                            if (isChecked) { if (dialogUnits.size > 1) dialogUnits.remove(unit) }
+                            else dialogUnits.add(unit)
+                        }
+                    )
+                }
             }
+        },
+        confirmButton = {
+            Button(onClick = { onConfirm(dialogUnits.toSet()) }) {
+                Text(stringResource(R.string.ok))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+        }
+    )
+}
+
+@Composable
+private fun FormatCheckboxRow(
+    label     : String,
+    isChecked : Boolean,
+    onToggle  : () -> Unit
+) {
+    Row(
+        modifier              = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onToggle)
+            .padding(vertical = 6.dp),
+        verticalAlignment     = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(label, style = MaterialTheme.typography.bodyMedium)
+        Checkbox(
+            checked         = isChecked,
+            onCheckedChange = { onToggle() },
+            colors          = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary)
         )
     }
 }
@@ -307,12 +340,7 @@ private fun ThemePickerGrid(currentTheme: CustomTheme, onThemeSelected: (CustomT
         chunks.forEach { row ->
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 row.forEach { theme ->
-                    ThemePickerCard(
-                        theme          = theme,
-                        isSelected     = currentTheme == theme,
-                        onClick        = { onThemeSelected(theme) },
-                        modifier       = Modifier.weight(1f)
-                    )
+                    ThemePickerCard(theme = theme, isSelected = currentTheme == theme, onClick = { onThemeSelected(theme) }, modifier = Modifier.weight(1f))
                 }
                 if (row.size == 1) Box(modifier = Modifier.weight(1f))
             }
@@ -322,10 +350,10 @@ private fun ThemePickerGrid(currentTheme: CustomTheme, onThemeSelected: (CustomT
 
 @Composable
 private fun ThemePickerCard(theme: CustomTheme, isSelected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val config      = getThemeConfig(theme)
+    val config       = getThemeConfig(theme)
     val primaryLight = config.lightColorScheme.primary
-    val secondary   = config.lightColorScheme.secondary
-    val tertiary    = config.lightColorScheme.tertiary
+    val secondary    = config.lightColorScheme.secondary
+    val tertiary     = config.lightColorScheme.tertiary
 
     val bgColor by animateColorAsState(
         targetValue   = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f)
@@ -335,14 +363,14 @@ private fun ThemePickerCard(theme: CustomTheme, isSelected: Boolean, onClick: ()
     )
 
     Surface(
-        modifier  = modifier,
-        shape     = RoundedCornerShape(16.dp),
-        color     = bgColor,
-        border    = BorderStroke(
+        modifier = modifier,
+        shape    = RoundedCornerShape(16.dp),
+        color    = bgColor,
+        border   = BorderStroke(
             width = if (isSelected) 2.dp else 1.dp,
             color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
         ),
-        onClick   = onClick
+        onClick  = onClick
     ) {
         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -360,7 +388,6 @@ private fun ThemePickerCard(theme: CustomTheme, isSelected: Boolean, onClick: ()
                     }
                 }
             }
-            // Theme-Name und Beschreibung aus strings.xml
             val (name, desc) = when (theme) {
                 CustomTheme.BURGUNDY -> stringResource(R.string.theme_burgundy_name) to stringResource(R.string.theme_burgundy_desc)
                 CustomTheme.SAGE     -> stringResource(R.string.theme_sage_name)     to stringResource(R.string.theme_sage_desc)
@@ -447,10 +474,15 @@ private fun ThemeModeOption(label: String, isSelected: Boolean, onClick: () -> U
 
 @Composable
 private fun SettingsRow(label: String, value: String, onClick: () -> Unit) {
-    Surface(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium,
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), onClick = onClick) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape    = MaterialTheme.shapes.medium,
+        color    = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        onClick  = onClick
+    ) {
         Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text(label, style = MaterialTheme.typography.bodyMedium)
+            Text(label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+            Spacer(Modifier.width(8.dp))
             Text(value, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
         }
     }
@@ -459,8 +491,12 @@ private fun SettingsRow(label: String, value: String, onClick: () -> Unit) {
 @Composable
 private fun SettingsRowColor(label: String, color: String, onClick: () -> Unit) {
     val parsedColor = try { Color(android.graphics.Color.parseColor(color)) } catch (e: Exception) { MaterialTheme.colorScheme.primary }
-    Surface(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium,
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), onClick = onClick) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape    = MaterialTheme.shapes.medium,
+        color    = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        onClick  = onClick
+    ) {
         Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Text(label, style = MaterialTheme.typography.bodyMedium)
             Box(modifier = Modifier.size(24.dp).clip(CircleShape).background(parsedColor))

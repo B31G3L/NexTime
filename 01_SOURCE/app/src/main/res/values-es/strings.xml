@@ -199,5 +199,14 @@
     <string name="success_deleted">Cuenta atrás eliminada ✅</string>
 
     <string name="label_total">en total</string>
+    <string name="format_unit_years">Años</string>
+    <string name="format_unit_months">Meses</string>
+    <string name="format_unit_weeks">Semanas</string>
+    <string name="format_unit_days">Días</string>
+    <string name="format_unit_hours">Horas</string>
+    <string name="format_unit_minutes">Minutos</string>
+    <string name="format_unit_seconds">Segundos</string>
+    <string name="format_checkbox_hint">Elige las unidades a mostrar (al menos una)</string>
+    <string name="format_time_required">Activa primero «Incluir hora»</string>
 
 </resources>

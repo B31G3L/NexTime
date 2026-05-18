@@ -254,5 +254,14 @@
     <string name="theme_peach_name">Peach Ice</string>
     <string name="theme_peach_desc">Peach &amp; Aqua Mist</string>
     <string name="label_total">total</string>
+    <string name="format_unit_years">Years</string>
+    <string name="format_unit_months">Months</string>
+    <string name="format_unit_weeks">Weeks</string>
+    <string name="format_unit_days">Days</string>
+    <string name="format_unit_hours">Hours</string>
+    <string name="format_unit_minutes">Minutes</string>
+    <string name="format_unit_seconds">Seconds</string>
+    <string name="format_checkbox_hint">Choose which units to display (at least one)</string>
+    <string name="format_time_required">Activate "Include time" first</string>
 
 </resources>

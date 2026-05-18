@@ -256,5 +256,13 @@
     <string name="theme_peach_name">Peach Ice</string>
     <string name="theme_peach_desc">Pfirsich &amp; Aqua</string>
     <string name="label_total">gesamt</string>
-
+    <string name="format_unit_years">Jahre</string>
+    <string name="format_unit_months">Monate</string>
+    <string name="format_unit_weeks">Wochen</string>
+    <string name="format_unit_days">Tage</string>
+    <string name="format_unit_hours">Stunden</string>
+    <string name="format_unit_minutes">Minuten</string>
+    <string name="format_unit_seconds">Sekunden</string>
+    <string name="format_checkbox_hint">Wähle die Einheiten zur Anzeige (mind. eine)</string>
+    <string name="format_time_required">Aktiviere zuerst „Uhrzeit einbeziehen"</string>
 </resources>

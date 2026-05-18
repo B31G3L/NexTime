@@ -199,5 +199,13 @@
     <string name="success_deleted">Conto alla rovescia eliminato ✅</string>
 
     <string name="label_total">in totale</string>
-
+    <string name="format_unit_years">Anni</string>
+    <string name="format_unit_months">Mesi</string>
+    <string name="format_unit_weeks">Settimane</string>
+    <string name="format_unit_days">Giorni</string>
+    <string name="format_unit_hours">Ore</string>
+    <string name="format_unit_minutes">Minuti</string>
+    <string name="format_unit_seconds">Secondi</string>
+    <string name="format_checkbox_hint">Scegli le unità da visualizzare (almeno una)</string>
+    <string name="format_time_required">Attiva prima «Includi ora»</string>
 </resources>

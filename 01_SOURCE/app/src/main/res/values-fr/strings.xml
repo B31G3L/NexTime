@@ -199,5 +199,13 @@
     <string name="success_deleted">Compte à rebours supprimé ✅</string>
 
     <string name="label_total">au total</string>
-
+    <string name="format_unit_years">Années</string>
+    <string name="format_unit_months">Mois</string>
+    <string name="format_unit_weeks">Semaines</string>
+    <string name="format_unit_days">Jours</string>
+    <string name="format_unit_hours">Heures</string>
+    <string name="format_unit_minutes">Minutes</string>
+    <string name="format_unit_seconds">Secondes</string>
+    <string name="format_checkbox_hint">Choisir les unités à afficher (au moins une)</string>
+    <string name="format_time_required">Activez d\'abord « Inclure l\'heure »</string>
 </resources>

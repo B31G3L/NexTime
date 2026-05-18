@@ -21,9 +21,11 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import todo.beigelwick.de.todolist.R
 import todo.beigelwick.de.todolist.data.model.Countdown
-import todo.beigelwick.de.todolist.data.model.CountdownDisplayFormat
 import todo.beigelwick.de.todolist.data.model.CountdownInfo
+import todo.beigelwick.de.todolist.data.model.DisplayUnit
 import todo.beigelwick.de.todolist.data.model.RecurrenceType
+import todo.beigelwick.de.todolist.data.model.TIME_UNITS
+import todo.beigelwick.de.todolist.data.model.buildDisplaySegments
 import todo.beigelwick.de.todolist.data.model.calculateTimeRemaining
 import todo.beigelwick.de.todolist.data.model.formatTime
 import todo.beigelwick.de.todolist.ui.viewmodel.CountdownViewModel
@@ -37,12 +39,16 @@ fun CountdownCard(
     countdown : Countdown,
     viewModel : CountdownViewModel = viewModel()
 ) {
-    val tick by if (countdown.includeTime)
+    // Tick-Quelle: Sekunden wenn Zeit-Einheiten aktiv oder includeTime, sonst Minuten
+    val hasTimeUnits = remember(countdown.displayFormat) {
+        countdown.activeDisplayUnits.any { it in TIME_UNITS }
+    }
+    val tick by if (countdown.includeTime || hasTimeUnits)
         viewModel.tickSeconds.collectAsState()
     else
         viewModel.tickMinutes.collectAsState()
 
-    val timeInfo = remember(countdown.id, countdown.includeTime, tick) {
+    val timeInfo = remember(countdown.id, countdown.includeTime, countdown.displayFormat, tick) {
         countdown.calculateTimeRemaining()
     }
 
@@ -61,7 +67,6 @@ fun CountdownCard(
         countdown.effectiveTarget.toLocalDate() == LocalDate.now()
     }
 
-    // Box + clip statt Card, damit der untere Balken nicht abgeschnitten wird
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -69,7 +74,6 @@ fun CountdownCard(
             .background(baseColor)
     ) {
         Column {
-            // Akzentbalken oben
             Box(modifier = Modifier.fillMaxWidth().height(4.dp).background(darkerBar))
 
             Row(
@@ -93,6 +97,7 @@ fun CountdownCard(
                     modifier            = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(3.dp)
                 ) {
+                    // Titel + Badges
                     Row(
                         verticalAlignment     = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -105,22 +110,22 @@ fun CountdownCard(
                             modifier = Modifier.weight(1f, fill = false)
                         )
                         if (countdown.isRecurring) {
-                            RecurringBadge(
-                                recurrenceType = countdown.recurrenceType,
-                                cardColor      = baseColor
-                            )
+                            RecurringBadge(countdown.recurrenceType, baseColor)
                         }
-                        if (isToday && !countdown.includeTime) {
-                            TodayBadge(cardColor = baseColor)
+                        if (isToday && !hasTimeUnits) {
+                            TodayBadge(baseColor)
                         }
                     }
 
+                    // Hauptanzeige
                     CountdownMainDisplay(
-                        timeInfo      = timeInfo,
-                        displayFormat = countdown.displayFormat
+                        timeInfo = timeInfo,
+                        units    = countdown.activeDisplayUnits
                     )
 
-                    if (countdown.includeTime) {
+                    // HH:mm:ss Zeile – nur wenn includeTime aktiv UND keine Zeit-Einheiten
+                    // selbst ausgewählt sind (sonst doppelt)
+                    if (countdown.includeTime && !hasTimeUnits) {
                         Text(
                             text          = timeInfo.formatTime(),
                             fontSize      = 16.sp,
@@ -130,6 +135,7 @@ fun CountdownCard(
                         )
                     }
 
+                    // Subinfo + Datum
                     Row(
                         modifier              = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -142,13 +148,9 @@ fun CountdownCard(
                         )
                         Text(
                             text     = if (countdown.includeTime)
-                                countdown.effectiveTarget.format(
-                                    DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")
-                                )
+                                countdown.effectiveTarget.format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"))
                             else
-                                countdown.effectiveTarget.format(
-                                    DateTimeFormatter.ofPattern("dd.MM.yyyy")
-                                ),
+                                countdown.effectiveTarget.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")),
                             fontSize = 12.sp,
                             color    = Color.White.copy(alpha = 0.65f)
                         )
@@ -156,7 +158,6 @@ fun CountdownCard(
                 }
             }
 
-            // Akzentbalken unten – identisch mit dem oberen
             Box(modifier = Modifier.fillMaxWidth().height(4.dp).background(darkerBar))
         }
     }
@@ -218,87 +219,51 @@ private fun RecurringBadge(recurrenceType: RecurrenceType, cardColor: Color) {
 // ─── Hauptanzeige ─────────────────────────────────────────────────────────────
 
 @Composable
-private fun CountdownMainDisplay(timeInfo: CountdownInfo, displayFormat: String) {
-    val format = remember(displayFormat) {
-        try { CountdownDisplayFormat.valueOf(displayFormat) }
-        catch (e: Exception) { CountdownDisplayFormat.DAYS_ONLY }
-    }
+fun CountdownMainDisplay(timeInfo: CountdownInfo, units: Set<DisplayUnit>) {
+    val segments = remember(timeInfo, units) { timeInfo.buildDisplaySegments(units) }
 
-    val dayLabel   = stringResource(if (timeInfo.days   == 1L) R.string.day   else R.string.days)
-    val weekLabel  = stringResource(if (timeInfo.weeks  == 1L) R.string.week  else R.string.weeks)
-    val monthLabel = stringResource(if (timeInfo.months == 1L) R.string.month else R.string.months)
-    val yearLabel  = stringResource(if (timeInfo.years  == 1L) R.string.year  else R.string.years)
+    // Einheitsbezeichnungen – mit korrekter Pluralisierung
+    fun pluralRes(value: Long, singular: Int, plural: Int) =
+        if (value == 1L) singular else plural
 
-    val remainingDaysLabel = stringResource(
-        if (timeInfo.remainingDaysAfterWeeks == 1L) R.string.day else R.string.days
-    )
-    val remainingDaysAfterMonthsLabel = stringResource(
-        if (timeInfo.remainingDaysAfterMonths == 1L) R.string.day else R.string.days
-    )
-    val remainingMonthsLabel = stringResource(
-        if (timeInfo.remainingMonthsAfterYears == 1L) R.string.month else R.string.months
+    val labelMap: Map<DisplayUnit, @Composable (Long) -> String> = mapOf(
+        DisplayUnit.YEARS   to { v -> stringResource(pluralRes(v, R.string.year,   R.string.years)) },
+        DisplayUnit.MONTHS  to { v -> stringResource(pluralRes(v, R.string.month,  R.string.months)) },
+        DisplayUnit.WEEKS   to { v -> stringResource(pluralRes(v, R.string.week,   R.string.weeks)) },
+        DisplayUnit.DAYS    to { v -> stringResource(pluralRes(v, R.string.day,    R.string.days)) },
+        DisplayUnit.HOURS   to { v -> stringResource(pluralRes(v, R.string.hour,   R.string.hours)) },
+        DisplayUnit.MINUTES to { v -> stringResource(pluralRes(v, R.string.minute, R.string.minutes)) },
+        DisplayUnit.SECONDS to { v -> stringResource(pluralRes(v, R.string.second, R.string.seconds)) },
     )
 
     val text = buildAnnotatedString {
-        when (format) {
-            CountdownDisplayFormat.DAYS_ONLY -> {
-                withStyle(SpanStyle(fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)) {
-                    append("${timeInfo.days}")
-                }
-                withStyle(SpanStyle(fontSize = 18.sp, color = Color.White)) {
-                    append(" $dayLabel")
+        segments.forEachIndexed { index, seg ->
+            if (index > 0) {
+                withStyle(SpanStyle(fontSize = 16.sp, color = Color.White.copy(alpha = 0.75f))) {
+                    append("  ")
                 }
             }
-            CountdownDisplayFormat.WEEKS_DAYS -> {
-                withStyle(SpanStyle(fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)) {
-                    append("${timeInfo.weeks}")
-                }
-                withStyle(SpanStyle(fontSize = 18.sp, color = Color.White)) {
-                    append(" $weekLabel, ")
-                }
-                withStyle(SpanStyle(fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)) {
-                    append("${timeInfo.remainingDaysAfterWeeks}")
-                }
-                withStyle(SpanStyle(fontSize = 18.sp, color = Color.White)) {
-                    append(" $remainingDaysLabel")
-                }
+            // Zahl
+            withStyle(SpanStyle(fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)) {
+                // Sekunden/Minuten immer 2-stellig wenn nicht erste Einheit
+                val formatted = if (index > 0 && seg.unit in TIME_UNITS)
+                    "%02d".format(seg.value)
+                else
+                    "${seg.value}"
+                append(formatted)
             }
-            CountdownDisplayFormat.MONTHS_DAYS -> {
-                withStyle(SpanStyle(fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)) {
-                    append("${timeInfo.months}")
-                }
-                withStyle(SpanStyle(fontSize = 18.sp, color = Color.White)) {
-                    append(" $monthLabel, ")
-                }
-                withStyle(SpanStyle(fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)) {
-                    append("${timeInfo.remainingDaysAfterMonths}")
-                }
-                withStyle(SpanStyle(fontSize = 18.sp, color = Color.White)) {
-                    append(" $remainingDaysAfterMonthsLabel")
-                }
-            }
-            CountdownDisplayFormat.YEARS_MONTHS_DAYS -> {
-                if (timeInfo.years > 0) {
-                    withStyle(SpanStyle(fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)) {
-                        append("${timeInfo.years}")
-                    }
-                    withStyle(SpanStyle(fontSize = 18.sp, color = Color.White)) {
-                        append(" $yearLabel, ")
-                    }
-                }
-                withStyle(SpanStyle(fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)) {
-                    append("${timeInfo.remainingMonthsAfterYears}")
-                }
-                withStyle(SpanStyle(fontSize = 18.sp, color = Color.White)) {
-                    append(" $remainingMonthsLabel")
-                }
+            // Einheit
+            val label = labelMap[seg.unit]?.invoke(seg.value) ?: ""
+            withStyle(SpanStyle(fontSize = 16.sp, color = Color.White.copy(alpha = 0.85f))) {
+                append(" $label")
             }
         }
     }
-    Text(text = text, lineHeight = 30.sp)
+
+    Text(text = text, lineHeight = 34.sp)
 }
 
-// ─── Hilfsfunktionen ──────────────────────────────────────────────────────────
+// ─── Subinfo ──────────────────────────────────────────────────────────────────
 
 @Composable
 private fun buildSubInfo(
@@ -306,27 +271,22 @@ private fun buildSubInfo(
     countdown : Countdown,
     isToday   : Boolean
 ): String {
-    if (isToday && !countdown.includeTime) return stringResource(R.string.card_today_message)
+    val hasTimeUnits = countdown.activeDisplayUnits.any { it in TIME_UNITS }
+    if (isToday && !hasTimeUnits) return stringResource(R.string.card_today_message)
     if (countdown.isRecurring) return stringResource(
         R.string.card_next_occurrence,
         countdown.effectiveTarget.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))
     )
     if (timeInfo.isPast) return ""
 
-    val format = try { CountdownDisplayFormat.valueOf(countdown.displayFormat) }
-    catch (e: Exception) { CountdownDisplayFormat.DAYS_ONLY }
-
-    val weekLabel  = stringResource(if (timeInfo.weeks == 1L) R.string.week  else R.string.weeks)
-    val dayLabel   = stringResource(if (timeInfo.days  == 1L) R.string.day   else R.string.days)
-    val totalLabel = stringResource(R.string.label_total)
-    val remainingDaysAfterYearsLabel = stringResource(
-        if (timeInfo.remainingDaysAfterYears == 1L) R.string.day else R.string.days
-    )
-
-    return when (format) {
-        CountdownDisplayFormat.DAYS_ONLY         -> "${timeInfo.weeks} $weekLabel"
-        CountdownDisplayFormat.WEEKS_DAYS        -> "${timeInfo.days} $dayLabel $totalLabel"
-        CountdownDisplayFormat.MONTHS_DAYS       -> "${timeInfo.days} $dayLabel $totalLabel"
-        CountdownDisplayFormat.YEARS_MONTHS_DAYS -> "${timeInfo.remainingDaysAfterYears} $remainingDaysAfterYearsLabel"
+    val units = countdown.activeDisplayUnits
+    // Subinfo: Gesamttage anzeigen wenn Tage nicht die einzige Einheit sind
+    return if (DisplayUnit.DAYS !in units || units.size > 1) {
+        val dayLabel   = stringResource(if (timeInfo.days == 1L) R.string.day else R.string.days)
+        val totalLabel = stringResource(R.string.label_total)
+        "${timeInfo.days} $dayLabel $totalLabel"
+    } else {
+        val weekLabel = stringResource(if (timeInfo.weeks == 1L) R.string.week else R.string.weeks)
+        "${timeInfo.weeks} $weekLabel"
     }
 }

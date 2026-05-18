@@ -5,7 +5,8 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import todo.beigelwick.de.todolist.data.model.CountdownDisplayFormat
+import todo.beigelwick.de.todolist.data.model.DisplayFormat
+import todo.beigelwick.de.todolist.data.model.DisplayUnit
 import java.time.LocalTime
 
 object AppPreferences {
@@ -16,20 +17,14 @@ object AppPreferences {
 
     // ── Standard-Anzeigeformat ────────────────────────────────────────────────
 
-    fun getDefaultFormat(context: Context): Flow<CountdownDisplayFormat> =
+    fun getDefaultUnits(context: Context): Flow<Set<DisplayUnit>> =
         context.dataStore.data.map { prefs ->
-            try {
-                CountdownDisplayFormat.valueOf(
-                    prefs[DEFAULT_FORMAT] ?: CountdownDisplayFormat.DAYS_ONLY.name
-                )
-            } catch (e: Exception) {
-                CountdownDisplayFormat.DAYS_ONLY
-            }
+            DisplayFormat.decode(prefs[DEFAULT_FORMAT] ?: DisplayUnit.DAYS.name)
         }
 
-    suspend fun setDefaultFormat(context: Context, format: CountdownDisplayFormat) {
+    suspend fun setDefaultUnits(context: Context, units: Set<DisplayUnit>) {
         context.dataStore.edit { prefs ->
-            prefs[DEFAULT_FORMAT] = format.name
+            prefs[DEFAULT_FORMAT] = DisplayFormat.encode(units)
         }
     }
 
@@ -50,11 +45,8 @@ object AppPreferences {
 
     fun getDefaultTime(context: Context): Flow<LocalTime> =
         context.dataStore.data.map { prefs ->
-            try {
-                LocalTime.parse(prefs[DEFAULT_TIME] ?: "12:00")
-            } catch (e: Exception) {
-                LocalTime.of(12, 0)
-            }
+            try { LocalTime.parse(prefs[DEFAULT_TIME] ?: "12:00") }
+            catch (e: Exception) { LocalTime.of(12, 0) }
         }
 
     suspend fun setDefaultTime(context: Context, time: LocalTime) {
