@@ -263,5 +263,15 @@
     <string name="format_unit_seconds">Seconds</string>
     <string name="format_checkbox_hint">Choose which units to display (at least one)</string>
     <string name="format_time_required">Activate "Include time" first</string>
-
+    <string name="format_active_label">Active — drag to reorder</string>
+    <string name="format_inactive_label">Add unit</string>
+    <string name="recurrence_countup_hint">Wiederholung ist nur bei zukünftigen Ereignissen verfügbar.</string>
+    <string name="settings_display_style">Darstellung</string>
+    <string name="settings_display_style_hint">Wähle wie Countdowns angezeigt werden.</string>
+    <string name="display_style_compact">Kompakt</string>
+    <string name="display_style_normal">Normal</string>
+    <string name="display_style_generous">Großzügig</string>
+    <string name="preview_placeholder">Vorschau</string>
+    <string name="action_pin">Anheften</string>
+    <string name="action_unpin">Lösen</string>
 </resources>

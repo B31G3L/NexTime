@@ -208,5 +208,7 @@
     <string name="format_unit_seconds">Segundos</string>
     <string name="format_checkbox_hint">Elige las unidades a mostrar (al menos una)</string>
     <string name="format_time_required">Activa primero «Incluir hora»</string>
+    <string name="format_active_label">Activo — arrastra para reordenar</string>
+    <string name="format_inactive_label">Añadir unidad</string>
 
 </resources>

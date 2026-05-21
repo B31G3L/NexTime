@@ -11,7 +11,7 @@ enum class DisplayUnit {
     YEARS, MONTHS, WEEKS, DAYS, HOURS, MINUTES, SECONDS
 }
 
-/** Einheiten, die nur bei includeTime = true Sinn ergeben */
+/** Einheiten, die Zeit darstellen */
 val TIME_UNITS = setOf(DisplayUnit.HOURS, DisplayUnit.MINUTES, DisplayUnit.SECONDS)
 
 /** Kanonische Sortierreihenfolge groß → klein */
@@ -26,9 +26,12 @@ object DisplayFormat {
         if (units.isEmpty()) DisplayUnit.DAYS.name
         else units.joinToString(",") { it.name }
 
+    fun encodeOrdered(units: List<DisplayUnit>): String =
+        if (units.isEmpty()) DisplayUnit.DAYS.name
+        else units.joinToString(",") { it.name }
+
     fun decode(raw: String): Set<DisplayUnit> {
         if (raw.isBlank()) return setOf(DisplayUnit.DAYS)
-        // Legacy-Kompatibilität mit alten CountdownDisplayFormat-Werten
         return when (raw.trim()) {
             "DAYS_ONLY"         -> setOf(DisplayUnit.DAYS)
             "WEEKS_DAYS"        -> setOf(DisplayUnit.WEEKS, DisplayUnit.DAYS)
@@ -37,6 +40,19 @@ object DisplayFormat {
             else -> raw.split(",").mapNotNull { name ->
                 try { DisplayUnit.valueOf(name.trim()) } catch (e: Exception) { null }
             }.toSet().ifEmpty { setOf(DisplayUnit.DAYS) }
+        }
+    }
+
+    fun decodeOrdered(raw: String): List<DisplayUnit> {
+        if (raw.isBlank()) return listOf(DisplayUnit.DAYS)
+        return when (raw.trim()) {
+            "DAYS_ONLY"         -> listOf(DisplayUnit.DAYS)
+            "WEEKS_DAYS"        -> listOf(DisplayUnit.WEEKS, DisplayUnit.DAYS)
+            "MONTHS_DAYS"       -> listOf(DisplayUnit.MONTHS, DisplayUnit.DAYS)
+            "YEARS_MONTHS_DAYS" -> listOf(DisplayUnit.YEARS, DisplayUnit.MONTHS, DisplayUnit.DAYS)
+            else -> raw.split(",").mapNotNull { name ->
+                try { DisplayUnit.valueOf(name.trim()) } catch (e: Exception) { null }
+            }.ifEmpty { listOf(DisplayUnit.DAYS) }
         }
     }
 
@@ -75,9 +91,9 @@ data class Countdown(
     val notificationEnabled: Boolean = false,
     val reminderOptions: String = "",
     val lastNotificationSent: String? = null,
-    val includeTime: Boolean = false,
     val showNights: Boolean = false,
-    val recurrence: String = RecurrenceType.NONE.name
+    val recurrence: String = RecurrenceType.NONE.name,
+    val isPinned: Boolean = false
 ) {
     val isCountUp: Boolean
         get() = targetDateTime.isBefore(LocalDateTime.now())
@@ -90,6 +106,12 @@ data class Countdown(
 
     val activeDisplayUnits: Set<DisplayUnit>
         get() = DisplayFormat.decode(displayFormat)
+
+    val activeDisplayUnitsOrdered: List<DisplayUnit>
+        get() = DisplayFormat.decodeOrdered(displayFormat)
+
+    val hasTime: Boolean
+        get() = targetDateTime.toLocalTime() != java.time.LocalTime.MIDNIGHT
 
     fun nextOccurrence(): LocalDateTime {
         if (!isRecurring) return targetDateTime
@@ -114,7 +136,6 @@ data class Countdown(
 // ─── CountdownInfo ────────────────────────────────────────────────────────────
 
 data class CountdownInfo(
-    // ── Gesamtwerte ───────────────────────────────────────────────────────────
     val totalSeconds : Long,
     val totalMinutes : Long,
     val totalHours   : Long,
@@ -122,22 +143,19 @@ data class CountdownInfo(
     val weeks        : Long,
     val months       : Long,
     val years        : Long,
-    // ── Restwerte für Kombinationsanzeige ────────────────────────────────────
-    val remSecondsAfterMinutes : Long,  // Sek. nach vollen Minuten
-    val remMinutesAfterHours   : Long,  // Min. nach vollen Stunden
-    val remHoursAfterDays      : Long,  // Std. nach vollen Tagen
-    val remDaysAfterWeeks      : Long,  // Tage nach vollen Wochen
-    val remDaysAfterMonths     : Long,  // Tage nach vollen Monaten
-    val remWeeksAfterMonths    : Long,  // Wochen nach vollen Monaten
-    val remMonthsAfterYears    : Long,  // Monate nach vollen Jahren
-    val remDaysAfterYears      : Long,  // Tage nach Jahren+Monaten
-    // ── Für formatTime() (HH:mm:ss) ─────────────────────────────────────────
+    val remSecondsAfterMinutes : Long,
+    val remMinutesAfterHours   : Long,
+    val remHoursAfterDays      : Long,
+    val remDaysAfterWeeks      : Long,
+    val remDaysAfterMonths     : Long,
+    val remWeeksAfterMonths    : Long,
+    val remMonthsAfterYears    : Long,
+    val remDaysAfterYears      : Long,
     val hours   : Long,
     val minutes : Long,
     val seconds : Long,
     val isPast  : Boolean
 ) {
-    // Rückwärtskompatible Aliase
     val remainingDaysAfterMonths  get() = remDaysAfterMonths
     val remainingDaysAfterYears   get() = remDaysAfterYears
     val remainingMonthsAfterYears get() = remMonthsAfterYears
@@ -179,7 +197,6 @@ fun Countdown.calculateTimeRemaining(): CountdownInfo {
     val remMinutesAfterHours   = (totalSec % 3600) / 60
     val remHoursAfterDays      = (totalSec % 86400) / 3600
 
-    // Separate Uhrzeitstellen für formatTime()
     val timePart = totalSec % 86400
     val hrs  = timePart / 3600
     val mins = (timePart % 3600) / 60
@@ -210,9 +227,6 @@ fun Countdown.calculateTimeRemaining(): CountdownInfo {
 
 // ─── Formatierung ─────────────────────────────────────────────────────────────
 
-fun CountdownInfo.formatTime(): String =
-    "%02d:%02d:%02d".format(hours, minutes, seconds)
-
 fun Countdown.getReminderOptionsList(): List<ReminderOption> {
     if (reminderOptions.isEmpty()) return emptyList()
     return reminderOptions.split(",").mapNotNull { name ->
@@ -224,18 +238,16 @@ fun Countdown.getReminderOptionsList(): List<ReminderOption> {
 
 data class DisplaySegment(val value: Long, val unit: DisplayUnit)
 
-/**
- * Berechnet die Segmente für die Anzeige.
- * Jede Einheit zeigt den Restwert relativ zur vorherigen größeren Einheit.
- */
-fun CountdownInfo.buildDisplaySegments(units: Set<DisplayUnit>): List<DisplaySegment> {
-    val sorted = DisplayFormat.sorted(units)
-    if (sorted.isEmpty()) return listOf(DisplaySegment(days, DisplayUnit.DAYS))
-    return sorted.mapIndexed { index, unit ->
-        val prev  = if (index > 0) sorted[index - 1] else null
+fun CountdownInfo.buildDisplaySegments(units: List<DisplayUnit>): List<DisplaySegment> {
+    if (units.isEmpty()) return listOf(DisplaySegment(days, DisplayUnit.DAYS))
+    return units.mapIndexed { index, unit ->
+        val prev = if (index > 0) units[index - 1] else null
         DisplaySegment(getValueFor(unit, prev), unit)
     }
 }
+
+fun CountdownInfo.buildDisplaySegments(units: Set<DisplayUnit>): List<DisplaySegment> =
+    buildDisplaySegments(DisplayFormat.sorted(units))
 
 private fun CountdownInfo.getValueFor(unit: DisplayUnit, prev: DisplayUnit?): Long = when {
     prev == null -> when (unit) {

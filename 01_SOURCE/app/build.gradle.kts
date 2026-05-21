@@ -83,6 +83,7 @@ dependencies {
 
     // Navigation
     implementation(libs.androidx.navigation.compose)
+    implementation("sh.calvin.reorderable:reorderable:2.4.0")
 
     // Room
     implementation(libs.androidx.room.runtime)

@@ -34,14 +34,50 @@ interface CountdownDao {
 
 // ─── Migrations ───────────────────────────────────────────────────────────────
 
-/** v1 → v2: Frisches Projekt, keine Migration nötig – Startversion ist 1 */
+/** v1 → v2: includeTime entfernt */
+val MIGRATION_1_2 = object : Migration(1, 2) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        database.execSQL("""
+            CREATE TABLE IF NOT EXISTS `countdowns_new` (
+                `id`                    INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                `title`                 TEXT NOT NULL,
+                `targetDateTime`        TEXT NOT NULL,
+                `displayFormat`         TEXT NOT NULL,
+                `createdAt`             TEXT NOT NULL,
+                `color`                 TEXT NOT NULL,
+                `icon`                  TEXT NOT NULL,
+                `notificationEnabled`   INTEGER NOT NULL,
+                `reminderOptions`       TEXT NOT NULL,
+                `lastNotificationSent`  TEXT,
+                `showNights`            INTEGER NOT NULL,
+                `recurrence`            TEXT NOT NULL
+            )
+        """.trimIndent())
+        database.execSQL("""
+            INSERT INTO `countdowns_new` (
+                `id`, `title`, `targetDateTime`, `displayFormat`, `createdAt`,
+                `color`, `icon`, `notificationEnabled`, `reminderOptions`,
+                `lastNotificationSent`, `showNights`, `recurrence`
+            )
+            SELECT
+                `id`, `title`, `targetDateTime`, `displayFormat`, `createdAt`,
+                `color`, `icon`, `notificationEnabled`, `reminderOptions`,
+                `lastNotificationSent`, `showNights`, `recurrence`
+            FROM `countdowns`
+        """.trimIndent())
+        database.execSQL("DROP TABLE `countdowns`")
+        database.execSQL("ALTER TABLE `countdowns_new` RENAME TO `countdowns`")
+    }
+}
 
-// Für zukünftige Migrationen Beispiel:
-// val MIGRATION_1_2 = object : Migration(1, 2) {
-//     override fun migrate(database: SupportSQLiteDatabase) {
-//         database.execSQL("ALTER TABLE countdowns ADD COLUMN newColumn TEXT NOT NULL DEFAULT ''")
-//     }
-// }
+/** v2 → v3: isPinned Spalte hinzugefügt, Standard false */
+val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        database.execSQL(
+            "ALTER TABLE `countdowns` ADD COLUMN `isPinned` INTEGER NOT NULL DEFAULT 0"
+        )
+    }
+}
 
 // ─── Type Converters ──────────────────────────────────────────────────────────
 
@@ -58,8 +94,8 @@ class Converters {
 // ─── Database ─────────────────────────────────────────────────────────────────
 
 @Database(
-    entities = [Countdown::class],
-    version  = 1,
+    entities     = [Countdown::class],
+    version      = 3,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -78,7 +114,7 @@ abstract class CountdownDatabase : RoomDatabase() {
                     CountdownDatabase::class.java,
                     "nextime_database"
                 )
-                    // .addMigrations(MIGRATION_1_2)  ← hier zukünftige Migrationen eintragen
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .build()
                 INSTANCE = instance
                 instance

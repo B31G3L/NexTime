@@ -1,7 +1,6 @@
 package todo.beigelwick.de.todolist.widget
 
 import android.appwidget.AppWidgetManager
-import android.content.ComponentName
 import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
@@ -146,9 +145,9 @@ class CountdownWidget : GlanceAppWidget() {
 
     @Composable
     private fun WideLayout(context: Context, countdown: Countdown, timeInfo: CountdownInfo, accentColor: Color, clickAction: Action) {
-        val darker      = darken(accentColor)
-        val mainVal     = formatMainValue(timeInfo, countdown.displayFormat)
-        val mainUnit    = formatMainUnitShort(context, timeInfo, countdown.displayFormat)
+        val darker   = darken(accentColor)
+        val mainVal  = formatMainValue(timeInfo, countdown.displayFormat)
+        val mainUnit = formatMainUnitShort(context, timeInfo, countdown.displayFormat)
 
         Box(modifier = GlanceModifier.fillMaxSize().background(accentColor).cornerRadius(16.dp).clickable(clickAction)) {
             Column(modifier = GlanceModifier.fillMaxSize()) {
@@ -309,13 +308,11 @@ class CountdownWidget : GlanceAppWidget() {
     // ─── Hilfsfunktionen ──────────────────────────────────────────────────────
 
     /**
-     * Gibt den Wert der ersten (größten) aktiven Einheit zurück.
-     * Für Small/Tall/Wide-Layouts wo nur eine Zahl Platz hat.
+     * Wert der ersten (größten) aktiven Einheit in der gespeicherten Reihenfolge.
      */
     private fun formatMainValue(timeInfo: CountdownInfo, displayFormat: String): String {
-        val units  = DisplayFormat.decode(displayFormat)
-        val sorted = DisplayFormat.sorted(units)
-        return when (sorted.firstOrNull() ?: DisplayUnit.DAYS) {
+        val units = DisplayFormat.decodeOrdered(displayFormat)
+        return when (units.firstOrNull() ?: DisplayUnit.DAYS) {
             DisplayUnit.YEARS   -> "${timeInfo.years}"
             DisplayUnit.MONTHS  -> "${timeInfo.months}"
             DisplayUnit.WEEKS   -> "${timeInfo.weeks}"
@@ -330,22 +327,21 @@ class CountdownWidget : GlanceAppWidget() {
      * Kurze Einheitsbezeichnung für die erste Einheit (Small/Tall-Layouts).
      */
     private fun formatMainUnitShort(context: Context, timeInfo: CountdownInfo, displayFormat: String): String {
-        val units = DisplayFormat.decode(displayFormat)
-        val first = DisplayFormat.sorted(units).firstOrNull() ?: DisplayUnit.DAYS
+        val units = DisplayFormat.decodeOrdered(displayFormat)
+        val first = units.firstOrNull() ?: DisplayUnit.DAYS
         return getUnitLabel(context, first, getFirstValue(timeInfo, first))
     }
 
     /**
      * Vollständige Einheitenliste für Medium/Large-Layouts.
-     * Zeigt alle aktiven Einheiten mit Restwerten, z.B. "Jahre, 3 Monate, 12 Tage".
+     * Respektiert die vom Nutzer festgelegte Reihenfolge.
      */
     private fun formatMainUnitFull(context: Context, timeInfo: CountdownInfo, displayFormat: String): String {
-        val units    = DisplayFormat.decode(displayFormat)
+        val units    = DisplayFormat.decodeOrdered(displayFormat)
         val segments = timeInfo.buildDisplaySegments(units)
         if (segments.size == 1) {
             return getUnitLabel(context, segments[0].unit, segments[0].value)
         }
-        // Erste Einheit als Label, Rest als "X Einheit"
         val firstLabel = getUnitLabel(context, segments[0].unit, segments[0].value)
         val rest = segments.drop(1).joinToString(", ") { seg ->
             "${seg.value} ${getUnitLabel(context, seg.unit, seg.value)}"

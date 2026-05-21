@@ -208,4 +208,6 @@
     <string name="format_unit_seconds">Secondi</string>
     <string name="format_checkbox_hint">Scegli le unità da visualizzare (almeno una)</string>
     <string name="format_time_required">Attiva prima «Includi ora»</string>
+    <string name="format_active_label">Attivo — trascina per riordinare</string>
+    <string name="format_inactive_label">Aggiungi unità</string>
 </resources>

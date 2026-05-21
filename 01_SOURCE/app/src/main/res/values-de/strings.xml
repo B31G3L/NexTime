@@ -265,4 +265,6 @@
     <string name="format_unit_seconds">Sekunden</string>
     <string name="format_checkbox_hint">Wähle die Einheiten zur Anzeige (mind. eine)</string>
     <string name="format_time_required">Aktiviere zuerst „Uhrzeit einbeziehen"</string>
+    <string name="format_active_label">Aktiv — ziehen zum Umsortieren</string>
+    <string name="format_inactive_label">Einheit hinzufügen</string>
 </resources>

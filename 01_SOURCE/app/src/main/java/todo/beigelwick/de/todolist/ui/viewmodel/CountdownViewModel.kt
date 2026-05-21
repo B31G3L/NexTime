@@ -31,12 +31,10 @@ enum class SortMode {
 class CountdownViewModel(application: Application) : AndroidViewModel(application) {
 
     private val context    = application.applicationContext
-    private val repository: CountdownRepository
+    private val repository : CountdownRepository
 
-    // ── Interne Rohdaten ──────────────────────────────────────────────────────
     private val _allCountdowns = MutableStateFlow<List<Countdown>>(emptyList())
 
-    // ── Filter / Sort / Suche ─────────────────────────────────────────────────
     private val _filterMode  = MutableStateFlow(FilterMode.ALL)
     val filterMode: StateFlow<FilterMode> = _filterMode.asStateFlow()
 
@@ -46,38 +44,28 @@ class CountdownViewModel(application: Application) : AndroidViewModel(applicatio
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
-    // ── Gefilterte / sortierte Liste ──────────────────────────────────────────
     private val _countdowns  = MutableStateFlow<List<Countdown>>(emptyList())
     val countdowns: StateFlow<List<Countdown>> = _countdowns.asStateFlow()
 
-    // ── Ausgewählter Countdown (für Dialog) ───────────────────────────────────
     private val _selectedCountdown = MutableStateFlow<Countdown?>(null)
     val selectedCountdown: StateFlow<Countdown?> = _selectedCountdown.asStateFlow()
 
-    // ── Zentraler Ticker ──────────────────────────────────────────────────────
-    // Eine einzige Coroutine für die gesamte App statt einem Timer pro Card.
-    // tickSeconds → jede Sekunde (für Countdowns mit Uhrzeit)
-    // tickMinutes → jede Minute  (für reine Tages-Countdowns)
     private val _tickSeconds = MutableStateFlow(0L)
     val tickSeconds: StateFlow<Long> = _tickSeconds.asStateFlow()
 
     private val _tickMinutes = MutableStateFlow(0L)
     val tickMinutes: StateFlow<Long> = _tickMinutes.asStateFlow()
 
-    // ─────────────────────────────────────────────────────────────────────────
-
     init {
         val database = CountdownDatabase.getDatabase(application)
         repository   = CountdownRepository(database.countdownDao())
 
-        // Countdowns aus DB laden
         viewModelScope.launch {
             repository.allCountdowns.collect { list ->
                 _allCountdowns.value = list
             }
         }
 
-        // Filter + Sort + Suche kombinieren
         viewModelScope.launch {
             combine(
                 _allCountdowns,
@@ -92,7 +80,6 @@ class CountdownViewModel(application: Application) : AndroidViewModel(applicatio
             }
         }
 
-        // Zentraler Sekundenticker
         viewModelScope.launch {
             var tick = 0L
             while (true) {
@@ -139,17 +126,27 @@ class CountdownViewModel(application: Application) : AndroidViewModel(applicatio
             SortMode.CREATED    -> filtered.sortedByDescending { it.createdAt }
         }
 
-        // 4. Bei "Alle" ohne Suche: Countdowns vor Count-ups
+        // 4. Gepinnte immer ganz oben — innerhalb der Pinned-Gruppe gilt die gewählte Sortierung
+        val pinned   = sorted.filter {  it.isPinned }
+        val unpinned = sorted.filter { !it.isPinned }
+
+        // 5. Bei "Alle" ohne Suche: Countdowns vor Count-ups (jeweils Pinned zuerst)
         return if (filter == FilterMode.ALL && query.isBlank()) {
-            sorted.filter { !it.isCountUp } + sorted.filter { it.isCountUp }
-        } else sorted
+            val pinnedFuture   = pinned.filter   { !it.isCountUp }
+            val pinnedPast     = pinned.filter   {  it.isCountUp }
+            val unpinnedFuture = unpinned.filter { !it.isCountUp }
+            val unpinnedPast   = unpinned.filter {  it.isCountUp }
+            pinnedFuture + pinnedPast + unpinnedFuture + unpinnedPast
+        } else {
+            pinned + unpinned
+        }
     }
 
     // ─── CRUD ─────────────────────────────────────────────────────────────────
 
     fun addCountdown(countdown: Countdown) {
         viewModelScope.launch {
-            val id   = repository.insertCountdown(countdown)
+            val id    = repository.insertCountdown(countdown)
             val saved = repository.getCountdownById(id)
             saved?.let { NotificationScheduler.scheduleNotifications(context, it) }
             WidgetUpdateWorker.updateNow(context)
@@ -170,6 +167,13 @@ class CountdownViewModel(application: Application) : AndroidViewModel(applicatio
             NotificationScheduler.cancelAllNotifications(context, countdown)
             repository.deleteCountdown(countdown)
             WidgetUpdateWorker.updateNow(context)
+        }
+    }
+
+    /** Toggelt isPinned und speichert direkt */
+    fun togglePin(countdown: Countdown) {
+        viewModelScope.launch {
+            repository.updateCountdown(countdown.copy(isPinned = !countdown.isPinned))
         }
     }
 

@@ -28,19 +28,37 @@ import androidx.compose.ui.unit.sp
 import androidx.core.os.LocaleListCompat
 import kotlinx.coroutines.launch
 import todo.beigelwick.de.todolist.R
+import todo.beigelwick.de.todolist.data.model.Countdown
 import todo.beigelwick.de.todolist.data.model.DisplayFormat
 import todo.beigelwick.de.todolist.data.model.DisplayUnit
+import todo.beigelwick.de.todolist.data.model.RecurrenceType
+import todo.beigelwick.de.todolist.ui.components.CountdownCard
 import todo.beigelwick.de.todolist.ui.theme.AppLanguage
 import todo.beigelwick.de.todolist.ui.theme.AppPreferences
 import todo.beigelwick.de.todolist.ui.theme.CustomTheme
 import todo.beigelwick.de.todolist.ui.theme.CustomThemePreferences
+import todo.beigelwick.de.todolist.ui.theme.DisplayStyle
 import todo.beigelwick.de.todolist.ui.theme.LanguageManager
 import todo.beigelwick.de.todolist.ui.theme.ThemeMode
 import todo.beigelwick.de.todolist.ui.theme.ThemePreferences
 import todo.beigelwick.de.todolist.ui.theme.getThemeConfig
 import todo.beigelwick.de.todolist.utils.HapticFeedback
+import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
+
+// ─── Dummy-Countdown für Preview ─────────────────────────────────────────────
+
+private val PREVIEW_COUNTDOWN = Countdown(
+    id             = -1L,
+    title          = "Sommerurlaub",
+    icon           = "✈️",
+    targetDateTime = LocalDateTime.now().plusDays(42),
+    displayFormat  = DisplayFormat.encode(setOf(DisplayUnit.DAYS)),
+    color          = "#FF7043",
+    includeTime    = false,
+    recurrence     = RecurrenceType.NONE.name
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,18 +70,14 @@ fun SettingsScreen(onBack: () -> Unit) {
 
     val themeMode    by ThemePreferences.getThemeMode(context).collectAsState(initial = ThemeMode.SYSTEM)
     val customTheme  by CustomThemePreferences.getCustomTheme(context).collectAsState(initial = CustomTheme.BURGUNDY)
-    val defaultUnits by AppPreferences.getDefaultUnits(context).collectAsState(initial = setOf(DisplayUnit.DAYS))
     val defaultColor by AppPreferences.getDefaultColor(context).collectAsState(initial = "#FF7043")
     val defaultTime  by AppPreferences.getDefaultTime(context).collectAsState(initial = LocalTime.of(12, 0))
     val currentLang  by LanguageManager.getLanguage(context).collectAsState(initial = AppLanguage.SYSTEM)
+    val displayStyle by AppPreferences.getDisplayStyle(context).collectAsState(initial = DisplayStyle.NORMAL)
 
     var showTimePicker   by remember { mutableStateOf(false) }
     var showColorPicker  by remember { mutableStateOf(false) }
-    var showFormatPicker by remember { mutableStateOf(false) }
 
-    // ── Einheits-Labels als Map im @Composable-Kontext aufbauen ──────────────
-    // stringResource() darf NICHT in joinToString/map/forEach-Lambdas aufgerufen
-    // werden – nur direkt in @Composable-Funktionen oder deren Content-Lambdas.
     val unitLabelMap = mapOf(
         DisplayUnit.YEARS   to stringResource(R.string.format_unit_years),
         DisplayUnit.MONTHS  to stringResource(R.string.format_unit_months),
@@ -73,10 +87,6 @@ fun SettingsScreen(onBack: () -> Unit) {
         DisplayUnit.MINUTES to stringResource(R.string.format_unit_minutes),
         DisplayUnit.SECONDS to stringResource(R.string.format_unit_seconds),
     )
-
-    // Jetzt normales joinToString ohne stringResource()-Aufruf darin
-    val formatSummary = DisplayFormat.sorted(defaultUnits)
-        .joinToString(" + ") { unit -> unitLabelMap[unit] ?: unit.name }
 
     Scaffold(
         topBar = {
@@ -99,9 +109,32 @@ fun SettingsScreen(onBack: () -> Unit) {
                 .padding(horizontal = 20.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
+
+            // ── Darstellung ───────────────────────────────────────────────────
+            SettingsSectionTitle(stringResource(R.string.settings_display_style))
+            Text(
+                text  = stringResource(R.string.settings_display_style_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            DisplayStylePicker(
+                currentStyle    = displayStyle,
+                onStyleSelected = { style ->
+                    haptic.success()
+                    scope.launch { AppPreferences.setDisplayStyle(context, style) }
+                }
+            )
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
             // ── Farbschema ────────────────────────────────────────────────────
             SettingsSectionTitle(stringResource(R.string.settings_color_scheme))
-            Text(stringResource(R.string.settings_color_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                stringResource(R.string.settings_color_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
             ThemePickerGrid(
                 currentTheme    = customTheme,
                 onThemeSelected = { theme ->
@@ -148,13 +181,12 @@ fun SettingsScreen(onBack: () -> Unit) {
 
             // ── Standard-Einstellungen ────────────────────────────────────────
             SettingsSectionTitle(stringResource(R.string.settings_defaults))
-            Text(stringResource(R.string.settings_defaults_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-
-            SettingsRow(
-                label   = stringResource(R.string.settings_format_label),
-                value   = formatSummary,
-                onClick = { haptic.tick(); showFormatPicker = true }
+            Text(
+                stringResource(R.string.settings_defaults_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+
             SettingsRowColor(
                 label   = stringResource(R.string.settings_color_label),
                 color   = defaultColor,
@@ -170,19 +202,6 @@ fun SettingsScreen(onBack: () -> Unit) {
         }
     }
 
-    // ── Format-Picker Dialog ──────────────────────────────────────────────────
-    if (showFormatPicker) {
-        FormatPickerDialog(
-            currentUnits = defaultUnits,
-            unitLabelMap = unitLabelMap,
-            onDismiss    = { showFormatPicker = false },
-            onConfirm    = { units ->
-                scope.launch { AppPreferences.setDefaultUnits(context, units) }
-                showFormatPicker = false
-            }
-        )
-    }
-
     // ── Farb-Picker Dialog ────────────────────────────────────────────────────
     if (showColorPicker) {
         val initialColor = try { android.graphics.Color.parseColor(defaultColor) }
@@ -196,16 +215,25 @@ fun SettingsScreen(onBack: () -> Unit) {
             title = { Text(stringResource(R.string.dialog_default_color)) },
             text  = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                        listOf("#FF7043","#EF5350","#EC407A","#AB47BC","#5C6BC0",
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier              = Modifier.fillMaxWidth()
+                    ) {
+                        listOf(
+                            "#FF7043","#EF5350","#EC407A","#AB47BC","#5C6BC0",
                             "#42A5F5","#26A69A","#66BB6A","#FFA726","#8D6E63"
                         ).forEach { hex ->
                             val c = try { Color(android.graphics.Color.parseColor(hex)) }
                             catch (e: Exception) { MaterialTheme.colorScheme.primary }
-                            Surface(modifier = Modifier.size(32.dp), shape = CircleShape, color = c, onClick = {
-                                scope.launch { AppPreferences.setDefaultColor(context, hex) }
-                                showColorPicker = false
-                            }) {
+                            Surface(
+                                modifier = Modifier.size(32.dp),
+                                shape    = CircleShape,
+                                color    = c,
+                                onClick  = {
+                                    scope.launch { AppPreferences.setDefaultColor(context, hex) }
+                                    showColorPicker = false
+                                }
+                            ) {
                                 if (defaultColor == hex) {
                                     Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                                         Text("✓", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
@@ -216,11 +244,8 @@ fun SettingsScreen(onBack: () -> Unit) {
                     }
                     HorizontalDivider()
                     Box(modifier = Modifier.size(40.dp).clip(CircleShape).background(Color(android.graphics.Color.rgb(r, g, b))))
-                    Text("R: $r", style = MaterialTheme.typography.bodySmall)
                     Slider(value = r.toFloat(), onValueChange = { r = it.toInt() }, valueRange = 0f..255f)
-                    Text("G: $g", style = MaterialTheme.typography.bodySmall)
                     Slider(value = g.toFloat(), onValueChange = { g = it.toInt() }, valueRange = 0f..255f)
-                    Text("B: $b", style = MaterialTheme.typography.bodySmall)
                     Slider(value = b.toFloat(), onValueChange = { b = it.toInt() }, valueRange = 0f..255f)
                 }
             },
@@ -230,7 +255,9 @@ fun SettingsScreen(onBack: () -> Unit) {
                     showColorPicker = false
                 }) { Text(stringResource(R.string.ok)) }
             },
-            dismissButton = { TextButton(onClick = { showColorPicker = false }) { Text(stringResource(R.string.cancel)) } }
+            dismissButton = {
+                TextButton(onClick = { showColorPicker = false }) { Text(stringResource(R.string.cancel)) }
+            }
         )
     }
 
@@ -251,83 +278,124 @@ fun SettingsScreen(onBack: () -> Unit) {
             },
             confirmButton = {
                 Button(onClick = {
-                    scope.launch { AppPreferences.setDefaultTime(context, LocalTime.of(timePickerState.hour, timePickerState.minute)) }
+                    scope.launch {
+                        AppPreferences.setDefaultTime(
+                            context,
+                            LocalTime.of(timePickerState.hour, timePickerState.minute)
+                        )
+                    }
                     showTimePicker = false
                 }) { Text(stringResource(R.string.ok)) }
             },
-            dismissButton = { TextButton(onClick = { showTimePicker = false }) { Text(stringResource(R.string.cancel)) } }
+            dismissButton = {
+                TextButton(onClick = { showTimePicker = false }) { Text(stringResource(R.string.cancel)) }
+            }
         )
     }
 }
 
-// ─── Format-Picker Dialog ─────────────────────────────────────────────────────
+// ─── DisplayStyle Picker ──────────────────────────────────────────────────────
 
 @Composable
-private fun FormatPickerDialog(
-    currentUnits : Set<DisplayUnit>,
-    unitLabelMap : Map<DisplayUnit, String>,
-    onDismiss    : () -> Unit,
-    onConfirm    : (Set<DisplayUnit>) -> Unit
+private fun DisplayStylePicker(
+    currentStyle    : DisplayStyle,
+    onStyleSelected : (DisplayStyle) -> Unit
 ) {
-    val dialogUnits = remember { currentUnits.toMutableStateList() }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.dialog_default_format)) },
-        text  = {
-            Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
-                Text(
-                    text     = stringResource(R.string.format_checkbox_hint),
-                    style    = MaterialTheme.typography.bodySmall,
-                    color    = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-                // Alle Einheiten in der kanonischen Reihenfolge
-                DisplayUnit.values().forEach { unit ->
-                    val label     = unitLabelMap[unit] ?: unit.name
-                    val isChecked = dialogUnits.contains(unit)
-                    FormatCheckboxRow(
-                        label     = label,
-                        isChecked = isChecked,
-                        onToggle  = {
-                            if (isChecked) { if (dialogUnits.size > 1) dialogUnits.remove(unit) }
-                            else dialogUnits.add(unit)
-                        }
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            Button(onClick = { onConfirm(dialogUnits.toSet()) }) {
-                Text(stringResource(R.string.ok))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
-        }
+    val styles = listOf(
+        DisplayStyle.COMPACT  to stringResource(R.string.display_style_compact),
+        DisplayStyle.NORMAL   to stringResource(R.string.display_style_normal),
+        DisplayStyle.GENEROUS to stringResource(R.string.display_style_generous),
     )
+
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        styles.forEach { (style, label) ->
+            DisplayStyleCard(
+                style           = style,
+                label           = label,
+                isSelected      = currentStyle == style,
+                onStyleSelected = onStyleSelected
+            )
+        }
+    }
 }
 
 @Composable
-private fun FormatCheckboxRow(
-    label     : String,
-    isChecked : Boolean,
-    onToggle  : () -> Unit
+private fun DisplayStyleCard(
+    style           : DisplayStyle,
+    label           : String,
+    isSelected      : Boolean,
+    onStyleSelected : (DisplayStyle) -> Unit
 ) {
-    Row(
-        modifier              = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onToggle)
-            .padding(vertical = 6.dp),
-        verticalAlignment     = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+    val borderColor by animateColorAsState(
+        targetValue   = if (isSelected) MaterialTheme.colorScheme.primary
+        else MaterialTheme.colorScheme.outlineVariant,
+        animationSpec = tween(200),
+        label         = "border_${style.name}"
+    )
+    val bgColor by animateColorAsState(
+        targetValue   = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f)
+        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+        animationSpec = tween(200),
+        label         = "bg_${style.name}"
+    )
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape    = RoundedCornerShape(16.dp),
+        color    = bgColor,
+        border   = BorderStroke(
+            width = if (isSelected) 2.dp else 0.5.dp,
+            color = borderColor
+        ),
+        onClick  = { onStyleSelected(style) }
     ) {
-        Text(label, style = MaterialTheme.typography.bodyMedium)
-        Checkbox(
-            checked         = isChecked,
-            onCheckedChange = { onToggle() },
-            colors          = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary)
-        )
+        Column(
+            modifier            = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            // Label + Checkmark
+            Row(
+                modifier              = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment     = Alignment.CenterVertically
+            ) {
+                Text(
+                    text       = label,
+                    style      = MaterialTheme.typography.bodyMedium,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                    color      = if (isSelected) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurface
+                )
+                if (isSelected) {
+                    Surface(
+                        shape    = CircleShape,
+                        color    = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                            Icon(
+                                imageVector        = Icons.Default.Check,
+                                contentDescription = null,
+                                tint               = MaterialTheme.colorScheme.onPrimary,
+                                modifier           = Modifier.size(13.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Mini Card Preview — kein ViewModel nötig, previewStyle direkt übergeben
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(10.dp))
+            ) {
+                CountdownCard(
+                    countdown    = PREVIEW_COUNTDOWN,
+                    previewStyle = style
+                )
+            }
+        }
     }
 }
 
@@ -338,9 +406,17 @@ private fun ThemePickerGrid(currentTheme: CustomTheme, onThemeSelected: (CustomT
     val chunks = CustomTheme.values().toList().chunked(2)
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         chunks.forEach { row ->
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(
+                modifier              = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
                 row.forEach { theme ->
-                    ThemePickerCard(theme = theme, isSelected = currentTheme == theme, onClick = { onThemeSelected(theme) }, modifier = Modifier.weight(1f))
+                    ThemePickerCard(
+                        theme      = theme,
+                        isSelected = currentTheme == theme,
+                        onClick    = { onThemeSelected(theme) },
+                        modifier   = Modifier.weight(1f)
+                    )
                 }
                 if (row.size == 1) Box(modifier = Modifier.weight(1f))
             }
@@ -349,7 +425,12 @@ private fun ThemePickerGrid(currentTheme: CustomTheme, onThemeSelected: (CustomT
 }
 
 @Composable
-private fun ThemePickerCard(theme: CustomTheme, isSelected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun ThemePickerCard(
+    theme      : CustomTheme,
+    isSelected : Boolean,
+    onClick    : () -> Unit,
+    modifier   : Modifier = Modifier
+) {
     val config       = getThemeConfig(theme)
     val primaryLight = config.lightColorScheme.primary
     val secondary    = config.lightColorScheme.secondary
@@ -368,12 +449,16 @@ private fun ThemePickerCard(theme: CustomTheme, isSelected: Boolean, onClick: ()
         color    = bgColor,
         border   = BorderStroke(
             width = if (isSelected) 2.dp else 1.dp,
-            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
+            color = if (isSelected) MaterialTheme.colorScheme.primary
+            else MaterialTheme.colorScheme.outlineVariant
         ),
         onClick  = onClick
     ) {
         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(5.dp),
+                verticalAlignment     = Alignment.CenterVertically
+            ) {
                 Box(modifier = Modifier.size(28.dp).clip(CircleShape).background(primaryLight))
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Box(modifier = Modifier.width(22.dp).height(11.dp).clip(RoundedCornerShape(4.dp)).background(secondary))
@@ -396,10 +481,17 @@ private fun ThemePickerCard(theme: CustomTheme, isSelected: Boolean, onClick: ()
                 CustomTheme.VIOLET   -> stringResource(R.string.theme_violet_name)   to stringResource(R.string.theme_violet_desc)
                 CustomTheme.PEACH    -> stringResource(R.string.theme_peach_name)    to stringResource(R.string.theme_peach_desc)
             }
-            Text(text = name, style = MaterialTheme.typography.bodyMedium,
+            Text(
+                text       = name,
+                style      = MaterialTheme.typography.bodyMedium,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
-            Text(text = desc, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                color      = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text  = desc,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
@@ -407,7 +499,10 @@ private fun ThemePickerCard(theme: CustomTheme, isSelected: Boolean, onClick: ()
 // ─── Sprach-Auswahl ───────────────────────────────────────────────────────────
 
 @Composable
-private fun LanguagePickerSection(currentLanguage: AppLanguage, onLanguageSelected: (AppLanguage) -> Unit) {
+private fun LanguagePickerSection(
+    currentLanguage    : AppLanguage,
+    onLanguageSelected : (AppLanguage) -> Unit
+) {
     val flags = mapOf(
         AppLanguage.SYSTEM  to "🌐",
         AppLanguage.GERMAN  to "🇩🇪",
@@ -431,7 +526,10 @@ private fun LanguagePickerSection(currentLanguage: AppLanguage, onLanguageSelect
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment     = Alignment.CenterVertically
                 ) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment     = Alignment.CenterVertically
+                    ) {
                         Text(text = flags[language] ?: "🌐", fontSize = 20.sp)
                         Text(
                             text       = language.displayName,
@@ -442,7 +540,12 @@ private fun LanguagePickerSection(currentLanguage: AppLanguage, onLanguageSelect
                         )
                     }
                     if (isSelected) {
-                        Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+                        Icon(
+                            Icons.Default.Check,
+                            contentDescription = null,
+                            modifier           = Modifier.size(18.dp),
+                            tint               = MaterialTheme.colorScheme.primary
+                        )
                     }
                 }
             }
@@ -454,7 +557,12 @@ private fun LanguagePickerSection(currentLanguage: AppLanguage, onLanguageSelect
 
 @Composable
 private fun SettingsSectionTitle(title: String) {
-    Text(text = title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+    Text(
+        text       = title,
+        style      = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.Bold,
+        color      = MaterialTheme.colorScheme.onSurface
+    )
 }
 
 @Composable
@@ -462,10 +570,15 @@ private fun ThemeModeOption(label: String, isSelected: Boolean, onClick: () -> U
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape    = MaterialTheme.shapes.medium,
-        color    = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+        color    = if (isSelected) MaterialTheme.colorScheme.primaryContainer
+        else MaterialTheme.colorScheme.surfaceVariant,
         onClick  = onClick
     ) {
-        Row(modifier = Modifier.fillMaxWidth().padding(14.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            modifier              = Modifier.fillMaxWidth().padding(14.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment     = Alignment.CenterVertically
+        ) {
             Text(label, style = MaterialTheme.typography.bodyMedium)
             RadioButton(selected = isSelected, onClick = onClick)
         }
@@ -480,24 +593,38 @@ private fun SettingsRow(label: String, value: String, onClick: () -> Unit) {
         color    = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
         onClick  = onClick
     ) {
-        Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            modifier              = Modifier.fillMaxWidth().padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment     = Alignment.CenterVertically
+        ) {
             Text(label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
             Spacer(Modifier.width(8.dp))
-            Text(value, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
+            Text(
+                text       = value,
+                style      = MaterialTheme.typography.bodyMedium,
+                color      = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Medium
+            )
         }
     }
 }
 
 @Composable
 private fun SettingsRowColor(label: String, color: String, onClick: () -> Unit) {
-    val parsedColor = try { Color(android.graphics.Color.parseColor(color)) } catch (e: Exception) { MaterialTheme.colorScheme.primary }
+    val parsedColor = try { Color(android.graphics.Color.parseColor(color)) }
+    catch (e: Exception) { MaterialTheme.colorScheme.primary }
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape    = MaterialTheme.shapes.medium,
         color    = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
         onClick  = onClick
     ) {
-        Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            modifier              = Modifier.fillMaxWidth().padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment     = Alignment.CenterVertically
+        ) {
             Text(label, style = MaterialTheme.typography.bodyMedium)
             Box(modifier = Modifier.size(24.dp).clip(CircleShape).background(parsedColor))
         }

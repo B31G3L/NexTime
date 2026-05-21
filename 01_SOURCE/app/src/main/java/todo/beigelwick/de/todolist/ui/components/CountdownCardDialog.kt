@@ -5,7 +5,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -17,9 +19,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import todo.beigelwick.de.todolist.R
 import todo.beigelwick.de.todolist.data.model.Countdown
 import todo.beigelwick.de.todolist.data.model.calculateTimeRemaining
+import todo.beigelwick.de.todolist.ui.viewmodel.CountdownViewModel
 import todo.beigelwick.de.todolist.utils.HapticFeedback
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -29,7 +33,8 @@ fun CountdownCardDialog(
     onDismiss : () -> Unit,
     onEdit    : (Countdown) -> Unit,
     onDelete  : (Countdown) -> Unit,
-    onShare   : (Countdown) -> Unit
+    onShare   : (Countdown) -> Unit,
+    viewModel : CountdownViewModel = viewModel()
 ) {
     val context    = LocalContext.current
     val haptic     = remember { HapticFeedback(context) }
@@ -38,12 +43,6 @@ fun CountdownCardDialog(
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
     val timeInfo     = remember { countdown.calculateTimeRemaining() }
-
-    // BUG FIX: Die alte Bedingung `countdown.createdAt < countdown.targetDateTime`
-    // verwendet Kotlin-Operator-Overloading auf LocalDateTime, was korrekt ist,
-    // aber bei nachträglich bearbeiteten Einträgen (wo createdAt > targetDateTime
-    // sein kann, weil das Zieldatum in die Vergangenheit verschoben wurde) nie
-    // true wird. isAfter() macht die Absicht explizit und ist robuster.
     val showConfetti = remember {
         timeInfo.isPast &&
                 !countdown.isRecurring &&
@@ -56,7 +55,10 @@ fun CountdownCardDialog(
         containerColor   = MaterialTheme.colorScheme.surface,
         shape            = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
         dragHandle       = {
-            Box(modifier = Modifier.padding(vertical = 12.dp), contentAlignment = Alignment.Center) {
+            Box(
+                modifier         = Modifier.padding(vertical = 12.dp),
+                contentAlignment = Alignment.Center
+            ) {
                 Surface(
                     modifier = Modifier.width(40.dp).height(4.dp),
                     shape    = RoundedCornerShape(2.dp),
@@ -102,11 +104,27 @@ fun CountdownCardDialog(
                 // Card-Vorschau
                 CountdownCard(countdown = countdown)
 
-                // Aktionsbuttons
+                // Aktionsbuttons — 4 Buttons in einer Reihe
                 Row(
                     modifier              = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
+                    // Pin / Unpin
+                    CardActionButton(
+                        icon     = if (countdown.isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin,
+                        label    = stringResource(
+                            if (countdown.isPinned) R.string.action_unpin else R.string.action_pin
+                        ),
+                        color    = if (countdown.isPinned) MaterialTheme.colorScheme.tertiary
+                        else MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.weight(1f),
+                        onClick  = {
+                            haptic.click()
+                            viewModel.togglePin(countdown)
+                            onDismiss()
+                        }
+                    )
+                    // Teilen
                     CardActionButton(
                         icon     = Icons.Default.Share,
                         label    = stringResource(R.string.action_share),
@@ -114,6 +132,7 @@ fun CountdownCardDialog(
                         modifier = Modifier.weight(1f),
                         onClick  = { haptic.click(); onShare(countdown) }
                     )
+                    // Bearbeiten
                     CardActionButton(
                         icon     = Icons.Default.Edit,
                         label    = stringResource(R.string.action_edit),
@@ -121,6 +140,7 @@ fun CountdownCardDialog(
                         modifier = Modifier.weight(1f),
                         onClick  = { haptic.click(); onEdit(countdown) }
                     )
+                    // Löschen
                     CardActionButton(
                         icon     = Icons.Default.Delete,
                         label    = stringResource(R.string.action_delete),
@@ -142,21 +162,34 @@ fun CountdownCardDialog(
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { haptic.tick(); showDeleteConfirm = false },
-            icon             = { Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
-            title            = { Text(stringResource(R.string.confirm_delete_title)) },
-            text             = {
+            icon             = {
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = null,
+                    tint               = MaterialTheme.colorScheme.error
+                )
+            },
+            title   = { Text(stringResource(R.string.confirm_delete_title)) },
+            text    = {
                 Text(
                     stringResource(R.string.confirm_delete_msg, countdown.title),
                     style = MaterialTheme.typography.bodyMedium
                 )
             },
-            confirmButton    = {
+            confirmButton = {
                 Button(
-                    onClick = { haptic.heavy(); showDeleteConfirm = false; onDelete(countdown); onDismiss() },
-                    colors  = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                    onClick = {
+                        haptic.heavy()
+                        showDeleteConfirm = false
+                        onDelete(countdown)
+                        onDismiss()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
                 ) { Text(stringResource(R.string.delete)) }
             },
-            dismissButton    = {
+            dismissButton = {
                 TextButton(onClick = { haptic.tick(); showDeleteConfirm = false }) {
                     Text(stringResource(R.string.cancel))
                 }
@@ -164,6 +197,8 @@ fun CountdownCardDialog(
         )
     }
 }
+
+// ─── Action Button ────────────────────────────────────────────────────────────
 
 @Composable
 private fun CardActionButton(
@@ -184,7 +219,12 @@ private fun CardActionButton(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Icon(imageVector = icon, contentDescription = label, tint = color, modifier = Modifier.size(24.dp))
+            Icon(
+                imageVector        = icon,
+                contentDescription = label,
+                tint               = color,
+                modifier           = Modifier.size(24.dp)
+            )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text       = label,

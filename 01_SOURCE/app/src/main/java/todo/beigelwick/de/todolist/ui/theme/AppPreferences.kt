@@ -9,11 +9,22 @@ import todo.beigelwick.de.todolist.data.model.DisplayFormat
 import todo.beigelwick.de.todolist.data.model.DisplayUnit
 import java.time.LocalTime
 
+// ─── Display Style ────────────────────────────────────────────────────────────
+
+enum class DisplayStyle {
+    COMPACT,   // Nur Hauptzahl + Einheit, kein Datum, keine Subinfo
+    NORMAL,    // Standard: Zahlen + Einheiten + Subinfo + Datum
+    GENEROUS   // Größere Zahlen, mehr Abstand, Datum prominent
+}
+
+// ─── AppPreferences ───────────────────────────────────────────────────────────
+
 object AppPreferences {
 
-    private val DEFAULT_FORMAT = stringPreferencesKey("default_format")
-    private val DEFAULT_COLOR  = stringPreferencesKey("default_color")
-    private val DEFAULT_TIME   = stringPreferencesKey("default_time")
+    private val DEFAULT_FORMAT  = stringPreferencesKey("default_format")
+    private val DEFAULT_COLOR   = stringPreferencesKey("default_color")
+    private val DEFAULT_TIME    = stringPreferencesKey("default_time")
+    private val DISPLAY_STYLE   = stringPreferencesKey("display_style")
 
     // ── Standard-Anzeigeformat ────────────────────────────────────────────────
 
@@ -52,6 +63,20 @@ object AppPreferences {
     suspend fun setDefaultTime(context: Context, time: LocalTime) {
         context.dataStore.edit { prefs ->
             prefs[DEFAULT_TIME] = time.toString()
+        }
+    }
+
+    // ── Display Style ─────────────────────────────────────────────────────────
+
+    fun getDisplayStyle(context: Context): Flow<DisplayStyle> =
+        context.dataStore.data.map { prefs ->
+            try { DisplayStyle.valueOf(prefs[DISPLAY_STYLE] ?: DisplayStyle.NORMAL.name) }
+            catch (e: Exception) { DisplayStyle.NORMAL }
+        }
+
+    suspend fun setDisplayStyle(context: Context, style: DisplayStyle) {
+        context.dataStore.edit { prefs ->
+            prefs[DISPLAY_STYLE] = style.name
         }
     }
 }
