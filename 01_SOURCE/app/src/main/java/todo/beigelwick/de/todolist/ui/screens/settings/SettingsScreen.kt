@@ -56,7 +56,6 @@ private val PREVIEW_COUNTDOWN = Countdown(
     targetDateTime = LocalDateTime.now().plusDays(42),
     displayFormat  = DisplayFormat.encode(setOf(DisplayUnit.DAYS)),
     color          = "#FF7043",
-    includeTime    = false,
     recurrence     = RecurrenceType.NONE.name
 )
 

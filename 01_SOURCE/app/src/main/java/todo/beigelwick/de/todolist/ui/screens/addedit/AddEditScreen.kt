@@ -146,7 +146,6 @@ fun AddEditScreen(
         targetDateTime = LocalDateTime.of(selectedDate, if (showTime) selectedTime else LocalTime.MIDNIGHT),
         displayFormat  = displayFormat,
         color          = selectedColor,
-        includeTime    = false,
         recurrence     = selectedRecurrence.name
     )
 
@@ -161,7 +160,6 @@ fun AddEditScreen(
             color               = selectedColor,
             notificationEnabled = notificationEnabled,
             reminderOptions     = selectedReminders.joinToString(",") { it.name },
-            includeTime         = false,
             recurrence          = selectedRecurrence.name
         )
     }

@@ -33,7 +33,6 @@ import todo.beigelwick.de.todolist.data.model.DisplayFormat
 import todo.beigelwick.de.todolist.data.model.DisplayUnit
 import todo.beigelwick.de.todolist.data.model.buildDisplaySegments
 import todo.beigelwick.de.todolist.data.model.calculateTimeRemaining
-import todo.beigelwick.de.todolist.data.model.formatTime
 import java.time.format.DateTimeFormatter
 
 class CountdownWidget : GlanceAppWidget() {
@@ -190,8 +189,8 @@ class CountdownWidget : GlanceAppWidget() {
                     Spacer(GlanceModifier.defaultWeight())
                     Text(text = mainVal, style = TextStyle(fontSize = 28.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White)))
                     Text(text = mainUnit, style = TextStyle(fontSize = 13.sp, color = ColorProvider(Color.White.copy(alpha = 0.8f))))
-                    if (countdown.includeTime) {
-                        Text(text = timeInfo.formatTime(), style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White.copy(alpha = 0.9f))))
+                    if (countdown.hasTime) {
+                        Text(text = "%02d:%02d:%02d".format(timeInfo.hours, timeInfo.minutes, timeInfo.seconds), style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White.copy(alpha = 0.9f))))
                     }
                     Spacer(GlanceModifier.defaultWeight())
                     Text(text = countdown.effectiveTarget.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")), style = TextStyle(fontSize = 9.sp, color = ColorProvider(Color.White.copy(alpha = 0.6f))))
@@ -222,9 +221,9 @@ class CountdownWidget : GlanceAppWidget() {
                         Spacer(GlanceModifier.height(4.dp))
                         Text(text = mainVal, style = TextStyle(fontSize = 32.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White)))
                         Text(text = mainUnit, style = TextStyle(fontSize = 14.sp, color = ColorProvider(Color.White.copy(alpha = 0.8f))))
-                        if (countdown.includeTime) {
+                        if (countdown.hasTime) {
                             Spacer(GlanceModifier.height(2.dp))
-                            Text(text = timeInfo.formatTime(), style = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White.copy(alpha = 0.9f))))
+                            Text(text = "%02d:%02d:%02d".format(timeInfo.hours, timeInfo.minutes, timeInfo.seconds), style = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White.copy(alpha = 0.9f))))
                         }
                         Spacer(GlanceModifier.height(4.dp))
                         Row {
@@ -261,15 +260,15 @@ class CountdownWidget : GlanceAppWidget() {
                         Spacer(GlanceModifier.height(4.dp))
                         Text(text = mainVal, style = TextStyle(fontSize = 36.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White)))
                         Text(text = mainUnit, style = TextStyle(fontSize = 16.sp, color = ColorProvider(Color.White.copy(alpha = 0.8f))))
-                        if (countdown.includeTime) {
+                        if (countdown.hasTime) {
                             Spacer(GlanceModifier.height(2.dp))
-                            Text(text = timeInfo.formatTime(), style = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White.copy(alpha = 0.9f))))
+                            Text(text = "%02d:%02d:%02d".format(timeInfo.hours, timeInfo.minutes, timeInfo.seconds), style = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White.copy(alpha = 0.9f))))
                         }
                     }
                     Spacer(GlanceModifier.width(16.dp))
                     Column(horizontalAlignment = Alignment.End, verticalAlignment = Alignment.CenterVertically) {
                         Text(text = countdown.effectiveTarget.format(DateTimeFormatter.ofPattern("dd. MMM yyyy")), style = TextStyle(fontSize = 11.sp, color = ColorProvider(Color.White.copy(alpha = 0.75f))))
-                        if (countdown.includeTime) {
+                        if (countdown.hasTime) {
                             Spacer(GlanceModifier.height(2.dp))
                             Text(text = countdown.effectiveTarget.format(DateTimeFormatter.ofPattern("HH:mm")) + " Uhr", style = TextStyle(fontSize = 11.sp, color = ColorProvider(Color.White.copy(alpha = 0.75f))))
                         }
