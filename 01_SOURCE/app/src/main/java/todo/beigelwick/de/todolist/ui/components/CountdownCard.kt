@@ -253,9 +253,10 @@ fun CountdownCard(
                                 Spacer(Modifier.weight(1f))
                             }
                             if (cfg.showDate) {
+                                val datePattern = if (countdown.hasTime) "dd.MM.yyyy  HH:mm" else "dd.MM.yyyy"
                                 Text(
                                     text     = countdown.effectiveTarget
-                                        .format(DateTimeFormatter.ofPattern("dd.MM.yyyy")),
+                                        .format(DateTimeFormatter.ofPattern(datePattern)),
                                     fontSize = cfg.dateSize,
                                     color    = Color.White.copy(alpha = 0.65f)
                                 )
@@ -367,8 +368,15 @@ fun CountdownMainDisplay(
         DisplayUnit.SECONDS to { v -> stringResource(pluralRes(v, R.string.second, R.string.seconds)) },
     )
 
+    // Zeiteinheiten immer anzeigen (auch wenn 0), Datumseinheiten mit Wert 0 ausblenden
+    val visibleSegments = segments.filter { seg ->
+        if (seg.unit in TIME_UNITS) true else seg.value != 0L
+    }
+    // Fallback: wenn alle Null sind (z.B. genau 0 Tage), trotzdem die letzte Einheit zeigen
+    val displaySegments = visibleSegments.ifEmpty { segments.takeLast(1) }
+
     val text = buildAnnotatedString {
-        segments.forEachIndexed { index, seg ->
+        displaySegments.forEachIndexed { index, seg ->
             if (index > 0) {
                 withStyle(SpanStyle(fontSize = unitSize, color = Color.White.copy(alpha = 0.75f))) {
                     append("  ")
@@ -416,12 +424,5 @@ private fun buildSubInfo(
 
     if (timeInfo.isPast) return ""
 
-    return if (DisplayUnit.DAYS !in orderedUnits || orderedUnits.size > 1) {
-        val dayLabel   = stringResource(if (timeInfo.days == 1L) R.string.day else R.string.days)
-        val totalLabel = stringResource(R.string.label_total)
-        "${timeInfo.days} $dayLabel $totalLabel"
-    } else {
-        val weekLabel = stringResource(if (timeInfo.weeks == 1L) R.string.week else R.string.weeks)
-        "${timeInfo.weeks} $weekLabel"
-    }
+    return ""
 }

@@ -71,6 +71,7 @@ fun SettingsScreen(onBack: () -> Unit) {
     val customTheme  by CustomThemePreferences.getCustomTheme(context).collectAsState(initial = CustomTheme.BURGUNDY)
     val defaultColor by AppPreferences.getDefaultColor(context).collectAsState(initial = "#FF7043")
     val defaultTime  by AppPreferences.getDefaultTime(context).collectAsState(initial = LocalTime.of(12, 0))
+    val defaultUnits by AppPreferences.getDefaultUnits(context).collectAsState(initial = setOf(DisplayUnit.DAYS))
     val currentLang  by LanguageManager.getLanguage(context).collectAsState(initial = AppLanguage.SYSTEM)
     val displayStyle by AppPreferences.getDisplayStyle(context).collectAsState(initial = DisplayStyle.NORMAL)
 
@@ -197,6 +198,28 @@ fun SettingsScreen(onBack: () -> Unit) {
                 onClick = { haptic.tick(); showTimePicker = true }
             )
 
+            // ── Standard-Anzeigeformat ────────────────────────────────────────
+            Text(
+                text       = stringResource(R.string.settings_format_label),
+                style      = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                color      = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text  = stringResource(R.string.format_checkbox_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            DefaultFormatPicker(
+                selectedUnits  = defaultUnits,
+                unitLabelMap   = unitLabelMap,
+                onUnitsChanged = { newUnits ->
+                    haptic.tick()
+                    scope.launch { AppPreferences.setDefaultUnits(context, newUnits) }
+                }
+            )
+
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
@@ -293,6 +316,60 @@ fun SettingsScreen(onBack: () -> Unit) {
     }
 }
 
+// ─── Standard-Format Picker ───────────────────────────────────────────────────
+
+@Composable
+private fun DefaultFormatPicker(
+    selectedUnits  : Set<DisplayUnit>,
+    unitLabelMap   : Map<DisplayUnit, String>,
+    onUnitsChanged : (Set<DisplayUnit>) -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape    = RoundedCornerShape(12.dp),
+        color    = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+    ) {
+        Column(
+            modifier            = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            DisplayUnit.entries.forEach { unit ->
+                val isChecked = unit in selectedUnits
+                Row(
+                    modifier              = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable {
+                            val newUnits = if (isChecked) {
+                                // mind. eine Einheit muss aktiv bleiben
+                                if (selectedUnits.size > 1) selectedUnits - unit
+                                else selectedUnits
+                            } else {
+                                selectedUnits + unit
+                            }
+                            onUnitsChanged(newUnits)
+                        }
+                        .padding(horizontal = 8.dp, vertical = 10.dp),
+                    verticalAlignment     = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text       = unitLabelMap[unit] ?: unit.name,
+                        style      = MaterialTheme.typography.bodyMedium,
+                        fontWeight = if (isChecked) FontWeight.SemiBold else FontWeight.Normal,
+                        color      = if (isChecked) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurface
+                    )
+                    Checkbox(
+                        checked         = isChecked,
+                        onCheckedChange = null // Click wird von Row behandelt
+                    )
+                }
+            }
+        }
+    }
+}
+
 // ─── DisplayStyle Picker ──────────────────────────────────────────────────────
 
 @Composable
@@ -352,7 +429,6 @@ private fun DisplayStyleCard(
             modifier            = Modifier.padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // Label + Checkmark
             Row(
                 modifier              = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -383,7 +459,6 @@ private fun DisplayStyleCard(
                 }
             }
 
-            // Mini Card Preview — kein ViewModel nötig, previewStyle direkt übergeben
             Box(
                 modifier = Modifier
                     .fillMaxWidth()

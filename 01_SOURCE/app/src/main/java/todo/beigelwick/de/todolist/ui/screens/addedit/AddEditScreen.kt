@@ -35,8 +35,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import todo.beigelwick.de.todolist.R
 import todo.beigelwick.de.todolist.data.model.Countdown
-import todo.beigelwick.de.todolist.data.model.DisplayFormat
-import todo.beigelwick.de.todolist.data.model.DisplayUnit
 import todo.beigelwick.de.todolist.data.model.RecurrenceType
 import todo.beigelwick.de.todolist.data.model.ReminderOption
 import todo.beigelwick.de.todolist.ui.components.CountdownCard
@@ -110,7 +108,6 @@ fun AddEditScreen(
         icon                = cd?.icon ?: "⏰"
         selectedDate        = cd?.targetDateTime?.toLocalDate() ?: LocalDate.now().plusDays(1)
         selectedTime        = cd?.targetDateTime?.toLocalTime() ?: defaultTime
-        // showTime wenn die gespeicherte Zeit nicht Mitternacht ist
         showTime            = cd?.targetDateTime?.toLocalTime()?.let { it != LocalTime.MIDNIGHT } ?: false
         selectedRecurrence  = cd?.recurrenceType ?: RecurrenceType.NONE
         selectedColor       = cd?.color ?: defaultColor
@@ -136,15 +133,12 @@ fun AddEditScreen(
         if (isCountUp && selectedRecurrence != RecurrenceType.NONE) selectedRecurrence = RecurrenceType.NONE
     }
 
-    // displayFormat kommt später aus Settings — vorerst DAYS als Fallback
-    val displayFormat = DisplayFormat.encode(setOf(DisplayUnit.DAYS))
-
     val previewCountdown = Countdown(
         id             = existingCountdown?.id ?: 0L,
         title          = title.ifBlank { stringResource(R.string.preview_placeholder) },
         icon           = icon.ifBlank { "⏰" },
         targetDateTime = LocalDateTime.of(selectedDate, if (showTime) selectedTime else LocalTime.MIDNIGHT),
-        displayFormat  = displayFormat,
+        displayFormat  = "",
         color          = selectedColor,
         recurrence     = selectedRecurrence.name
     )
@@ -156,7 +150,7 @@ fun AddEditScreen(
             title               = title,
             icon                = icon.ifBlank { "⏰" },
             targetDateTime      = target,
-            displayFormat       = displayFormat,
+            displayFormat       = "",
             color               = selectedColor,
             notificationEnabled = notificationEnabled,
             reminderOptions     = selectedReminders.joinToString(",") { it.name },
@@ -227,8 +221,7 @@ fun AddEditScreen(
                     previewCountdown.targetDateTime,
                     previewCountdown.color,
                     previewCountdown.title,
-                    previewCountdown.icon,
-                    previewCountdown.displayFormat
+                    previewCountdown.icon
                 ) {
                     CountdownCard(countdown = previewCountdown)
                 }
@@ -255,7 +248,6 @@ fun AddEditScreen(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         modifier              = Modifier.fillMaxWidth()
                     ) {
-                        // Icon-Feld (tippbar → BottomSheet)
                         Box(
                             modifier         = Modifier
                                 .size(64.dp)
@@ -272,7 +264,6 @@ fun AddEditScreen(
                             Text(text = icon.ifBlank { "⏰" }, fontSize = 28.sp)
                         }
 
-                        // Namens-Textfeld
                         OutlinedTextField(
                             value         = title,
                             onValueChange = { title = it },
@@ -291,7 +282,6 @@ fun AddEditScreen(
                 SectionCard(title = stringResource(R.string.section_datetime)) {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
 
-                        // Datum-Button
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             modifier              = Modifier.fillMaxWidth()
@@ -309,7 +299,6 @@ fun AddEditScreen(
                             }
                         }
 
-                        // Uhrzeit Toggle
                         Row(
                             modifier              = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -334,7 +323,6 @@ fun AddEditScreen(
                             )
                         }
 
-                        // Uhrzeit-Button (nur wenn Toggle aktiv)
                         AnimatedVisibility(
                             visible = showTime,
                             enter   = fadeIn() + expandVertically(),
@@ -506,7 +494,6 @@ fun AddEditScreen(
                             )
                         }
 
-                        // Hinweis bei Count-up
                         AnimatedVisibility(
                             visible = isCountUp,
                             enter   = fadeIn() + expandVertically(),
@@ -536,7 +523,6 @@ fun AddEditScreen(
                             }
                         }
 
-                        // Optionsliste
                         AnimatedVisibility(
                             visible = selectedRecurrence != RecurrenceType.NONE && !isCountUp,
                             enter   = fadeIn() + expandVertically(),

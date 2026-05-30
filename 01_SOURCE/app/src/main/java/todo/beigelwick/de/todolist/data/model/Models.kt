@@ -84,7 +84,7 @@ data class Countdown(
     val id: Long = 0,
     val title: String,
     val targetDateTime: LocalDateTime,
-    val displayFormat: String = DisplayUnit.DAYS.name,
+    val displayFormat: String = "",
     val createdAt: LocalDateTime = LocalDateTime.now(),
     val color: String = "#FF7043",
     val icon: String = "⏰",
@@ -151,6 +151,7 @@ data class CountdownInfo(
     val remWeeksAfterMonths    : Long,
     val remMonthsAfterYears    : Long,
     val remDaysAfterYears      : Long,
+    val remWeeksAfterYears     : Long,
     val hours   : Long,
     val minutes : Long,
     val seconds : Long,
@@ -185,13 +186,21 @@ fun Countdown.calculateTimeRemaining(): CountdownInfo {
     val totalYears  = ChronoUnit.YEARS.between(startDate, endDate)
     val totalWeeks  = ChronoUnit.WEEKS.between(startDate, endDate)
 
-    val remDaysAfterMonths  = ChronoUnit.DAYS.between(startDate.plusMonths(totalMonths), endDate)
     val remMonthsAfterYears = ChronoUnit.MONTHS.between(startDate.plusYears(totalYears), endDate)
-    val remDaysAfterYears   = ChronoUnit.DAYS.between(
+    val remDaysAfterMonths  = ChronoUnit.DAYS.between(startDate.plusMonths(totalMonths), endDate)
+    val remWeeksAfterMonths = ChronoUnit.WEEKS.between(startDate.plusMonths(totalMonths), endDate)
+
+    // Resttage nach Jahren + Monaten + Wochen (korrekte Kaskade)
+    val remDaysAfterYears  = ChronoUnit.DAYS.between(
         startDate.plusYears(totalYears).plusMonths(remMonthsAfterYears), endDate
     )
-    val remWeeksAfterMonths = ChronoUnit.WEEKS.between(startDate.plusMonths(totalMonths), endDate)
-    val remDaysAfterWeeks   = totalDays % 7
+    val remWeeksAfterYears = ChronoUnit.WEEKS.between(
+        startDate.plusYears(totalYears).plusMonths(remMonthsAfterYears), endDate
+    )
+    // Resttage nach Wochen: immer relativ zur letzten größeren Einheit
+    val remDaysAfterWeeks  = ChronoUnit.DAYS.between(
+        startDate.plusMonths(totalMonths).plusWeeks(remWeeksAfterMonths), endDate
+    )
 
     val remSecondsAfterMinutes = totalSec % 60
     val remMinutesAfterHours   = (totalSec % 3600) / 60
@@ -218,6 +227,7 @@ fun Countdown.calculateTimeRemaining(): CountdownInfo {
         remWeeksAfterMonths    = remWeeksAfterMonths,
         remMonthsAfterYears    = remMonthsAfterYears,
         remDaysAfterYears      = remDaysAfterYears,
+        remWeeksAfterYears     = remWeeksAfterYears,
         hours                  = hrs,
         minutes                = mins,
         seconds                = secs,
@@ -260,7 +270,7 @@ private fun CountdownInfo.getValueFor(unit: DisplayUnit, prev: DisplayUnit?): Lo
         DisplayUnit.SECONDS -> totalSeconds
     }
     prev == DisplayUnit.YEARS   && unit == DisplayUnit.MONTHS  -> remMonthsAfterYears
-    prev == DisplayUnit.YEARS   && unit == DisplayUnit.WEEKS   -> remDaysAfterYears / 7
+    prev == DisplayUnit.YEARS   && unit == DisplayUnit.WEEKS   -> remWeeksAfterYears
     prev == DisplayUnit.YEARS   && unit == DisplayUnit.DAYS    -> remDaysAfterYears
     prev == DisplayUnit.YEARS   && unit == DisplayUnit.HOURS   -> remDaysAfterYears * 24 + remHoursAfterDays
     prev == DisplayUnit.YEARS   && unit == DisplayUnit.MINUTES -> remDaysAfterYears * 1440 + remHoursAfterDays * 60 + remMinutesAfterHours
