@@ -59,67 +59,47 @@ private data class CardStyleConfig(
 
 private fun styleConfig(style: DisplayStyle): CardStyleConfig = when (style) {
     DisplayStyle.COMPACT -> CardStyleConfig(
-        iconSize      = 40.dp,
-        iconCorner    = 10.dp,
-        cardPaddingH  = 12.dp,
-        cardPaddingV  = 10.dp,
-        rowSpacing    = 10.dp,
-        numberSize    = 22.sp,
-        unitSize      = 13.sp,
-        titleSize     = 12.sp,
-        subInfoSize   = 0.sp,
-        dateSize      = 0.sp,
-        showSubInfo   = false,
-        showDate      = false,
+        iconSize = 40.dp, iconCorner = 10.dp,
+        cardPaddingH = 12.dp, cardPaddingV = 10.dp,
+        rowSpacing = 10.dp, numberSize = 22.sp,
+        unitSize = 13.sp, titleSize = 12.sp,
+        subInfoSize = 0.sp, dateSize = 0.sp,
+        showSubInfo = false, showDate = false,
         columnSpacing = 2.dp,
     )
     DisplayStyle.NORMAL -> CardStyleConfig(
-        iconSize      = 56.dp,
-        iconCorner    = 12.dp,
-        cardPaddingH  = 16.dp,
-        cardPaddingV  = 14.dp,
-        rowSpacing    = 14.dp,
-        numberSize    = 28.sp,
-        unitSize      = 16.sp,
-        titleSize     = 13.sp,
-        subInfoSize   = 12.sp,
-        dateSize      = 12.sp,
-        showSubInfo   = true,
-        showDate      = true,
+        iconSize = 56.dp, iconCorner = 12.dp,
+        cardPaddingH = 16.dp, cardPaddingV = 14.dp,
+        rowSpacing = 14.dp, numberSize = 28.sp,
+        unitSize = 16.sp, titleSize = 13.sp,
+        subInfoSize = 12.sp, dateSize = 12.sp,
+        showSubInfo = true, showDate = true,
         columnSpacing = 3.dp,
     )
     DisplayStyle.GENEROUS -> CardStyleConfig(
-        iconSize      = 68.dp,
-        iconCorner    = 16.dp,
-        cardPaddingH  = 18.dp,
-        cardPaddingV  = 18.dp,
-        rowSpacing    = 16.dp,
-        numberSize    = 36.sp,
-        unitSize      = 18.sp,
-        titleSize     = 14.sp,
-        subInfoSize   = 13.sp,
-        dateSize      = 13.sp,
-        showSubInfo   = true,
-        showDate      = true,
+        iconSize = 68.dp, iconCorner = 16.dp,
+        cardPaddingH = 18.dp, cardPaddingV = 18.dp,
+        rowSpacing = 16.dp, numberSize = 36.sp,
+        unitSize = 18.sp, titleSize = 14.sp,
+        subInfoSize = 13.sp, dateSize = 13.sp,
+        showSubInfo = true, showDate = true,
         columnSpacing = 5.dp,
     )
 }
 
-// ─── Einheiten-Klassifikation ─────────────────────────────────────────────────
+// ─── UnitSplit ────────────────────────────────────────────────────────────────
 
 private data class UnitSplit(
-    val mainUnits     : List<DisplayUnit>,
-    val timeInSubInfo : Boolean
+    val mainUnits     : List<DisplayUnit>,  // Datumseinheiten für Hauptanzeige
+    val timeInSubInfo : Boolean             // true → HH:mm:ss in SubInfo
 )
 
-private fun splitUnits(orderedUnits: List<DisplayUnit>): UnitSplit {
-    val dateUnits = orderedUnits.filter { it !in TIME_UNITS }
-    val timeUnits = orderedUnits.filter { it in TIME_UNITS }
-    return when {
-        dateUnits.isEmpty()      -> UnitSplit(orderedUnits, false)
-        timeUnits.isNotEmpty()   -> UnitSplit(dateUnits, true)
-        else                     -> UnitSplit(orderedUnits, false)
-    }
+private fun buildUnitSplit(
+    dateUnits     : Set<DisplayUnit>,
+    showTime      : Boolean
+): UnitSplit {
+    val ordered = DisplayFormat.sorted(dateUnits)
+    return UnitSplit(mainUnits = ordered, timeInSubInfo = showTime)
 }
 
 // ─── CountdownCard ────────────────────────────────────────────────────────────
@@ -138,17 +118,23 @@ fun CountdownCard(
         AppPreferences.getDisplayStyle(context).collectAsState(initial = DisplayStyle.NORMAL)
     }
 
-    val cfg          = remember(displayStyle) { styleConfig(displayStyle) }
-    val orderedUnits = remember(countdown.displayFormat) { DisplayFormat.decodeOrdered(countdown.displayFormat) }
-    val split        = remember(orderedUnits) { splitUnits(orderedUnits) }
-    val hasAnyTime   = remember(orderedUnits) { orderedUnits.any { it in TIME_UNITS } }
+    // Datumseinheiten + Uhrzeit-Toggle aus Settings
+    val defaultDateUnits by AppPreferences.getDefaultDateUnits(context)
+        .collectAsState(initial = setOf(DisplayUnit.DAYS))
+    val showTimeOnCard by AppPreferences.getShowTimeOnCard(context)
+        .collectAsState(initial = false)
 
-    val tick by if (hasAnyTime)
+    val cfg   = remember(displayStyle) { styleConfig(displayStyle) }
+    val split = remember(defaultDateUnits, showTimeOnCard) {
+        buildUnitSplit(defaultDateUnits, showTimeOnCard)
+    }
+
+    val tick by if (showTimeOnCard)
         viewModel.tickSeconds.collectAsState()
     else
         viewModel.tickMinutes.collectAsState()
 
-    val timeInfo = remember(countdown.id, countdown.displayFormat, tick) {
+    val timeInfo = remember(countdown.id, defaultDateUnits, showTimeOnCard, tick) {
         countdown.calculateTimeRemaining()
     }
 
@@ -177,55 +163,43 @@ fun CountdownCard(
             Box(modifier = Modifier.fillMaxWidth().height(4.dp).background(darkerBar))
 
             Row(
-                modifier              = Modifier
+                modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = cfg.cardPaddingH, vertical = cfg.cardPaddingV),
-                verticalAlignment     = Alignment.CenterVertically,
+                verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(cfg.rowSpacing)
             ) {
-                // ── Icon ──────────────────────────────────────────────────────
                 Box(
-                    modifier         = Modifier
+                    modifier = Modifier
                         .size(cfg.iconSize)
                         .clip(RoundedCornerShape(cfg.iconCorner))
                         .background(Color.White.copy(alpha = 0.2f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text     = countdown.icon.ifBlank { "⏰" },
-                        fontSize = (cfg.iconSize.value * 0.43f).sp
-                    )
+                    Text(text = countdown.icon.ifBlank { "⏰" }, fontSize = (cfg.iconSize.value * 0.43f).sp)
                 }
 
-                // ── Inhalt ────────────────────────────────────────────────────
                 Column(
-                    modifier            = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(cfg.columnSpacing)
                 ) {
-                    // Titelzeile + Badges
                     Row(
-                        verticalAlignment     = Alignment.CenterVertically,
+                        verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Text(
-                            text     = countdown.title,
+                            text = countdown.title,
                             fontSize = cfg.titleSize,
-                            color    = Color.White.copy(alpha = 0.85f),
+                            color = Color.White.copy(alpha = 0.85f),
                             maxLines = 1,
                             modifier = Modifier.weight(1f, fill = false)
                         )
-                        if (countdown.isPinned) {
-                            PinBadge()
-                        }
-                        if (countdown.isRecurring) {
-                            RecurringBadge(countdown.recurrenceType)
-                        }
-                        if (isToday && split.mainUnits.none { it in TIME_UNITS }) {
-                            TodayBadge(baseColor)
-                        }
+                        if (countdown.isPinned)    PinBadge()
+                        if (countdown.isRecurring) RecurringBadge(countdown.recurrenceType)
+                        if (isToday)               TodayBadge(baseColor)
                     }
 
-                    // Hauptanzeige
+                    // Hauptanzeige: Datumseinheiten
                     CountdownMainDisplay(
                         timeInfo   = timeInfo,
                         units      = split.mainUnits,
@@ -233,20 +207,19 @@ fun CountdownCard(
                         unitSize   = cfg.unitSize
                     )
 
-                    // Subinfo + Datum
+                    // SubInfo: Uhrzeit (HH:mm:ss) + Datum
                     if (cfg.showSubInfo || cfg.showDate) {
                         Row(
-                            modifier              = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment     = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             if (cfg.showSubInfo) {
-                                val subInfo = buildSubInfo(timeInfo, countdown, isToday, split.timeInSubInfo)
                                 Text(
-                                    text          = subInfo,
-                                    fontSize      = cfg.subInfoSize,
-                                    color         = Color.White.copy(alpha = 0.75f),
-                                    fontWeight    = if (split.timeInSubInfo) FontWeight.SemiBold else FontWeight.Normal,
+                                    text = buildSubInfo(timeInfo, countdown, isToday, split.timeInSubInfo),
+                                    fontSize = cfg.subInfoSize,
+                                    color = Color.White.copy(alpha = 0.75f),
+                                    fontWeight = if (split.timeInSubInfo) FontWeight.SemiBold else FontWeight.Normal,
                                     letterSpacing = if (split.timeInSubInfo) 0.5.sp else 0.sp
                                 )
                             } else {
@@ -255,10 +228,9 @@ fun CountdownCard(
                             if (cfg.showDate) {
                                 val datePattern = if (countdown.hasTime) "dd.MM.yyyy  HH:mm" else "dd.MM.yyyy"
                                 Text(
-                                    text     = countdown.effectiveTarget
-                                        .format(DateTimeFormatter.ofPattern(datePattern)),
+                                    text = countdown.effectiveTarget.format(DateTimeFormatter.ofPattern(datePattern)),
                                     fontSize = cfg.dateSize,
-                                    color    = Color.White.copy(alpha = 0.65f)
+                                    color = Color.White.copy(alpha = 0.65f)
                                 )
                             }
                         }
@@ -275,70 +247,35 @@ fun CountdownCard(
 
 @Composable
 private fun PinBadge() {
-    Box(
-        modifier         = Modifier
-            .clip(RoundedCornerShape(20.dp))
-            .background(Color.White.copy(alpha = 0.25f)),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            imageVector        = Icons.Default.PushPin,
-            contentDescription = null,
-            tint               = Color.White,
-            modifier           = Modifier
-                .padding(horizontal = 5.dp, vertical = 3.dp)
-                .size(11.dp)
-                .rotate(45f)
-        )
+    Box(modifier = Modifier.clip(RoundedCornerShape(20.dp)).background(Color.White.copy(alpha = 0.25f)), contentAlignment = Alignment.Center) {
+        Icon(Icons.Default.PushPin, null, tint = Color.White,
+            modifier = Modifier.padding(horizontal = 5.dp, vertical = 3.dp).size(11.dp).rotate(45f))
     }
 }
 
 @Composable
 private fun TodayBadge(cardColor: Color) {
-    Box(
-        modifier         = Modifier.clip(RoundedCornerShape(20.dp)).background(Color.White),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text       = stringResource(R.string.badge_today),
-            fontSize   = 9.sp,
-            fontWeight = FontWeight.Bold,
-            color      = cardColor,
-            modifier   = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-        )
+    Box(modifier = Modifier.clip(RoundedCornerShape(20.dp)).background(Color.White), contentAlignment = Alignment.Center) {
+        Text(stringResource(R.string.badge_today), fontSize = 9.sp, fontWeight = FontWeight.Bold,
+            color = cardColor, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
     }
 }
 
 @Composable
 private fun RecurringBadge(recurrenceType: RecurrenceType) {
-    Box(
-        modifier         = Modifier
-            .clip(RoundedCornerShape(20.dp))
-            .background(Color.White.copy(alpha = 0.25f)),
-        contentAlignment = Alignment.Center
-    ) {
-        Row(
-            modifier              = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-            verticalAlignment     = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(3.dp)
-        ) {
-            Icon(
-                imageVector        = Icons.Outlined.Repeat,
-                contentDescription = null,
-                tint               = Color.White,
-                modifier           = Modifier.size(10.dp)
-            )
+    Box(modifier = Modifier.clip(RoundedCornerShape(20.dp)).background(Color.White.copy(alpha = 0.25f)), contentAlignment = Alignment.Center) {
+        Row(modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+            Icon(Icons.Outlined.Repeat, null, tint = Color.White, modifier = Modifier.size(10.dp))
             Text(
-                text       = when (recurrenceType) {
+                text = when (recurrenceType) {
                     RecurrenceType.DAILY   -> stringResource(R.string.badge_daily)
                     RecurrenceType.WEEKLY  -> stringResource(R.string.badge_weekly)
                     RecurrenceType.MONTHLY -> stringResource(R.string.badge_monthly)
                     RecurrenceType.YEARLY  -> stringResource(R.string.badge_yearly)
                     RecurrenceType.NONE    -> ""
                 },
-                fontSize   = 9.sp,
-                fontWeight = FontWeight.Bold,
-                color      = Color.White
+                fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color.White
             )
         }
     }
@@ -355,8 +292,7 @@ fun CountdownMainDisplay(
 ) {
     val segments = remember(timeInfo, units) { timeInfo.buildDisplaySegments(units) }
 
-    fun pluralRes(value: Long, singular: Int, plural: Int) =
-        if (value == 1L) singular else plural
+    fun pluralRes(value: Long, singular: Int, plural: Int) = if (value == 1L) singular else plural
 
     val labelMap: Map<DisplayUnit, @Composable (Long) -> String> = mapOf(
         DisplayUnit.YEARS   to { v -> stringResource(pluralRes(v, R.string.year,   R.string.years)) },
@@ -368,34 +304,20 @@ fun CountdownMainDisplay(
         DisplayUnit.SECONDS to { v -> stringResource(pluralRes(v, R.string.second, R.string.seconds)) },
     )
 
-    // Zeiteinheiten immer anzeigen (auch wenn 0), Datumseinheiten mit Wert 0 ausblenden
-    val visibleSegments = segments.filter { seg ->
-        if (seg.unit in TIME_UNITS) true else seg.value != 0L
-    }
-    // Fallback: wenn alle Null sind (z.B. genau 0 Tage), trotzdem die letzte Einheit zeigen
+    val visibleSegments = segments.filter { seg -> if (seg.unit in TIME_UNITS) true else seg.value != 0L }
     val displaySegments = visibleSegments.ifEmpty { segments.takeLast(1) }
 
     val text = buildAnnotatedString {
         displaySegments.forEachIndexed { index, seg ->
-            if (index > 0) {
-                withStyle(SpanStyle(fontSize = unitSize, color = Color.White.copy(alpha = 0.75f))) {
-                    append("  ")
-                }
-            }
+            if (index > 0) withStyle(SpanStyle(fontSize = unitSize, color = Color.White.copy(alpha = 0.75f))) { append("  ") }
             withStyle(SpanStyle(fontSize = numberSize, fontWeight = FontWeight.Bold, color = Color.White)) {
-                val formatted = if (index > 0 && seg.unit in TIME_UNITS)
-                    "%02d".format(seg.value)
-                else
-                    "${seg.value}"
-                append(formatted)
+                append(if (index > 0 && seg.unit in TIME_UNITS) "%02d".format(seg.value) else "${seg.value}")
             }
-            val label = labelMap[seg.unit]?.invoke(seg.value) ?: ""
             withStyle(SpanStyle(fontSize = unitSize, color = Color.White.copy(alpha = 0.85f))) {
-                append(" $label")
+                append(" ${labelMap[seg.unit]?.invoke(seg.value) ?: ""}")
             }
         }
     }
-
     Text(text = text, lineHeight = (numberSize.value * 1.2f).sp)
 }
 
@@ -408,21 +330,11 @@ private fun buildSubInfo(
     isToday       : Boolean,
     timeInSubInfo : Boolean
 ): String {
-    if (timeInSubInfo) {
-        return "%02d:%02d:%02d".format(timeInfo.hours, timeInfo.minutes, timeInfo.seconds)
-    }
-
-    val orderedUnits = DisplayFormat.decodeOrdered(countdown.displayFormat)
-    val hasTimeUnits = orderedUnits.any { it in TIME_UNITS }
-
-    if (isToday && !hasTimeUnits) return stringResource(R.string.card_today_message)
-
+    if (timeInSubInfo) return "%02d:%02d:%02d".format(timeInfo.hours, timeInfo.minutes, timeInfo.seconds)
+    if (isToday) return stringResource(R.string.card_today_message)
     if (countdown.isRecurring) return stringResource(
         R.string.card_next_occurrence,
         countdown.effectiveTarget.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))
     )
-
-    if (timeInfo.isPast) return ""
-
     return ""
 }

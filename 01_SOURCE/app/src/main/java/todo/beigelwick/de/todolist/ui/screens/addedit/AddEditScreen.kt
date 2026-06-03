@@ -35,6 +35,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import todo.beigelwick.de.todolist.R
 import todo.beigelwick.de.todolist.data.model.Countdown
+import todo.beigelwick.de.todolist.data.model.DisplayFormat
+import todo.beigelwick.de.todolist.data.model.DisplayUnit
 import todo.beigelwick.de.todolist.data.model.RecurrenceType
 import todo.beigelwick.de.todolist.data.model.ReminderOption
 import todo.beigelwick.de.todolist.ui.components.CountdownCard
@@ -221,7 +223,7 @@ fun AddEditScreen(
                     previewCountdown.targetDateTime,
                     previewCountdown.color,
                     previewCountdown.title,
-                    previewCountdown.icon
+                    previewCountdown.icon,
                 ) {
                     CountdownCard(countdown = previewCountdown)
                 }

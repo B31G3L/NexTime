@@ -146,12 +146,12 @@ data class CountdownInfo(
     val remSecondsAfterMinutes : Long,
     val remMinutesAfterHours   : Long,
     val remHoursAfterDays      : Long,
-    val remDaysAfterWeeks      : Long,
-    val remDaysAfterMonths     : Long,
-    val remWeeksAfterMonths    : Long,
-    val remMonthsAfterYears    : Long,
-    val remDaysAfterYears      : Long,
-    val remWeeksAfterYears     : Long,
+    val remDaysAfterWeeks      : Long,  // Resttage nach Abzug ganzer Wochen (unabhängig von Monaten)
+    val remDaysAfterMonths     : Long,  // Resttage nach Abzug ganzer Monate
+    val remWeeksAfterMonths    : Long,  // Restwochen nach Abzug ganzer Monate
+    val remMonthsAfterYears    : Long,  // Restmonate nach Abzug ganzer Jahre
+    val remDaysAfterYears      : Long,  // Resttage nach Abzug ganzer Jahre + ganzer Monate
+    val remWeeksAfterYears     : Long,  // Restwochen nach Abzug ganzer Jahre + ganzer Monate
     val hours   : Long,
     val minutes : Long,
     val seconds : Long,
@@ -177,30 +177,38 @@ fun Countdown.calculateTimeRemaining(): CountdownInfo {
     val totalSec  = ChronoUnit.SECONDS.between(start, end)
     val totalMin  = totalSec / 60
     val totalHrs  = totalSec / 3600
-    val totalDays = ChronoUnit.DAYS.between(start.toLocalDate(), end.toLocalDate())
 
     val startDate = start.toLocalDate()
     val endDate   = end.toLocalDate()
 
+    val totalDays   = ChronoUnit.DAYS.between(startDate, endDate)
     val totalMonths = ChronoUnit.MONTHS.between(startDate, endDate)
     val totalYears  = ChronoUnit.YEARS.between(startDate, endDate)
     val totalWeeks  = ChronoUnit.WEEKS.between(startDate, endDate)
 
-    val remMonthsAfterYears = ChronoUnit.MONTHS.between(startDate.plusYears(totalYears), endDate)
-    val remDaysAfterMonths  = ChronoUnit.DAYS.between(startDate.plusMonths(totalMonths), endDate)
-    val remWeeksAfterMonths = ChronoUnit.WEEKS.between(startDate.plusMonths(totalMonths), endDate)
+    // ── Kaskade: Jahre → Monate → Tage ───────────────────────────────────────
+    val remMonthsAfterYears = ChronoUnit.MONTHS.between(
+        startDate.plusYears(totalYears), endDate
+    )
+    val remDaysAfterMonths = ChronoUnit.DAYS.between(
+        startDate.plusMonths(totalMonths), endDate
+    )
+    val remWeeksAfterMonths = ChronoUnit.WEEKS.between(
+        startDate.plusMonths(totalMonths), endDate
+    )
 
-    // Resttage nach Jahren + Monaten + Wochen (korrekte Kaskade)
-    val remDaysAfterYears  = ChronoUnit.DAYS.between(
+    // Resttage nach Jahren + Monaten (korrekte Kaskade)
+    val remDaysAfterYears = ChronoUnit.DAYS.between(
         startDate.plusYears(totalYears).plusMonths(remMonthsAfterYears), endDate
     )
     val remWeeksAfterYears = ChronoUnit.WEEKS.between(
         startDate.plusYears(totalYears).plusMonths(remMonthsAfterYears), endDate
     )
-    // Resttage nach Wochen: immer relativ zur letzten größeren Einheit
-    val remDaysAfterWeeks  = ChronoUnit.DAYS.between(
-        startDate.plusMonths(totalMonths).plusWeeks(remWeeksAfterMonths), endDate
-    )
+
+    // ── KORREKTUR: remDaysAfterWeeks immer direkt aus totalWeeks ──────────────
+    // Unabhängig von Monaten: Wieviele Tage bleiben nach Abzug ganzer Wochen übrig?
+    // Beispiel: 65 Tage → 9 Wochen, 2 Tage  (65 - 9*7 = 2) ✓
+    val remDaysAfterWeeks = totalDays - (totalWeeks * 7)
 
     val remSecondsAfterMinutes = totalSec % 60
     val remMinutesAfterHours   = (totalSec % 3600) / 60
@@ -260,6 +268,7 @@ fun CountdownInfo.buildDisplaySegments(units: Set<DisplayUnit>): List<DisplaySeg
     buildDisplaySegments(DisplayFormat.sorted(units))
 
 private fun CountdownInfo.getValueFor(unit: DisplayUnit, prev: DisplayUnit?): Long = when {
+    // ── Keine übergeordnete Einheit → absolute Gesamtwerte ────────────────────
     prev == null -> when (unit) {
         DisplayUnit.YEARS   -> years
         DisplayUnit.MONTHS  -> months
@@ -269,27 +278,42 @@ private fun CountdownInfo.getValueFor(unit: DisplayUnit, prev: DisplayUnit?): Lo
         DisplayUnit.MINUTES -> totalMinutes
         DisplayUnit.SECONDS -> totalSeconds
     }
-    prev == DisplayUnit.YEARS   && unit == DisplayUnit.MONTHS  -> remMonthsAfterYears
-    prev == DisplayUnit.YEARS   && unit == DisplayUnit.WEEKS   -> remWeeksAfterYears
-    prev == DisplayUnit.YEARS   && unit == DisplayUnit.DAYS    -> remDaysAfterYears
-    prev == DisplayUnit.YEARS   && unit == DisplayUnit.HOURS   -> remDaysAfterYears * 24 + remHoursAfterDays
-    prev == DisplayUnit.YEARS   && unit == DisplayUnit.MINUTES -> remDaysAfterYears * 1440 + remHoursAfterDays * 60 + remMinutesAfterHours
-    prev == DisplayUnit.YEARS   && unit == DisplayUnit.SECONDS -> remDaysAfterYears * 86400 + remHoursAfterDays * 3600 + remMinutesAfterHours * 60 + remSecondsAfterMinutes
-    prev == DisplayUnit.MONTHS  && unit == DisplayUnit.WEEKS   -> remWeeksAfterMonths
-    prev == DisplayUnit.MONTHS  && unit == DisplayUnit.DAYS    -> remDaysAfterMonths
-    prev == DisplayUnit.MONTHS  && unit == DisplayUnit.HOURS   -> remDaysAfterMonths * 24 + remHoursAfterDays
-    prev == DisplayUnit.MONTHS  && unit == DisplayUnit.MINUTES -> remDaysAfterMonths * 1440 + remHoursAfterDays * 60 + remMinutesAfterHours
-    prev == DisplayUnit.MONTHS  && unit == DisplayUnit.SECONDS -> remDaysAfterMonths * 86400 + remHoursAfterDays * 3600 + remMinutesAfterHours * 60 + remSecondsAfterMinutes
-    prev == DisplayUnit.WEEKS   && unit == DisplayUnit.DAYS    -> remDaysAfterWeeks
-    prev == DisplayUnit.WEEKS   && unit == DisplayUnit.HOURS   -> remDaysAfterWeeks * 24 + remHoursAfterDays
-    prev == DisplayUnit.WEEKS   && unit == DisplayUnit.MINUTES -> remDaysAfterWeeks * 1440 + remHoursAfterDays * 60 + remMinutesAfterHours
-    prev == DisplayUnit.WEEKS   && unit == DisplayUnit.SECONDS -> remDaysAfterWeeks * 86400 + remHoursAfterDays * 3600 + remMinutesAfterHours * 60 + remSecondsAfterMinutes
-    prev == DisplayUnit.DAYS    && unit == DisplayUnit.HOURS   -> remHoursAfterDays
-    prev == DisplayUnit.DAYS    && unit == DisplayUnit.MINUTES -> remHoursAfterDays * 60 + remMinutesAfterHours
-    prev == DisplayUnit.DAYS    && unit == DisplayUnit.SECONDS -> remHoursAfterDays * 3600 + remMinutesAfterHours * 60 + remSecondsAfterMinutes
-    prev == DisplayUnit.HOURS   && unit == DisplayUnit.MINUTES -> remMinutesAfterHours
-    prev == DisplayUnit.HOURS   && unit == DisplayUnit.SECONDS -> remMinutesAfterHours * 60 + remSecondsAfterMinutes
+
+    // ── Nach YEARS ────────────────────────────────────────────────────────────
+    prev == DisplayUnit.YEARS && unit == DisplayUnit.MONTHS  -> remMonthsAfterYears
+    prev == DisplayUnit.YEARS && unit == DisplayUnit.WEEKS   -> remWeeksAfterYears
+    prev == DisplayUnit.YEARS && unit == DisplayUnit.DAYS    -> remDaysAfterYears
+    prev == DisplayUnit.YEARS && unit == DisplayUnit.HOURS   -> remDaysAfterYears * 24 + remHoursAfterDays
+    prev == DisplayUnit.YEARS && unit == DisplayUnit.MINUTES -> remDaysAfterYears * 1440 + remHoursAfterDays * 60 + remMinutesAfterHours
+    prev == DisplayUnit.YEARS && unit == DisplayUnit.SECONDS -> remDaysAfterYears * 86400 + remHoursAfterDays * 3600 + remMinutesAfterHours * 60 + remSecondsAfterMinutes
+
+    // ── Nach MONTHS ───────────────────────────────────────────────────────────
+    prev == DisplayUnit.MONTHS && unit == DisplayUnit.WEEKS   -> remWeeksAfterMonths
+    prev == DisplayUnit.MONTHS && unit == DisplayUnit.DAYS    -> remDaysAfterMonths
+    prev == DisplayUnit.MONTHS && unit == DisplayUnit.HOURS   -> remDaysAfterMonths * 24 + remHoursAfterDays
+    prev == DisplayUnit.MONTHS && unit == DisplayUnit.MINUTES -> remDaysAfterMonths * 1440 + remHoursAfterDays * 60 + remMinutesAfterHours
+    prev == DisplayUnit.MONTHS && unit == DisplayUnit.SECONDS -> remDaysAfterMonths * 86400 + remHoursAfterDays * 3600 + remMinutesAfterHours * 60 + remSecondsAfterMinutes
+
+    // ── Nach WEEKS ────────────────────────────────────────────────────────────
+    // KORREKTUR: remDaysAfterWeeks ist jetzt immer korrekt (totalDays - totalWeeks*7)
+    prev == DisplayUnit.WEEKS && unit == DisplayUnit.DAYS    -> remDaysAfterWeeks
+    prev == DisplayUnit.WEEKS && unit == DisplayUnit.HOURS   -> remDaysAfterWeeks * 24 + remHoursAfterDays
+    prev == DisplayUnit.WEEKS && unit == DisplayUnit.MINUTES -> remDaysAfterWeeks * 1440 + remHoursAfterDays * 60 + remMinutesAfterHours
+    prev == DisplayUnit.WEEKS && unit == DisplayUnit.SECONDS -> remDaysAfterWeeks * 86400 + remHoursAfterDays * 3600 + remMinutesAfterHours * 60 + remSecondsAfterMinutes
+
+    // ── Nach DAYS ─────────────────────────────────────────────────────────────
+    prev == DisplayUnit.DAYS && unit == DisplayUnit.HOURS   -> remHoursAfterDays
+    prev == DisplayUnit.DAYS && unit == DisplayUnit.MINUTES -> remHoursAfterDays * 60 + remMinutesAfterHours
+    prev == DisplayUnit.DAYS && unit == DisplayUnit.SECONDS -> remHoursAfterDays * 3600 + remMinutesAfterHours * 60 + remSecondsAfterMinutes
+
+    // ── Nach HOURS ────────────────────────────────────────────────────────────
+    prev == DisplayUnit.HOURS && unit == DisplayUnit.MINUTES -> remMinutesAfterHours
+    prev == DisplayUnit.HOURS && unit == DisplayUnit.SECONDS -> remMinutesAfterHours * 60 + remSecondsAfterMinutes
+
+    // ── Nach MINUTES ──────────────────────────────────────────────────────────
     prev == DisplayUnit.MINUTES && unit == DisplayUnit.SECONDS -> remSecondsAfterMinutes
+
+    // ── Fallback ──────────────────────────────────────────────────────────────
     else -> when (unit) {
         DisplayUnit.YEARS   -> years
         DisplayUnit.MONTHS  -> months
