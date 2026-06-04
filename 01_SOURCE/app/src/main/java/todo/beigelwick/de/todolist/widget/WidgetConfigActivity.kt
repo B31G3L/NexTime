@@ -4,9 +4,9 @@ import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -28,8 +28,8 @@ import todo.beigelwick.de.todolist.R
 import todo.beigelwick.de.todolist.data.database.CountdownDatabase
 import todo.beigelwick.de.todolist.data.model.Countdown
 import todo.beigelwick.de.todolist.data.model.calculateTimeRemaining
-import todo.beigelwick.de.todolist.ui.theme.CustomTheme
-import todo.beigelwick.de.todolist.ui.theme.CustomThemePreferences
+import todo.beigelwick.de.todolist.ui.theme.AccentColor
+import todo.beigelwick.de.todolist.ui.theme.AccentColorPreferences
 import todo.beigelwick.de.todolist.ui.theme.NexTimeTheme
 import todo.beigelwick.de.todolist.ui.theme.ThemeMode
 import todo.beigelwick.de.todolist.ui.theme.ThemePreferences
@@ -52,14 +52,21 @@ class WidgetConfigActivity : AppCompatActivity() {
 
         setContent {
             val themeMode   by ThemePreferences.getThemeMode(this).collectAsState(initial = ThemeMode.SYSTEM)
-            val customTheme by CustomThemePreferences.getCustomTheme(this).collectAsState(initial = CustomTheme.BURGUNDY)
+            val accentColor by AccentColorPreferences.getAccentColor(this).collectAsState(initial = AccentColor.ORANGE)
+
+            // BUG FIX: isNightModeActive() statt isSystemInDarkTheme() um Namenskonflikt
+            // mit der Compose-Funktion zu vermeiden
             val isDark = when (themeMode) {
                 ThemeMode.DARK   -> true
                 ThemeMode.LIGHT  -> false
-                ThemeMode.SYSTEM -> isSystemInDarkTheme()
+                ThemeMode.SYSTEM -> isNightModeActive()
             }
-            NexTimeTheme(darkTheme = isDark, customTheme = customTheme) {
-                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+
+            NexTimeTheme(darkTheme = isDark, accentColor = accentColor) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color    = MaterialTheme.colorScheme.background
+                ) {
                     WidgetConfigScreen(
                         onCountdownSelected = { countdown ->
                             saveSelectedCountdown(countdown)
@@ -72,8 +79,14 @@ class WidgetConfigActivity : AppCompatActivity() {
         }
     }
 
-    private fun isSystemInDarkTheme(): Boolean {
-        val uiMode = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
+    /**
+     * Gibt true zurück wenn das System im Nacht-/Dunkelmodus ist.
+     * Bewusst NICHT isSystemInDarkTheme() genannt, da das der Name der
+     * Compose-Funktion ist und zu einem Namenskonflikt führen würde.
+     */
+    private fun isNightModeActive(): Boolean {
+        val uiMode = resources.configuration.uiMode and
+                android.content.res.Configuration.UI_MODE_NIGHT_MASK
         return uiMode == android.content.res.Configuration.UI_MODE_NIGHT_YES
     }
 
@@ -144,36 +157,62 @@ private fun WidgetConfigScreen(
     ) { paddingValues ->
         when {
             isLoading -> {
-                Box(modifier = Modifier.fillMaxSize().padding(paddingValues), contentAlignment = Alignment.Center) {
+                Box(
+                    modifier         = Modifier.fillMaxSize().padding(paddingValues),
+                    contentAlignment = Alignment.Center
+                ) {
                     CircularProgressIndicator()
                 }
             }
             countdowns.isEmpty() -> {
-                Box(modifier = Modifier.fillMaxSize().padding(paddingValues), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Box(
+                    modifier         = Modifier.fillMaxSize().padding(paddingValues),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
                         Text("⏰", style = MaterialTheme.typography.displayLarge)
-                        Text(stringResource(R.string.widget_no_countdowns), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                        Text(stringResource(R.string.widget_no_countdowns_hint), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(
+                            stringResource(R.string.widget_no_countdowns),
+                            style      = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            stringResource(R.string.widget_no_countdowns_hint),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
             }
             else -> {
                 LazyColumn(
-                    modifier       = Modifier.fillMaxSize().padding(paddingValues),
-                    contentPadding = PaddingValues(16.dp),
+                    modifier            = Modifier.fillMaxSize().padding(paddingValues),
+                    contentPadding      = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     item {
-                        Text(stringResource(R.string.widget_select_hint), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = 8.dp))
+                        Text(
+                            stringResource(R.string.widget_select_hint),
+                            style    = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
                     }
                     items(countdowns) { countdown ->
-                        WidgetCountdownCard(countdown = countdown, onClick = { onCountdownSelected(countdown) })
+                        WidgetCountdownCard(
+                            countdown = countdown,
+                            onClick   = { onCountdownSelected(countdown) }
+                        )
                     }
                 }
             }
         }
     }
 }
+
+// ─── Widget Countdown Card ────────────────────────────────────────────────────
 
 @Composable
 private fun WidgetCountdownCard(countdown: Countdown, onClick: () -> Unit) {
@@ -183,33 +222,61 @@ private fun WidgetCountdownCard(countdown: Countdown, onClick: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         shape    = RoundedCornerShape(16.dp),
-        colors   = CardDefaults.cardColors(containerColor = cardColor.copy(alpha = 0.08f))
+        colors   = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
     ) {
-        Row(
-            modifier              = Modifier.fillMaxWidth().padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment     = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(text = countdown.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text(
-                    text  = countdown.targetDateTime.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                val timeInfo = countdown.calculateTimeRemaining()
-                Text(
-                    text  = if (timeInfo.isPast)
-                        "${timeInfo.days} ${if (timeInfo.days == 1L) "Tag" else "Tage"} vergangen"
-                    else
-                        "Noch ${timeInfo.days} ${if (timeInfo.days == 1L) "Tag" else "Tage"}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = cardColor
-                )
-            }
-            Surface(modifier = Modifier.size(48.dp), shape = RoundedCornerShape(12.dp), color = cardColor) {
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                    Text(text = countdown.icon.ifBlank { "⏰" }, style = MaterialTheme.typography.titleLarge)
+        Column {
+            // Akzentbalken oben
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(3.dp)
+                    .background(cardColor)
+            )
+            Row(
+                modifier              = Modifier.fillMaxWidth().padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment     = Alignment.CenterVertically
+            ) {
+                Column(
+                    modifier            = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text       = countdown.title,
+                        style      = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text  = countdown.targetDateTime.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    val timeInfo = countdown.calculateTimeRemaining()
+                    Text(
+                        text  = if (timeInfo.isPast)
+                            "${timeInfo.days} ${if (timeInfo.days == 1L) "Tag" else "Tage"} vergangen"
+                        else
+                            "Noch ${timeInfo.days} ${if (timeInfo.days == 1L) "Tag" else "Tage"}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = cardColor
+                    )
+                }
+                Surface(
+                    modifier = Modifier.size(48.dp),
+                    shape    = RoundedCornerShape(12.dp),
+                    color    = cardColor.copy(alpha = 0.12f)
+                ) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier         = Modifier.fillMaxSize()
+                    ) {
+                        Text(
+                            text  = countdown.icon.ifBlank { "⏰" },
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                    }
                 }
             }
         }

@@ -274,4 +274,24 @@
     <string name="preview_placeholder">Vorschau</string>
     <string name="action_pin">Anheften</string>
     <string name="action_unpin">Lösen</string>
+
+    <string name="theme_hourglass_name">Hourglass</string>
+    <string name="theme_hourglass_desc">Orange · Sage · Violet</string>
+    <string name="settings_accent_hint">Choose your accent color. The neutral background stays the same in light and dark mode.</string>
+    <string name="accent_orange">Orange</string>
+    <string name="accent_sage">Sage</string>
+    <string name="accent_violet">Violet</string>
+    <string name="accent_crimson">Crimson</string>
+    <string name="accent_teal">Teal</string>
+    <string name="accent_gold">Gold</string>
+    <string name="accent_slate">Slate</string>
+
+    <string name="icon_cat_time">Time</string>
+    <string name="icon_cat_travel">Travel</string>
+    <string name="icon_cat_celebrate">Celebrate</string>
+    <string name="icon_cat_work">Work</string>
+    <string name="icon_cat_sport">Sport</string>
+    <string name="icon_cat_nature">Nature</string>
+    <string name="icon_cat_home">Home</string>
+    <string name="icon_cat_other">Other</string>
 </resources>

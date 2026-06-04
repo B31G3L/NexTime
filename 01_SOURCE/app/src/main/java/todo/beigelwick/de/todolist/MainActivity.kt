@@ -29,8 +29,8 @@ import todo.beigelwick.de.todolist.data.database.CountdownDatabase
 import todo.beigelwick.de.todolist.notifications.CountdownNotificationManager
 import todo.beigelwick.de.todolist.notifications.NotificationScheduler
 import todo.beigelwick.de.todolist.ui.navigation.AppNavigation
-import todo.beigelwick.de.todolist.ui.theme.CustomTheme
-import todo.beigelwick.de.todolist.ui.theme.CustomThemePreferences
+import todo.beigelwick.de.todolist.ui.theme.AccentColor
+import todo.beigelwick.de.todolist.ui.theme.AccentColorPreferences
 import todo.beigelwick.de.todolist.ui.theme.NexTimeTheme
 import todo.beigelwick.de.todolist.ui.theme.ThemeMode
 import todo.beigelwick.de.todolist.ui.theme.ThemePreferences
@@ -50,17 +50,14 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // Edge-to-Edge manuell setzen (ersetzt enableEdgeToEdge())
         WindowCompat.setDecorFitsSystemWindows(window, false)
-
         CountdownNotificationManager.createNotificationChannel(this)
         requestNotificationPermissionIfNeeded()
         scheduleAllPendingNotifications()
 
         setContent {
             val themeMode   by ThemePreferences.getThemeMode(this).collectAsState(initial = ThemeMode.SYSTEM)
-            val customTheme by CustomThemePreferences.getCustomTheme(this).collectAsState(initial = CustomTheme.BURGUNDY)
+            val accentColor by AccentColorPreferences.getAccentColor(this).collectAsState(initial = AccentColor.ORANGE)
             val systemDark  = isSystemInDarkTheme()
 
             val isDark = when (themeMode) {
@@ -69,10 +66,7 @@ class MainActivity : AppCompatActivity() {
                 ThemeMode.DARK   -> true
             }
 
-            NexTimeTheme(
-                darkTheme   = isDark,
-                customTheme = customTheme
-            ) {
+            NexTimeTheme(darkTheme = isDark, accentColor = accentColor) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color    = MaterialTheme.colorScheme.background
@@ -100,15 +94,10 @@ class MainActivity : AppCompatActivity() {
             when {
                 ContextCompat.checkSelfPermission(
                     this, Manifest.permission.POST_NOTIFICATIONS
-                ) == PackageManager.PERMISSION_GRANTED -> {
-                    checkExactAlarmPermission()
-                }
-                shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS) -> {
+                ) == PackageManager.PERMISSION_GRANTED -> checkExactAlarmPermission()
+                shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS) ->
                     showPermissionRationaleDialog()
-                }
-                else -> {
-                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                }
+                else -> notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
         } else {
             checkExactAlarmPermission()
@@ -118,9 +107,7 @@ class MainActivity : AppCompatActivity() {
     private fun checkExactAlarmPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val alarmManager = getSystemService(ALARM_SERVICE) as AlarmManager
-            if (!alarmManager.canScheduleExactAlarms()) {
-                showExactAlarmPermissionDialog()
-            }
+            if (!alarmManager.canScheduleExactAlarms()) showExactAlarmPermissionDialog()
         }
     }
 
@@ -131,11 +118,9 @@ class MainActivity : AppCompatActivity() {
             .setPositiveButton(getString(R.string.alarm_to_settings)) { _, _ ->
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                     try {
-                        startActivity(
-                            Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
-                                data = Uri.parse("package:$packageName")
-                            }
-                        )
+                        startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                            data = Uri.parse("package:$packageName")
+                        })
                     } catch (e: Exception) {
                         Toast.makeText(this, getString(R.string.alarm_fallback), Toast.LENGTH_LONG).show()
                     }

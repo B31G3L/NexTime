@@ -1,7 +1,6 @@
 package todo.beigelwick.de.todolist.ui.screens.settings
 
 import androidx.appcompat.app.AppCompatDelegate
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -18,10 +17,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -37,21 +34,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.os.LocaleListCompat
 import kotlinx.coroutines.launch
-import todo.beigelwick.de.todolist.BuildConfig
 import todo.beigelwick.de.todolist.R
 import todo.beigelwick.de.todolist.data.model.Countdown
+import todo.beigelwick.de.todolist.data.model.DisplayUnit
 import todo.beigelwick.de.todolist.data.model.RecurrenceType
 import todo.beigelwick.de.todolist.ui.components.CountdownCard
-import todo.beigelwick.de.todolist.data.model.DisplayUnit
+import todo.beigelwick.de.todolist.ui.theme.AccentColor
+import todo.beigelwick.de.todolist.ui.theme.AccentColorPreferences
 import todo.beigelwick.de.todolist.ui.theme.AppLanguage
 import todo.beigelwick.de.todolist.ui.theme.AppPreferences
-import todo.beigelwick.de.todolist.ui.theme.CustomTheme
-import todo.beigelwick.de.todolist.ui.theme.CustomThemePreferences
 import todo.beigelwick.de.todolist.ui.theme.DisplayStyle
 import todo.beigelwick.de.todolist.ui.theme.LanguageManager
 import todo.beigelwick.de.todolist.ui.theme.ThemeMode
 import todo.beigelwick.de.todolist.ui.theme.ThemePreferences
-import todo.beigelwick.de.todolist.ui.theme.getThemeConfig
 import todo.beigelwick.de.todolist.utils.HapticFeedback
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -69,140 +64,51 @@ private val PREVIEW_COUNTDOWN = Countdown(
     recurrence     = RecurrenceType.NONE.name
 )
 
-// ─── Expandable Section ───────────────────────────────────────────────────────
-
-@Composable
-private fun ExpandableSection(
-    title      : String,
-    summary    : String? = null,
-    expanded   : Boolean,
-    onToggle   : () -> Unit,
-    content    : @Composable ColumnScope.() -> Unit
-) {
-    val arrowRotation by animateFloatAsState(
-        targetValue   = if (expanded) 180f else 0f,
-        animationSpec = tween(250),
-        label         = "arrow_$title"
-    )
-    val bgColor by animateColorAsState(
-        targetValue   = if (expanded)
-            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.08f)
-        else
-            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-        animationSpec = tween(200),
-        label         = "bg_$title"
-    )
-
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape    = RoundedCornerShape(16.dp),
-        color    = bgColor,
-        border   = if (expanded) BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f))
-        else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-    ) {
-        Column {
-            // ── Header ────────────────────────────────────────────────────────
-            Row(
-                modifier              = Modifier
-                    .fillMaxWidth()
-                    .clickable(onClick = onToggle)
-                    .padding(horizontal = 16.dp, vertical = 14.dp),
-                verticalAlignment     = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text       = title,
-                        style      = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color      = if (expanded) MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.onSurface
-                    )
-                    if (!summary.isNullOrBlank()) {
-                        Spacer(Modifier.height(2.dp))
-                        Text(
-                            text  = summary,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-                Icon(
-                    imageVector        = Icons.Default.KeyboardArrowDown,
-                    contentDescription = null,
-                    tint               = if (expanded) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier           = Modifier
-                        .size(22.dp)
-                        .rotate(arrowRotation)
-                )
-            }
-
-            // ── Inhalt ────────────────────────────────────────────────────────
-            AnimatedVisibility(
-                visible = expanded,
-                enter   = expandVertically(tween(300)) + fadeIn(tween(250)),
-                exit    = shrinkVertically(tween(250)) + fadeOut(tween(200))
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    content = content
-                )
-            }
-        }
-    }
-}
-
 // ─── Settings Screen ──────────────────────────────────────────────────────────
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(
-    onBack              : () -> Unit,
-    onNavigateToSim     : () -> Unit = {},
-    onNavigateToWelcome : () -> Unit = {}
-) {
+fun SettingsScreen(onBack: () -> Unit) {
     val context     = LocalContext.current
     val scope       = rememberCoroutineScope()
     val haptic      = remember { HapticFeedback(context) }
     val scrollState = rememberScrollState()
 
-    val themeMode    by ThemePreferences.getThemeMode(context).collectAsState(initial = ThemeMode.SYSTEM)
-    val customTheme  by CustomThemePreferences.getCustomTheme(context).collectAsState(initial = CustomTheme.BURGUNDY)
-    val defaultColor by AppPreferences.getDefaultColor(context).collectAsState(initial = "#FF7043")
-    val defaultTime  by AppPreferences.getDefaultTime(context).collectAsState(initial = LocalTime.of(12, 0))
+    // ── Preferences ──────────────────────────────────────────────────────────
+    val themeMode        by ThemePreferences.getThemeMode(context).collectAsState(initial = ThemeMode.SYSTEM)
+    val accentColor      by AccentColorPreferences.getAccentColor(context).collectAsState(initial = AccentColor.ORANGE)
+    val defaultColor     by AppPreferences.getDefaultColor(context).collectAsState(initial = "#FF7043")
+    val defaultTime      by AppPreferences.getDefaultTime(context).collectAsState(initial = LocalTime.of(12, 0))
     val defaultDateUnits by AppPreferences.getDefaultDateUnits(context).collectAsState(initial = setOf(DisplayUnit.DAYS))
     val showTimeOnCard   by AppPreferences.getShowTimeOnCard(context).collectAsState(initial = false)
-    val currentLang  by LanguageManager.getLanguage(context).collectAsState(initial = AppLanguage.SYSTEM)
-    val displayStyle by AppPreferences.getDisplayStyle(context).collectAsState(initial = DisplayStyle.NORMAL)
+    val currentLang      by LanguageManager.getLanguage(context).collectAsState(initial = AppLanguage.SYSTEM)
+    val displayStyle     by AppPreferences.getDisplayStyle(context).collectAsState(initial = DisplayStyle.NORMAL)
 
     // ── Expanded States ───────────────────────────────────────────────────────
     var expandedDarstellung   by remember { mutableStateOf(false) }
-    var expandedFarbschema    by remember { mutableStateOf(false) }
+    var expandedAkzentfarbe   by remember { mutableStateOf(false) }
     var expandedHellDunkel    by remember { mutableStateOf(false) }
     var expandedSprache       by remember { mutableStateOf(false) }
     var expandedStandards     by remember { mutableStateOf(false) }
     var expandedAnzeigeformat by remember { mutableStateOf(false) }
 
-    var showTimePicker   by remember { mutableStateOf(false) }
-    var showColorPicker  by remember { mutableStateOf(false) }
+    var showTimePicker  by remember { mutableStateOf(false) }
+    var showColorPicker by remember { mutableStateOf(false) }
 
-    // Summary-Texte für geschlossene Sektionen
+    // ── Summaries ─────────────────────────────────────────────────────────────
     val darstellungSummary = when (displayStyle) {
         DisplayStyle.COMPACT  -> stringResource(R.string.display_style_compact)
         DisplayStyle.NORMAL   -> stringResource(R.string.display_style_normal)
         DisplayStyle.GENEROUS -> stringResource(R.string.display_style_generous)
     }
-    val farbschemaSummary = when (customTheme) {
-        CustomTheme.BURGUNDY -> stringResource(R.string.theme_burgundy_name)
-        CustomTheme.SAGE     -> stringResource(R.string.theme_sage_name)
-        CustomTheme.PUMPKIN  -> stringResource(R.string.theme_pumpkin_name)
-        CustomTheme.OCEAN    -> stringResource(R.string.theme_ocean_name)
-        CustomTheme.VIOLET   -> stringResource(R.string.theme_violet_name)
-        CustomTheme.PEACH    -> stringResource(R.string.theme_peach_name)
+    val akzentfarbeSummary = when (accentColor) {
+        AccentColor.ORANGE  -> stringResource(R.string.accent_orange)
+        AccentColor.SAGE    -> stringResource(R.string.accent_sage)
+        AccentColor.VIOLET  -> stringResource(R.string.accent_violet)
+        AccentColor.CRIMSON -> stringResource(R.string.accent_crimson)
+        AccentColor.TEAL    -> stringResource(R.string.accent_teal)
+        AccentColor.GOLD    -> stringResource(R.string.accent_gold)
+        AccentColor.SLATE   -> stringResource(R.string.accent_slate)
     }
     val hellDunkelSummary = when (themeMode) {
         ThemeMode.SYSTEM -> stringResource(R.string.design_system)
@@ -210,15 +116,12 @@ fun SettingsScreen(
         ThemeMode.DARK   -> stringResource(R.string.design_dark)
     }
     val spracheSummary = currentLang.displayName
-    val standardsSummary = buildString {
-        append(defaultTime.format(DateTimeFormatter.ofPattern("HH:mm")))
-        append(" Uhr")
-    }
+    val standardsSummary = defaultTime.format(DateTimeFormatter.ofPattern("HH:mm")) + " Uhr"
     val dateUnitLabels = mapOf(
-        DisplayUnit.YEARS  to "Jahre",
-        DisplayUnit.MONTHS to "Monate",
-        DisplayUnit.WEEKS  to "Wochen",
-        DisplayUnit.DAYS   to "Tage"
+        DisplayUnit.YEARS  to stringResource(R.string.format_unit_years),
+        DisplayUnit.MONTHS to stringResource(R.string.format_unit_months),
+        DisplayUnit.WEEKS  to stringResource(R.string.format_unit_weeks),
+        DisplayUnit.DAYS   to stringResource(R.string.format_unit_days),
     )
     val anzeigeformatSummary = buildString {
         val sorted = listOf(DisplayUnit.YEARS, DisplayUnit.MONTHS, DisplayUnit.WEEKS, DisplayUnit.DAYS)
@@ -234,7 +137,7 @@ fun SettingsScreen(
                 title = { Text(stringResource(R.string.topbar_settings)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.back))
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
@@ -246,8 +149,8 @@ fun SettingsScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
                 .verticalScroll(scrollState)
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
 
             // ── 1. Darstellung ────────────────────────────────────────────────
@@ -278,18 +181,18 @@ fun SettingsScreen(
                 expanded = expandedAnzeigeformat,
                 onToggle = { haptic.tick(); expandedAnzeigeformat = !expandedAnzeigeformat }
             ) {
-                // ── Datumseinheiten (Checkboxen) ──────────────────────────────
+                // Datumseinheiten
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape    = RoundedCornerShape(12.dp),
+                    shape    = RoundedCornerShape(10.dp),
                     color    = MaterialTheme.colorScheme.surface
                 ) {
                     Column(modifier = Modifier.padding(4.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         listOf(
-                            DisplayUnit.YEARS  to "Jahre",
-                            DisplayUnit.MONTHS to "Monate",
-                            DisplayUnit.WEEKS  to "Wochen",
-                            DisplayUnit.DAYS   to "Tage",
+                            DisplayUnit.YEARS  to stringResource(R.string.format_unit_years),
+                            DisplayUnit.MONTHS to stringResource(R.string.format_unit_months),
+                            DisplayUnit.WEEKS  to stringResource(R.string.format_unit_weeks),
+                            DisplayUnit.DAYS   to stringResource(R.string.format_unit_days),
                         ).forEach { (unit, label) ->
                             val isChecked = unit in defaultDateUnits
                             Row(
@@ -323,74 +226,76 @@ fun SettingsScreen(
                     }
                 }
 
-                // ── Uhrzeit-Toggle ────────────────────────────────────────────
-                Row(
-                    modifier              = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.surface)
-                        .padding(horizontal = 12.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment     = Alignment.CenterVertically
+                // Uhrzeit-Toggle
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape    = RoundedCornerShape(10.dp),
+                    color    = MaterialTheme.colorScheme.surface
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("Uhrzeit (HH:mm:ss)", style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = if (showTimeOnCard) FontWeight.SemiBold else FontWeight.Normal,
-                            color = if (showTimeOnCard) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.onSurface)
-                        Text("Wird unter den Datumseinheiten angezeigt",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    Switch(
-                        checked         = showTimeOnCard,
-                        onCheckedChange = { checked ->
-                            haptic.tick()
-                            scope.launch { AppPreferences.setShowTimeOnCard(context, checked) }
+                    Row(
+                        modifier              = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment     = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text       = "Uhrzeit (HH:mm:ss)",
+                                style      = MaterialTheme.typography.bodyMedium,
+                                fontWeight = if (showTimeOnCard) FontWeight.SemiBold else FontWeight.Normal,
+                                color      = if (showTimeOnCard) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text  = "Wird unter den Datumseinheiten angezeigt",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
-                    )
+                        Switch(
+                            checked         = showTimeOnCard,
+                            onCheckedChange = { checked ->
+                                haptic.tick()
+                                scope.launch { AppPreferences.setShowTimeOnCard(context, checked) }
+                            }
+                        )
+                    }
                 }
 
-                // ── Vorschau ──────────────────────────────────────────────────
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(vertical = 4.dp))
-                Text(stringResource(R.string.preview_label), style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 4.dp))
+                // Vorschau
+                HorizontalDivider(
+                    color    = MaterialTheme.colorScheme.outlineVariant,
+                    modifier = Modifier.padding(vertical = 4.dp)
+                )
+                Text(
+                    stringResource(R.string.preview_label),
+                    style    = MaterialTheme.typography.labelSmall,
+                    color    = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
                 key(defaultDateUnits, showTimeOnCard) {
                     CountdownCard(countdown = PREVIEW_COUNTDOWN)
                 }
-
-                // ── Simulate-Button ───────────────────────────────────────
-                OutlinedButton(
-                    onClick  = { haptic.tick(); onNavigateToSim() },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(
-                        imageVector        = Icons.Default.PlayArrow,
-                        contentDescription = null,
-                        modifier           = Modifier.size(18.dp)
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text("Alle Formate simulieren")
-                }
             }
 
-            // ── 3. Farbschema ─────────────────────────────────────────────────
+            // ── 3. Akzentfarbe ────────────────────────────────────────────────
             ExpandableSection(
                 title    = stringResource(R.string.settings_color_scheme),
-                summary  = if (!expandedFarbschema) farbschemaSummary else null,
-                expanded = expandedFarbschema,
-                onToggle = { haptic.tick(); expandedFarbschema = !expandedFarbschema }
+                summary  = if (!expandedAkzentfarbe) akzentfarbeSummary else null,
+                expanded = expandedAkzentfarbe,
+                onToggle = { haptic.tick(); expandedAkzentfarbe = !expandedAkzentfarbe }
             ) {
                 Text(
-                    text  = stringResource(R.string.settings_color_hint),
+                    text  = stringResource(R.string.settings_accent_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                ThemePickerGrid(
-                    currentTheme    = customTheme,
-                    onThemeSelected = { theme ->
+                AccentColorPicker(
+                    currentAccent    = accentColor,
+                    onAccentSelected = { accent ->
                         haptic.success()
-                        scope.launch { CustomThemePreferences.setCustomTheme(context, theme) }
+                        scope.launch { AccentColorPreferences.setAccentColor(context, accent) }
                     }
                 )
             }
@@ -402,16 +307,22 @@ fun SettingsScreen(
                 expanded = expandedHellDunkel,
                 onToggle = { haptic.tick(); expandedHellDunkel = !expandedHellDunkel }
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    ThemeModeOption("⚙️  ${stringResource(R.string.design_system)}", themeMode == ThemeMode.SYSTEM) {
-                        haptic.tick(); scope.launch { ThemePreferences.setThemeMode(context, ThemeMode.SYSTEM) }
-                    }
-                    ThemeModeOption("🌞  ${stringResource(R.string.design_light)}", themeMode == ThemeMode.LIGHT) {
-                        haptic.tick(); scope.launch { ThemePreferences.setThemeMode(context, ThemeMode.LIGHT) }
-                    }
-                    ThemeModeOption("🌙  ${stringResource(R.string.design_dark)}", themeMode == ThemeMode.DARK) {
-                        haptic.tick(); scope.launch { ThemePreferences.setThemeMode(context, ThemeMode.DARK) }
-                    }
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    ThemeModeOption(
+                        label      = "⚙️  ${stringResource(R.string.design_system)}",
+                        isSelected = themeMode == ThemeMode.SYSTEM,
+                        onClick    = { haptic.tick(); scope.launch { ThemePreferences.setThemeMode(context, ThemeMode.SYSTEM) } }
+                    )
+                    ThemeModeOption(
+                        label      = "🌞  ${stringResource(R.string.design_light)}",
+                        isSelected = themeMode == ThemeMode.LIGHT,
+                        onClick    = { haptic.tick(); scope.launch { ThemePreferences.setThemeMode(context, ThemeMode.LIGHT) } }
+                    )
+                    ThemeModeOption(
+                        label      = "🌙  ${stringResource(R.string.design_dark)}",
+                        isSelected = themeMode == ThemeMode.DARK,
+                        onClick    = { haptic.tick(); scope.launch { ThemePreferences.setThemeMode(context, ThemeMode.DARK) } }
+                    )
                 }
             }
 
@@ -461,68 +372,6 @@ fun SettingsScreen(
                 )
             }
 
-            Spacer(Modifier.height(8.dp))
-
-            // ── Willkommensscreen ─────────────────────────────────────────────
-            OutlinedButton(
-                onClick  = { haptic.tick(); onNavigateToWelcome() },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(
-                    imageVector        = Icons.Default.WbSunny,
-                    contentDescription = null,
-                    modifier           = Modifier.size(18.dp)
-                )
-                Spacer(Modifier.width(8.dp))
-                Text("Willkommensscreen anzeigen")
-            }
-
-            Spacer(Modifier.height(24.dp))
-
-            // ── App-Info Footer ───────────────────────────────────────────────
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape    = RoundedCornerShape(16.dp),
-                color    = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-            ) {
-                Column(
-                    modifier            = Modifier.padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Text(
-                        text       = "NexTime",
-                        style      = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color      = MaterialTheme.colorScheme.onSurface
-                    )
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer
-                    ) {
-                        Text(
-                            text     = "v${BuildConfig.VERSION_NAME}",
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),
-                            style    = MaterialTheme.typography.labelMedium,
-                            color    = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
-                    Spacer(Modifier.height(2.dp))
-                    Text(
-                        text      = "Entwickelt mit ❤️ von Beigel",
-                        style     = MaterialTheme.typography.bodySmall,
-                        color     = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                    )
-                    Text(
-                        text      = "Solo-Entwickler • NexTime ist kostenlos",
-                        style     = MaterialTheme.typography.bodySmall,
-                        color     = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                    )
-                }
-            }
-
             Spacer(Modifier.height(24.dp))
         }
     }
@@ -540,9 +389,10 @@ fun SettingsScreen(
             title = { Text(stringResource(R.string.dialog_default_color)) },
             text  = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    // Schnellauswahl
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier              = Modifier.fillMaxWidth()
+                        modifier              = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         listOf(
                             "#FF7043","#EF5350","#EC407A","#AB47BC","#5C6BC0",
@@ -551,7 +401,7 @@ fun SettingsScreen(
                             val c = try { Color(android.graphics.Color.parseColor(hex)) }
                             catch (e: Exception) { MaterialTheme.colorScheme.primary }
                             Surface(
-                                modifier = Modifier.size(32.dp),
+                                modifier = Modifier.size(28.dp),
                                 shape    = CircleShape,
                                 color    = c,
                                 onClick  = {
@@ -561,14 +411,14 @@ fun SettingsScreen(
                             ) {
                                 if (defaultColor == hex) {
                                     Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                                        Text("✓", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                        Text("✓", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 11.sp)
                                     }
                                 }
                             }
                         }
                     }
                     HorizontalDivider()
-                    Box(modifier = Modifier.size(40.dp).clip(CircleShape).background(Color(android.graphics.Color.rgb(r, g, b))))
+                    Box(modifier = Modifier.size(36.dp).clip(CircleShape).background(Color(android.graphics.Color.rgb(r, g, b))))
                     Slider(value = r.toFloat(), onValueChange = { r = it.toInt() }, valueRange = 0f..255f)
                     Slider(value = g.toFloat(), onValueChange = { g = it.toInt() }, valueRange = 0f..255f)
                     Slider(value = b.toFloat(), onValueChange = { b = it.toInt() }, valueRange = 0f..255f)
@@ -619,8 +469,191 @@ fun SettingsScreen(
     }
 }
 
-// ─── Standard-Format Picker ───────────────────────────────────────────────────
+// ─── Expandable Section ───────────────────────────────────────────────────────
 
+@Composable
+private fun ExpandableSection(
+    title    : String,
+    summary  : String? = null,
+    expanded : Boolean,
+    onToggle : () -> Unit,
+    content  : @Composable ColumnScope.() -> Unit
+) {
+    val arrowRotation by animateFloatAsState(
+        targetValue   = if (expanded) 180f else 0f,
+        animationSpec = tween(250),
+        label         = "arrow_$title"
+    )
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape    = RoundedCornerShape(14.dp),
+        color    = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+        border   = BorderStroke(
+            width = 1.dp,
+            color = if (expanded)
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.30f)
+            else
+                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+        )
+    ) {
+        Column {
+            // Header
+            Row(
+                modifier              = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onToggle)
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalAlignment     = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text       = title,
+                        style      = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color      = if (expanded) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurface
+                    )
+                    if (!summary.isNullOrBlank()) {
+                        Spacer(Modifier.height(1.dp))
+                        Text(
+                            text  = summary,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                Icon(
+                    imageVector        = Icons.Default.KeyboardArrowDown,
+                    contentDescription = null,
+                    tint               = if (expanded) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier           = Modifier.size(20.dp).rotate(arrowRotation)
+                )
+            }
+
+            // Inhalt
+            androidx.compose.animation.AnimatedVisibility(
+                visible = expanded,
+                enter   = expandVertically(tween(280)) + fadeIn(tween(220)),
+                exit    = shrinkVertically(tween(220)) + fadeOut(tween(180))
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    content = content
+                )
+            }
+        }
+    }
+}
+
+// ─── Akzentfarben-Picker ──────────────────────────────────────────────────────
+
+@Composable
+private fun AccentColorPicker(
+    currentAccent    : AccentColor,
+    onAccentSelected : (AccentColor) -> Unit
+) {
+    val allAccents = AccentColor.values().toList()
+    // 4 pro Reihe
+    val rows = allAccents.chunked(4)
+
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        rows.forEach { row ->
+            Row(
+                modifier              = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                row.forEach { accent ->
+                    AccentColorTile(
+                        accent      = accent,
+                        isSelected  = currentAccent == accent,
+                        onClick     = { onAccentSelected(accent) },
+                        modifier    = Modifier.weight(1f)
+                    )
+                }
+                repeat(4 - row.size) { Box(modifier = Modifier.weight(1f)) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AccentColorTile(
+    accent     : AccentColor,
+    isSelected : Boolean,
+    onClick    : () -> Unit,
+    modifier   : Modifier = Modifier
+) {
+    val borderColor by animateColorAsState(
+        targetValue   = if (isSelected) accent.light else Color.Transparent,
+        animationSpec = tween(200),
+        label         = "border_${accent.name}"
+    )
+    val bgColor by animateColorAsState(
+        targetValue   = if (isSelected)
+            accent.light.copy(alpha = 0.08f)
+        else
+            MaterialTheme.colorScheme.surface,
+        animationSpec = tween(200),
+        label         = "bg_${accent.name}"
+    )
+    val accentName = when (accent) {
+        AccentColor.ORANGE  -> stringResource(R.string.accent_orange)
+        AccentColor.SAGE    -> stringResource(R.string.accent_sage)
+        AccentColor.VIOLET  -> stringResource(R.string.accent_violet)
+        AccentColor.CRIMSON -> stringResource(R.string.accent_crimson)
+        AccentColor.TEAL    -> stringResource(R.string.accent_teal)
+        AccentColor.GOLD    -> stringResource(R.string.accent_gold)
+        AccentColor.SLATE   -> stringResource(R.string.accent_slate)
+    }
+
+    Surface(
+        modifier = modifier,
+        shape    = RoundedCornerShape(12.dp),
+        color    = bgColor,
+        border   = BorderStroke(if (isSelected) 2.dp else 1.dp, borderColor.copy(
+            alpha = if (isSelected) 1f else 0.15f
+        )),
+        onClick  = onClick
+    ) {
+        Column(
+            modifier            = Modifier.padding(vertical = 10.dp, horizontal = 6.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Box(
+                modifier         = Modifier
+                    .size(28.dp)
+                    .clip(CircleShape)
+                    .background(accent.light),
+                contentAlignment = Alignment.Center
+            ) {
+                if (isSelected) {
+                    Icon(
+                        Icons.Default.Check,
+                        contentDescription = null,
+                        tint               = Color.White,
+                        modifier           = Modifier.size(14.dp)
+                    )
+                }
+            }
+            Text(
+                text       = accentName,
+                style      = MaterialTheme.typography.labelSmall,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                color      = if (isSelected) accent.light
+                else MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines   = 1,
+                fontSize   = 10.sp
+            )
+        }
+    }
+}
 
 // ─── DisplayStyle Picker ──────────────────────────────────────────────────────
 
@@ -634,7 +667,7 @@ private fun DisplayStylePicker(
         DisplayStyle.NORMAL   to stringResource(R.string.display_style_normal),
         DisplayStyle.GENEROUS to stringResource(R.string.display_style_generous),
     )
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         styles.forEach { (style, label) ->
             DisplayStyleCard(
                 style           = style,
@@ -660,16 +693,19 @@ private fun DisplayStyleCard(
         label         = "border_${style.name}"
     )
     val bgColor by animateColorAsState(
-        targetValue   = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f)
-        else MaterialTheme.colorScheme.surface,
+        targetValue   = if (isSelected)
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.06f)
+        else
+            MaterialTheme.colorScheme.surface,
         animationSpec = tween(200),
         label         = "bg_${style.name}"
     )
+
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape    = RoundedCornerShape(12.dp),
         color    = bgColor,
-        border   = BorderStroke(if (isSelected) 2.dp else 0.5.dp, borderColor),
+        border   = BorderStroke(if (isSelected) 1.5.dp else 1.dp, borderColor),
         onClick  = { onStyleSelected(style) }
     ) {
         Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -681,14 +717,23 @@ private fun DisplayStyleCard(
                 Text(
                     text       = label,
                     style      = MaterialTheme.typography.bodyMedium,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                     color      = if (isSelected) MaterialTheme.colorScheme.primary
                     else MaterialTheme.colorScheme.onSurface
                 )
                 if (isSelected) {
-                    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp)) {
+                    Surface(
+                        shape    = CircleShape,
+                        color    = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp)
+                    ) {
                         Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                            Icon(Icons.Default.Check, null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(13.dp))
+                            Icon(
+                                Icons.Default.Check,
+                                contentDescription = null,
+                                tint               = MaterialTheme.colorScheme.onPrimary,
+                                modifier           = Modifier.size(11.dp)
+                            )
                         }
                     }
                 }
@@ -696,88 +741,6 @@ private fun DisplayStyleCard(
             Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp))) {
                 CountdownCard(countdown = PREVIEW_COUNTDOWN, previewStyle = style)
             }
-        }
-    }
-}
-
-// ─── Theme Picker Grid ────────────────────────────────────────────────────────
-
-@Composable
-private fun ThemePickerGrid(currentTheme: CustomTheme, onThemeSelected: (CustomTheme) -> Unit) {
-    val chunks = CustomTheme.values().toList().chunked(2)
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        chunks.forEach { row ->
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                row.forEach { theme ->
-                    ThemePickerCard(
-                        theme      = theme,
-                        isSelected = currentTheme == theme,
-                        onClick    = { onThemeSelected(theme) },
-                        modifier   = Modifier.weight(1f)
-                    )
-                }
-                if (row.size == 1) Box(modifier = Modifier.weight(1f))
-            }
-        }
-    }
-}
-
-@Composable
-private fun ThemePickerCard(
-    theme      : CustomTheme,
-    isSelected : Boolean,
-    onClick    : () -> Unit,
-    modifier   : Modifier = Modifier
-) {
-    val config       = getThemeConfig(theme)
-    val primaryLight = config.lightColorScheme.primary
-    val secondary    = config.lightColorScheme.secondary
-    val tertiary     = config.lightColorScheme.tertiary
-
-    val bgColor by animateColorAsState(
-        targetValue   = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f)
-        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
-        animationSpec = tween(200),
-        label         = "bg_${theme.name}"
-    )
-    Surface(
-        modifier = modifier,
-        shape    = RoundedCornerShape(14.dp),
-        color    = bgColor,
-        border   = BorderStroke(
-            width = if (isSelected) 2.dp else 1.dp,
-            color = if (isSelected) MaterialTheme.colorScheme.primary
-            else MaterialTheme.colorScheme.outlineVariant
-        ),
-        onClick  = onClick
-    ) {
-        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalAlignment = Alignment.CenterVertically) {
-                Box(modifier = Modifier.size(28.dp).clip(CircleShape).background(primaryLight))
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Box(modifier = Modifier.width(22.dp).height(11.dp).clip(RoundedCornerShape(4.dp)).background(secondary))
-                    Box(modifier = Modifier.width(22.dp).height(11.dp).clip(RoundedCornerShape(4.dp)).background(tertiary))
-                }
-                if (isSelected) {
-                    Spacer(Modifier.weight(1f))
-                    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp)) {
-                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                            Text("✓", color = MaterialTheme.colorScheme.onPrimary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
-            }
-            val (name, desc) = when (theme) {
-                CustomTheme.BURGUNDY -> stringResource(R.string.theme_burgundy_name) to stringResource(R.string.theme_burgundy_desc)
-                CustomTheme.SAGE     -> stringResource(R.string.theme_sage_name)     to stringResource(R.string.theme_sage_desc)
-                CustomTheme.PUMPKIN  -> stringResource(R.string.theme_pumpkin_name)  to stringResource(R.string.theme_pumpkin_desc)
-                CustomTheme.OCEAN    -> stringResource(R.string.theme_ocean_name)    to stringResource(R.string.theme_ocean_desc)
-                CustomTheme.VIOLET   -> stringResource(R.string.theme_violet_name)   to stringResource(R.string.theme_violet_desc)
-                CustomTheme.PEACH    -> stringResource(R.string.theme_peach_name)    to stringResource(R.string.theme_peach_desc)
-            }
-            Text(text = name, style = MaterialTheme.typography.bodyMedium, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
-            Text(text = desc, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -803,27 +766,44 @@ private fun LanguagePickerSection(
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape    = MaterialTheme.shapes.medium,
-                color    = if (isSelected) MaterialTheme.colorScheme.primaryContainer
-                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                color    = if (isSelected)
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
+                else
+                    MaterialTheme.colorScheme.surface,
+                border   = BorderStroke(
+                    width = if (isSelected) 1.5.dp else 1.dp,
+                    color = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
+                    else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+                ),
                 onClick  = { onLanguageSelected(language) }
             ) {
                 Row(
-                    modifier              = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 13.dp),
+                    modifier              = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment     = Alignment.CenterVertically
                 ) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text(text = flags[language] ?: "🌐", fontSize = 20.sp)
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalAlignment     = Alignment.CenterVertically
+                    ) {
+                        Text(text = flags[language] ?: "🌐", fontSize = 18.sp)
                         Text(
                             text       = language.displayName,
                             style      = MaterialTheme.typography.bodyMedium,
                             fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                            color      = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
+                            color      = if (isSelected) MaterialTheme.colorScheme.primary
                             else MaterialTheme.colorScheme.onSurface
                         )
                     }
                     if (isSelected) {
-                        Icon(Icons.Default.Check, null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+                        Icon(
+                            Icons.Default.Check,
+                            contentDescription = null,
+                            modifier           = Modifier.size(16.dp),
+                            tint               = MaterialTheme.colorScheme.primary
+                        )
                     }
                 }
             }
@@ -831,23 +811,38 @@ private fun LanguagePickerSection(
     }
 }
 
-// ─── Settings Helpers ─────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 @Composable
 private fun ThemeModeOption(label: String, isSelected: Boolean, onClick: () -> Unit) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape    = MaterialTheme.shapes.medium,
-        color    = if (isSelected) MaterialTheme.colorScheme.primaryContainer
-        else MaterialTheme.colorScheme.surfaceVariant,
+        color    = if (isSelected)
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
+        else
+            MaterialTheme.colorScheme.surface,
+        border   = BorderStroke(
+            width = if (isSelected) 1.5.dp else 1.dp,
+            color = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
+            else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+        ),
         onClick  = onClick
     ) {
         Row(
-            modifier              = Modifier.fillMaxWidth().padding(14.dp),
+            modifier              = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment     = Alignment.CenterVertically
         ) {
-            Text(label, style = MaterialTheme.typography.bodyMedium)
+            Text(
+                text       = label,
+                style      = MaterialTheme.typography.bodyMedium,
+                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                color      = if (isSelected) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.onSurface
+            )
             RadioButton(selected = isSelected, onClick = onClick)
         }
     }
@@ -858,17 +853,28 @@ private fun SettingsRow(label: String, value: String, onClick: () -> Unit) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape    = MaterialTheme.shapes.medium,
-        color    = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        color    = MaterialTheme.colorScheme.surface,
+        border   = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
         onClick  = onClick
     ) {
         Row(
-            modifier              = Modifier.fillMaxWidth().padding(16.dp),
+            modifier              = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 14.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment     = Alignment.CenterVertically
         ) {
-            Text(label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-            Spacer(Modifier.width(8.dp))
-            Text(text = value, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
+            Text(
+                text     = label,
+                style    = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.weight(1f)
+            )
+            Text(
+                text       = value,
+                style      = MaterialTheme.typography.bodyMedium,
+                color      = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Medium
+            )
         }
     }
 }
@@ -877,19 +883,28 @@ private fun SettingsRow(label: String, value: String, onClick: () -> Unit) {
 private fun SettingsRowColor(label: String, color: String, onClick: () -> Unit) {
     val parsedColor = try { Color(android.graphics.Color.parseColor(color)) }
     catch (e: Exception) { MaterialTheme.colorScheme.primary }
+
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape    = MaterialTheme.shapes.medium,
-        color    = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        color    = MaterialTheme.colorScheme.surface,
+        border   = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
         onClick  = onClick
     ) {
         Row(
-            modifier              = Modifier.fillMaxWidth().padding(16.dp),
+            modifier              = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 14.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment     = Alignment.CenterVertically
         ) {
-            Text(label, style = MaterialTheme.typography.bodyMedium)
-            Box(modifier = Modifier.size(24.dp).clip(CircleShape).background(parsedColor))
+            Text(text = label, style = MaterialTheme.typography.bodyMedium)
+            Box(
+                modifier = Modifier
+                    .size(22.dp)
+                    .clip(CircleShape)
+                    .background(parsedColor)
+            )
         }
     }
 }

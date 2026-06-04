@@ -10,14 +10,17 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.material3.*
@@ -37,10 +40,13 @@ import todo.beigelwick.de.todolist.R
 import todo.beigelwick.de.todolist.data.model.Countdown
 import todo.beigelwick.de.todolist.data.model.DisplayFormat
 import todo.beigelwick.de.todolist.data.model.DisplayUnit
-import todo.beigelwick.de.todolist.data.model.DISPLAY_UNIT_ORDER
 import todo.beigelwick.de.todolist.data.model.RecurrenceType
 import todo.beigelwick.de.todolist.data.model.ReminderOption
+import todo.beigelwick.de.todolist.ui.components.ALL_NEXTIME_ICONS
 import todo.beigelwick.de.todolist.ui.components.CountdownCard
+import todo.beigelwick.de.todolist.ui.components.DEFAULT_ICON_NAME
+import todo.beigelwick.de.todolist.ui.components.IconCategory
+import todo.beigelwick.de.todolist.ui.components.iconByName
 import todo.beigelwick.de.todolist.ui.theme.AppPreferences
 import todo.beigelwick.de.todolist.ui.viewmodel.CountdownViewModel
 import todo.beigelwick.de.todolist.utils.HapticFeedback
@@ -48,13 +54,6 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
-
-private val QUICK_EMOJIS = listOf(
-    "⏰", "🎂", "✈️", "🎄", "🎃", "🎵", "🏖️", "💍",
-    "🎓", "🏆", "🎉", "❤️", "🚀", "🌍", "🏠", "💼",
-    "🐶", "🎮", "⚽", "🍕", "🎁", "💪", "🌸", "🔥",
-    "🎯", "📚", "🏋️", "🎸", "🌈", "🦋", "🍀", "⭐"
-)
 
 private val REMINDER_GROUPS = listOf(
     R.string.reminder_group_attime to listOf(ReminderOption.AT_TIME),
@@ -91,7 +90,7 @@ fun AddEditScreen(
 
     // ── State ─────────────────────────────────────────────────────────────────
     var title               by remember { mutableStateOf("") }
-    var icon                by remember { mutableStateOf("⏰") }
+    var icon                by remember { mutableStateOf(DEFAULT_ICON_NAME) }
     var selectedDate        by remember { mutableStateOf(LocalDate.now().plusDays(1)) }
     var selectedTime        by remember { mutableStateOf(LocalTime.of(12, 0)) }
     var showTime            by remember { mutableStateOf(false) }
@@ -99,39 +98,20 @@ fun AddEditScreen(
     var selectedColor       by remember { mutableStateOf("#FF7043") }
     var notificationEnabled by remember { mutableStateOf(false) }
     val selectedReminders   = remember { mutableStateListOf<ReminderOption>() }
-    // Abweichendes Format pro Eintrag (leer = globale Settings verwenden)
-    var useCustomFormat      by remember { mutableStateOf(false) }
-    var customDateUnits      by remember { mutableStateOf(setOf(DisplayUnit.DAYS)) }
-    var customShowTime       by remember { mutableStateOf(false) }
-
-    val initialized = remember { mutableStateOf(false) }
+    val initialized         = remember { mutableStateOf(false) }
 
     LaunchedEffect(existingCountdown, defaultColor, defaultTime) {
         if (initialized.value) return@LaunchedEffect
         if (isEdit && existingCountdown == null) return@LaunchedEffect
-
         val cd = existingCountdown
         title               = cd?.title ?: ""
-        icon                = cd?.icon ?: "⏰"
+        icon                = cd?.icon?.ifEmpty { DEFAULT_ICON_NAME } ?: DEFAULT_ICON_NAME
         selectedDate        = cd?.targetDateTime?.toLocalDate() ?: LocalDate.now().plusDays(1)
         selectedTime        = cd?.targetDateTime?.toLocalTime() ?: defaultTime
         showTime            = cd?.targetDateTime?.toLocalTime()?.let { it != LocalTime.MIDNIGHT } ?: false
         selectedRecurrence  = cd?.recurrenceType ?: RecurrenceType.NONE
         selectedColor       = cd?.color ?: defaultColor
         notificationEnabled = cd?.notificationEnabled ?: false
-
-        // Abweichendes Format laden falls vorhanden
-        if (cd != null && cd.displayFormat.isNotBlank()) {
-            val decoded = DisplayFormat.decode(cd.displayFormat)
-            val dateUnits = decoded.filter { it !in setOf(DisplayUnit.HOURS, DisplayUnit.MINUTES, DisplayUnit.SECONDS) }.toSet()
-            val hasTime = decoded.any { it in setOf(DisplayUnit.HOURS, DisplayUnit.MINUTES, DisplayUnit.SECONDS) }
-            if (dateUnits.isNotEmpty()) {
-                useCustomFormat = true
-                customDateUnits = dateUnits
-                customShowTime  = hasTime
-            }
-        }
-
         if (cd != null && cd.reminderOptions.isNotEmpty()) {
             selectedReminders.clear()
             cd.reminderOptions.split(",").forEach { name ->
@@ -147,26 +127,16 @@ fun AddEditScreen(
     )
 
     val isCountUp = remember(selectedDate) { selectedDate.isBefore(LocalDate.now()) }
-
     LaunchedEffect(isCountUp) {
         if (isCountUp && selectedRecurrence != RecurrenceType.NONE) selectedRecurrence = RecurrenceType.NONE
     }
 
-    // previewCountdown zeigt das eigene Format wenn aktiviert
-    val previewDisplayFormat = if (useCustomFormat) {
-        val units = customDateUnits.toMutableSet()
-        if (customShowTime) {
-            units += DisplayUnit.HOURS; units += DisplayUnit.MINUTES; units += DisplayUnit.SECONDS
-        }
-        DisplayFormat.encode(units)
-    } else ""
-
     val previewCountdown = Countdown(
         id             = existingCountdown?.id ?: 0L,
         title          = title.ifBlank { stringResource(R.string.preview_placeholder) },
-        icon           = icon.ifBlank { "⏰" },
+        icon           = icon.ifEmpty { DEFAULT_ICON_NAME },
         targetDateTime = LocalDateTime.of(selectedDate, if (showTime) selectedTime else LocalTime.MIDNIGHT),
-        displayFormat  = previewDisplayFormat,
+        displayFormat  = "",
         color          = selectedColor,
         recurrence     = selectedRecurrence.name
     )
@@ -176,17 +146,9 @@ fun AddEditScreen(
         return Countdown(
             id                  = existingCountdown?.id ?: 0L,
             title               = title,
-            icon                = icon.ifBlank { "⏰" },
+            icon                = icon.ifEmpty { DEFAULT_ICON_NAME },
             targetDateTime      = target,
-            displayFormat       = if (useCustomFormat) {
-                val units = customDateUnits.toMutableSet()
-                if (customShowTime) {
-                    units += DisplayUnit.HOURS
-                    units += DisplayUnit.MINUTES
-                    units += DisplayUnit.SECONDS
-                }
-                DisplayFormat.encode(units)
-            } else "",
+            displayFormat       = "",
             color               = selectedColor,
             notificationEnabled = notificationEnabled,
             reminderOptions     = selectedReminders.joinToString(",") { it.name },
@@ -207,14 +169,16 @@ fun AddEditScreen(
                 title = {
                     Text(
                         if (isEdit) stringResource(R.string.topbar_edit)
-                        else        stringResource(R.string.topbar_create)
+                        else        stringResource(R.string.topbar_create),
+                        style = MaterialTheme.typography.titleMedium
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = { haptic.tick(); onBack() }) {
-                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.close))
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
             )
         }
     ) { paddingValues ->
@@ -228,8 +192,7 @@ fun AddEditScreen(
                 .pointerInput(Unit) {
                     detectHorizontalDragGestures(
                         onHorizontalDrag = { change, dragAmount ->
-                            swipeOffset += dragAmount
-                            change.consume()
+                            swipeOffset += dragAmount; change.consume()
                         },
                         onDragEnd    = {
                             if (swipeOffset > 150f) { haptic.tick(); onBack() }
@@ -240,26 +203,21 @@ fun AddEditScreen(
                 }
         ) {
 
-            // ── 1. Vorschau (sticky) ──────────────────────────────────────────
+            // ── Vorschau ──────────────────────────────────────────────────────
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(MaterialTheme.colorScheme.background)
-                    .padding(horizontal = 12.dp, vertical = 8.dp)
+                    .padding(horizontal = 16.dp, vertical = 10.dp)
             ) {
                 Text(
                     text     = stringResource(R.string.preview_label),
                     style    = MaterialTheme.typography.labelSmall,
                     color    = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = 6.dp, start = 4.dp)
+                    modifier = Modifier.padding(bottom = 6.dp)
                 )
-                key(
-                    previewCountdown.targetDateTime,
-                    previewCountdown.color,
-                    previewCountdown.title,
-                    previewCountdown.icon,
-                    previewDisplayFormat,
-                ) {
+                key(previewCountdown.targetDateTime, previewCountdown.color,
+                    previewCountdown.title, previewCountdown.icon) {
                     CountdownCard(countdown = previewCountdown)
                 }
                 HorizontalDivider(
@@ -268,39 +226,44 @@ fun AddEditScreen(
                 )
             }
 
-            // ── Scrollbarer Inhalt ────────────────────────────────────────────
+            // ── Formular ──────────────────────────────────────────────────────
             Column(
-                modifier            = Modifier
+                modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
                     .verticalScroll(scrollState)
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                    .padding(horizontal = 16.dp)
+                    .padding(top = 4.dp, bottom = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(0.dp)
             ) {
 
-                // ── 2. Icon + Name ────────────────────────────────────────────
-                SectionCard {
+                // ── 1. Icon + Titel ───────────────────────────────────────────
+                FormSection {
                     Row(
                         verticalAlignment     = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         modifier              = Modifier.fillMaxWidth()
                     ) {
+                        // Icon-Button ohne Hintergrundbox
                         Box(
-                            modifier         = Modifier
-                                .size(64.dp)
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+                            modifier = Modifier
+                                .size(48.dp)
+                                .clip(RoundedCornerShape(12.dp))
                                 .border(
-                                    width = 1.5.dp,
-                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
-                                    shape = RoundedCornerShape(16.dp)
+                                    width = 1.dp,
+                                    color = MaterialTheme.colorScheme.outlineVariant,
+                                    shape = RoundedCornerShape(12.dp)
                                 )
                                 .clickable { haptic.tick(); showIconSheet = true },
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(text = icon.ifBlank { "⏰" }, fontSize = 28.sp)
+                            Icon(
+                                imageVector        = iconByName(icon),
+                                contentDescription = stringResource(R.string.section_icon),
+                                tint               = MaterialTheme.colorScheme.primary,
+                                modifier           = Modifier.size(26.dp)
+                            )
                         }
-
                         OutlinedTextField(
                             value         = title,
                             onValueChange = { title = it },
@@ -315,418 +278,283 @@ fun AddEditScreen(
                     }
                 }
 
-                // ── 3. Datum & Uhrzeit ────────────────────────────────────────
-                SectionCard(title = stringResource(R.string.section_datetime)) {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                FormDivider()
 
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier              = Modifier.fillMaxWidth()
+                // ── 2. Datum & Uhrzeit ────────────────────────────────────────
+                FormSection(label = stringResource(R.string.section_datetime)) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier              = Modifier.fillMaxWidth()
+                    ) {
+                        OutlinedButton(
+                            onClick  = { haptic.tick(); showDatePicker = true },
+                            modifier = Modifier.weight(1f)
                         ) {
-                            OutlinedButton(
-                                onClick  = { haptic.tick(); showDatePicker = true },
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Icon(Icons.Default.CalendarToday, null, modifier = Modifier.size(18.dp))
-                                Spacer(Modifier.width(8.dp))
-                                Text(selectedDate.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")))
-                            }
-                            TextButton(onClick = { selectedDate = LocalDate.now() }) {
-                                Text(stringResource(R.string.today_button))
-                            }
+                            Icon(Icons.Default.CalendarToday, null, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text(selectedDate.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")))
                         }
-
-                        Row(
-                            modifier              = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment     = Alignment.CenterVertically
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    Icons.Default.AccessTime,
-                                    null,
-                                    modifier = Modifier.size(18.dp),
-                                    tint     = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Spacer(Modifier.width(8.dp))
-                                Text(
-                                    text  = stringResource(R.string.time_toggle),
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                            }
-                            Switch(
-                                checked         = showTime,
-                                onCheckedChange = { haptic.tick(); showTime = it }
-                            )
-                        }
-
-                        AnimatedVisibility(
-                            visible = showTime,
-                            enter   = fadeIn() + expandVertically(),
-                            exit    = fadeOut() + shrinkVertically()
-                        ) {
-                            OutlinedButton(
-                                onClick  = { haptic.tick(); showTimePicker = true },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Icon(Icons.Default.Schedule, null, modifier = Modifier.size(18.dp))
-                                Spacer(Modifier.width(8.dp))
-                                Text(selectedTime.format(DateTimeFormatter.ofPattern("HH:mm")) + " Uhr")
-                            }
+                        TextButton(onClick = { selectedDate = LocalDate.now() }) {
+                            Text(stringResource(R.string.today_button))
                         }
                     }
-                }
 
-                // ── 4. Farbe ──────────────────────────────────────────────────
-                SectionCard(title = stringResource(R.string.section_color)) {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Row(
-                            modifier              = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            colorOptions.forEach { colorHex ->
-                                ColorCircle(
-                                    color      = Color(android.graphics.Color.parseColor(colorHex)),
-                                    isSelected = selectedColor == colorHex,
-                                    onClick    = { haptic.tick(); selectedColor = colorHex },
-                                    modifier   = Modifier.size(32.dp)
-                                )
-                            }
-                        }
+                    Row(
+                        modifier              = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment     = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text  = stringResource(R.string.time_toggle),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Switch(
+                            checked         = showTime,
+                            onCheckedChange = { haptic.tick(); showTime = it }
+                        )
+                    }
+
+                    AnimatedVisibility(
+                        visible = showTime,
+                        enter   = fadeIn() + expandVertically(),
+                        exit    = fadeOut() + shrinkVertically()
+                    ) {
                         OutlinedButton(
-                            onClick  = { haptic.tick(); showCustomColorPicker = true },
+                            onClick  = { haptic.tick(); showTimePicker = true },
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(18.dp)
-                                    .clip(CircleShape)
-                                    .background(
-                                        try { Color(android.graphics.Color.parseColor(selectedColor)) }
-                                        catch (e: Exception) { MaterialTheme.colorScheme.primary }
-                                    )
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            Text(stringResource(R.string.custom_color_label))
+                            Icon(Icons.Default.Schedule, null, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text(selectedTime.format(DateTimeFormatter.ofPattern("HH:mm")) + " Uhr")
                         }
                     }
                 }
 
-                // ── 5. Benachrichtigung ───────────────────────────────────────
-                SectionCard(title = stringResource(R.string.section_notifications)) {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Row(
-                            modifier              = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment     = Alignment.CenterVertically
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    Icons.Default.Notifications,
-                                    null,
-                                    modifier = Modifier.size(18.dp),
-                                    tint     = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Spacer(Modifier.width(8.dp))
-                                Text(
-                                    text  = stringResource(R.string.notification_enable),
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                            }
-                            Switch(
-                                checked         = notificationEnabled,
-                                onCheckedChange = { haptic.tick(); notificationEnabled = it }
-                            )
-                        }
+                FormDivider()
 
-                        AnimatedVisibility(
-                            visible = notificationEnabled,
-                            enter   = fadeIn() + expandVertically(),
-                            exit    = fadeOut() + shrinkVertically()
-                        ) {
-                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                REMINDER_GROUPS.forEach { (groupLabelRes, options) ->
-                                    Text(
-                                        text     = stringResource(groupLabelRes),
-                                        style    = MaterialTheme.typography.labelSmall,
-                                        color    = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.padding(top = 8.dp, bottom = 2.dp, start = 4.dp)
+                // ── 3. Farbe ──────────────────────────────────────────────────
+                FormSection(label = stringResource(R.string.section_color)) {
+                    Row(
+                        modifier              = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment     = Alignment.CenterVertically
+                    ) {
+                        colorOptions.forEach { colorHex ->
+                            val parsed = try { Color(android.graphics.Color.parseColor(colorHex)) }
+                            catch (e: Exception) { MaterialTheme.colorScheme.primary }
+                            Box(
+                                modifier = Modifier
+                                    .size(28.dp)
+                                    .clip(CircleShape)
+                                    .background(parsed)
+                                    .then(
+                                        if (selectedColor == colorHex)
+                                            Modifier.border(2.5.dp, MaterialTheme.colorScheme.onBackground, CircleShape)
+                                        else
+                                            Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
                                     )
-                                    options.forEach { option ->
-                                        Row(
-                                            modifier              = Modifier
-                                                .fillMaxWidth()
-                                                .clickable {
-                                                    haptic.tick()
-                                                    if (selectedReminders.contains(option))
-                                                        selectedReminders.remove(option)
-                                                    else
-                                                        selectedReminders.add(option)
-                                                }
-                                                .padding(horizontal = 8.dp, vertical = 6.dp),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment     = Alignment.CenterVertically
-                                        ) {
-                                            Text(
-                                                text  = reminderLabel(option),
-                                                style = MaterialTheme.typography.bodyMedium
-                                            )
-                                            if (selectedReminders.contains(option)) {
-                                                Icon(
-                                                    Icons.Default.Check,
-                                                    null,
-                                                    modifier = Modifier.size(18.dp),
-                                                    tint     = MaterialTheme.colorScheme.primary
-                                                )
-                                            }
-                                        }
+                                    .clickable { haptic.tick(); selectedColor = colorHex }
+                            ) {
+                                if (selectedColor == colorHex) {
+                                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            Icons.Default.Check, null,
+                                            tint     = Color.White,
+                                            modifier = Modifier.size(14.dp)
+                                        )
                                     }
                                 }
                             }
                         }
+                        // Eigene Farbe
+                        Box(
+                            modifier = Modifier
+                                .size(28.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    try { Color(android.graphics.Color.parseColor(selectedColor)) }
+                                    catch (e: Exception) { MaterialTheme.colorScheme.primary }
+                                )
+                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
+                                .clickable { haptic.tick(); showCustomColorPicker = true },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.Add, null,
+                                tint     = Color.White,
+                                modifier = Modifier.size(14.dp)
+                            )
+                        }
                     }
                 }
 
-                // ── 6. Abweichendes Anzeigeformat ────────────────────────
-                SectionCard(title = "Anzeigeformat") {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Row(
-                            modifier              = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment     = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text  = if (useCustomFormat) "Eigenes Format" else "Globale Einstellung",
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                                Text(
-                                    text  = if (useCustomFormat) "Dieses Format überschreibt die Settings"
-                                    else "Format aus den Einstellungen wird verwendet",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Switch(
-                                checked         = useCustomFormat,
-                                onCheckedChange = { haptic.tick(); useCustomFormat = it }
-                            )
-                        }
+                FormDivider()
 
-                        AnimatedVisibility(
-                            visible = useCustomFormat,
-                            enter   = fadeIn() + expandVertically(),
-                            exit    = fadeOut() + shrinkVertically()
-                        ) {
-                            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                                // Datumseinheiten
-                                listOf(
-                                    DisplayUnit.YEARS  to "Jahre",
-                                    DisplayUnit.MONTHS to "Monate",
-                                    DisplayUnit.WEEKS  to "Wochen",
-                                    DisplayUnit.DAYS   to "Tage",
-                                ).forEach { (unit, label) ->
-                                    val isChecked = unit in customDateUnits
+                // ── 4. Benachrichtigungen ─────────────────────────────────────
+                FormSection(label = stringResource(R.string.section_notifications)) {
+                    Row(
+                        modifier              = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment     = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text  = stringResource(R.string.notification_enable),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Switch(
+                            checked         = notificationEnabled,
+                            onCheckedChange = { haptic.tick(); notificationEnabled = it }
+                        )
+                    }
+
+                    AnimatedVisibility(
+                        visible = notificationEnabled,
+                        enter   = fadeIn() + expandVertically(),
+                        exit    = fadeOut() + shrinkVertically()
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            REMINDER_GROUPS.forEach { (groupLabelRes, options) ->
+                                Text(
+                                    text     = stringResource(groupLabelRes),
+                                    style    = MaterialTheme.typography.labelSmall,
+                                    color    = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(top = 10.dp, bottom = 2.dp)
+                                )
+                                options.forEach { option ->
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .clip(RoundedCornerShape(8.dp))
                                             .clickable {
                                                 haptic.tick()
-                                                customDateUnits = if (isChecked) {
-                                                    if (customDateUnits.size > 1) customDateUnits - unit
-                                                    else customDateUnits
-                                                } else customDateUnits + unit
+                                                if (selectedReminders.contains(option))
+                                                    selectedReminders.remove(option)
+                                                else
+                                                    selectedReminders.add(option)
                                             }
-                                            .padding(horizontal = 8.dp, vertical = 8.dp),
-                                        verticalAlignment     = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceBetween
+                                            .padding(horizontal = 4.dp, vertical = 8.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment     = Alignment.CenterVertically
                                     ) {
                                         Text(
-                                            text       = label,
-                                            style      = MaterialTheme.typography.bodyMedium,
-                                            fontWeight = if (isChecked) FontWeight.SemiBold else FontWeight.Normal,
-                                            color      = if (isChecked) MaterialTheme.colorScheme.primary
-                                            else MaterialTheme.colorScheme.onSurface
+                                            text  = reminderLabel(option),
+                                            style = MaterialTheme.typography.bodyMedium
                                         )
-                                        Checkbox(checked = isChecked, onCheckedChange = null)
+                                        if (selectedReminders.contains(option)) {
+                                            Icon(
+                                                Icons.Default.Check, null,
+                                                modifier = Modifier.size(16.dp),
+                                                tint     = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
                                     }
-                                }
-                                // Uhrzeit-Toggle
-                                Row(
-                                    modifier              = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment     = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text       = "Uhrzeit (HH:mm:ss)",
-                                        style      = MaterialTheme.typography.bodyMedium,
-                                        fontWeight = if (customShowTime) FontWeight.SemiBold else FontWeight.Normal,
-                                        color      = if (customShowTime) MaterialTheme.colorScheme.primary
-                                        else MaterialTheme.colorScheme.onSurface
-                                    )
-                                    Switch(
-                                        checked         = customShowTime,
-                                        onCheckedChange = { haptic.tick(); customShowTime = it }
-                                    )
                                 }
                             }
                         }
                     }
                 }
 
-                // ── 7. Wiederholung ───────────────────────────────────────────
-                SectionCard(title = stringResource(R.string.section_recurrence)) {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                FormDivider()
+
+                // ── 5. Wiederholung ───────────────────────────────────────────
+                FormSection(label = stringResource(R.string.section_recurrence)) {
+                    Row(
+                        modifier              = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment     = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text  = stringResource(R.string.recurrence_hint),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            if (selectedRecurrence != RecurrenceType.NONE) {
+                                Text(
+                                    text  = recurrenceLabel(selectedRecurrence),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                        Switch(
+                            checked         = selectedRecurrence != RecurrenceType.NONE,
+                            onCheckedChange = { enabled ->
+                                haptic.tick()
+                                selectedRecurrence = if (enabled) RecurrenceType.YEARLY else RecurrenceType.NONE
+                            },
+                            enabled = !isCountUp
+                        )
+                    }
+
+                    AnimatedVisibility(
+                        visible = isCountUp,
+                        enter   = fadeIn() + expandVertically(),
+                        exit    = fadeOut() + shrinkVertically()
+                    ) {
                         Row(
-                            modifier              = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier              = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f))
+                                .padding(10.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment     = Alignment.CenterVertically
                         ) {
-                            Row(
-                                verticalAlignment     = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                modifier              = Modifier.weight(1f)
-                            ) {
-                                Icon(
-                                    imageVector        = Icons.Outlined.Repeat,
-                                    contentDescription = null,
-                                    modifier           = Modifier.size(18.dp),
-                                    tint               = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Column {
-                                    Text(
-                                        text  = stringResource(R.string.recurrence_hint),
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
-                                    if (selectedRecurrence != RecurrenceType.NONE) {
-                                        Text(
-                                            text  = recurrenceLabel(selectedRecurrence),
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.primary
-                                        )
-                                    }
-                                }
-                            }
-                            Switch(
-                                checked         = selectedRecurrence != RecurrenceType.NONE,
-                                onCheckedChange = { enabled ->
-                                    haptic.tick()
-                                    selectedRecurrence =
-                                        if (enabled) RecurrenceType.YEARLY else RecurrenceType.NONE
-                                },
-                                enabled = !isCountUp
+                            Icon(
+                                Icons.Default.Info, null,
+                                modifier = Modifier.size(14.dp),
+                                tint     = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                            Text(
+                                text  = stringResource(R.string.recurrence_countup_hint),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onErrorContainer
                             )
                         }
+                    }
 
-                        AnimatedVisibility(
-                            visible = isCountUp,
-                            enter   = fadeIn() + expandVertically(),
-                            exit    = fadeOut() + shrinkVertically()
-                        ) {
-                            Surface(
-                                modifier = Modifier.fillMaxWidth(),
-                                color    = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.6f),
-                                shape    = RoundedCornerShape(8.dp)
-                            ) {
+                    AnimatedVisibility(
+                        visible = selectedRecurrence != RecurrenceType.NONE && !isCountUp,
+                        enter   = fadeIn() + expandVertically(),
+                        exit    = fadeOut() + shrinkVertically()
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            HorizontalDivider(
+                                modifier = Modifier.padding(vertical = 6.dp),
+                                color    = MaterialTheme.colorScheme.outlineVariant
+                            )
+                            listOf(
+                                RecurrenceType.DAILY   to stringResource(R.string.recurrence_daily),
+                                RecurrenceType.WEEKLY  to stringResource(R.string.recurrence_weekly),
+                                RecurrenceType.MONTHLY to stringResource(R.string.recurrence_monthly),
+                                RecurrenceType.YEARLY  to stringResource(R.string.recurrence_yearly),
+                            ).forEach { (type, label) ->
                                 Row(
-                                    modifier              = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .clickable { haptic.tick(); selectedRecurrence = type }
+                                        .padding(horizontal = 4.dp, vertical = 10.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment     = Alignment.CenterVertically
                                 ) {
-                                    Icon(
-                                        Icons.Default.Info, null,
-                                        modifier = Modifier.size(16.dp),
-                                        tint     = MaterialTheme.colorScheme.onErrorContainer
-                                    )
                                     Text(
-                                        text  = stringResource(R.string.recurrence_countup_hint),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onErrorContainer
+                                        text       = label,
+                                        style      = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = if (selectedRecurrence == type) FontWeight.SemiBold else FontWeight.Normal,
+                                        color      = if (selectedRecurrence == type)
+                                            MaterialTheme.colorScheme.primary
+                                        else
+                                            MaterialTheme.colorScheme.onSurface
                                     )
-                                }
-                            }
-                        }
-
-                        AnimatedVisibility(
-                            visible = selectedRecurrence != RecurrenceType.NONE && !isCountUp,
-                            enter   = fadeIn() + expandVertically(),
-                            exit    = fadeOut() + shrinkVertically()
-                        ) {
-                            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                                HorizontalDivider(
-                                    modifier = Modifier.padding(vertical = 4.dp),
-                                    color    = MaterialTheme.colorScheme.outlineVariant
-                                )
-                                listOf(
-                                    RecurrenceType.DAILY   to stringResource(R.string.recurrence_daily),
-                                    RecurrenceType.WEEKLY  to stringResource(R.string.recurrence_weekly),
-                                    RecurrenceType.MONTHLY to stringResource(R.string.recurrence_monthly),
-                                    RecurrenceType.YEARLY  to stringResource(R.string.recurrence_yearly),
-                                ).forEach { (type, label) ->
-                                    Row(
-                                        modifier              = Modifier
-                                            .fillMaxWidth()
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .clickable { haptic.tick(); selectedRecurrence = type }
-                                            .padding(horizontal = 8.dp, vertical = 8.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment     = Alignment.CenterVertically
-                                    ) {
-                                        Row(
-                                            verticalAlignment     = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                                        ) {
-                                            Text(
-                                                text     = when (type) {
-                                                    RecurrenceType.DAILY   -> "📅"
-                                                    RecurrenceType.WEEKLY  -> "🗓️"
-                                                    RecurrenceType.MONTHLY -> "📆"
-                                                    RecurrenceType.YEARLY  -> "🎯"
-                                                    RecurrenceType.NONE    -> "🚫"
-                                                },
-                                                fontSize = 18.sp
-                                            )
-                                            Text(
-                                                text       = label,
-                                                style      = MaterialTheme.typography.bodyMedium,
-                                                fontWeight = if (selectedRecurrence == type) FontWeight.Bold else FontWeight.Normal,
-                                                color      = if (selectedRecurrence == type)
-                                                    MaterialTheme.colorScheme.primary
-                                                else
-                                                    MaterialTheme.colorScheme.onSurface
-                                            )
-                                        }
-                                        if (selectedRecurrence == type) {
-                                            Icon(
-                                                Icons.Default.Check, null,
-                                                modifier = Modifier.size(18.dp),
-                                                tint     = MaterialTheme.colorScheme.primary
-                                            )
-                                        }
-                                    }
-                                }
-
-                                Surface(
-                                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                                    color    = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
-                                    shape    = RoundedCornerShape(8.dp)
-                                ) {
-                                    Row(
-                                        modifier              = Modifier.padding(10.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        verticalAlignment     = Alignment.CenterVertically
-                                    ) {
+                                    if (selectedRecurrence == type) {
                                         Icon(
-                                            Icons.Default.Info, null,
+                                            Icons.Default.Check, null,
                                             modifier = Modifier.size(16.dp),
                                             tint     = MaterialTheme.colorScheme.primary
-                                        )
-                                        Text(
-                                            text  = stringResource(R.string.recurrence_info),
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.primary
                                         )
                                     }
                                 }
@@ -739,6 +567,7 @@ fun AddEditScreen(
             }
 
             // ── Buttons ───────────────────────────────────────────────────────
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             Row(
                 modifier              = Modifier
                     .fillMaxWidth()
@@ -766,96 +595,120 @@ fun AddEditScreen(
                     enabled  = title.isNotBlank(),
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text(stringResource(R.string.save_button), fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.save_button), fontWeight = FontWeight.SemiBold)
                 }
             }
         }
     }
 
-    // ── Icon BottomSheet ──────────────────────────────────────────────────────
+    // ── Icon-BottomSheet ──────────────────────────────────────────────────────
     if (showIconSheet) {
-        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        val sheetState        = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        var selectedCategory  by remember { mutableStateOf<IconCategory?>(null) }
+        val visibleIcons      = remember(selectedCategory) {
+            if (selectedCategory == null) ALL_NEXTIME_ICONS
+            else ALL_NEXTIME_ICONS.filter { it.category == selectedCategory }
+        }
+
         ModalBottomSheet(
             onDismissRequest = { haptic.tick(); showIconSheet = false },
             sheetState       = sheetState,
             containerColor   = MaterialTheme.colorScheme.surface,
-            shape            = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+            shape            = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp)
+                    .padding(horizontal = 16.dp)
                     .padding(bottom = 32.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
                     text       = stringResource(R.string.section_icon),
                     style      = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.SemiBold
                 )
 
+                // Kategorie-Filter
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier              = Modifier.fillMaxWidth()
+                ) {
+                    item {
+                        FilterChip(
+                            selected = selectedCategory == null,
+                            onClick  = { haptic.tick(); selectedCategory = null },
+                            label    = { Text(stringResource(R.string.template_cat_all)) }
+                        )
+                    }
+                    items(IconCategory.values().toList()) { category ->
+                        FilterChip(
+                            selected = selectedCategory == category,
+                            onClick  = { haptic.tick(); selectedCategory = category },
+                            label    = {
+                                Text(
+                                    when (category) {
+                                        IconCategory.TIME      -> stringResource(R.string.icon_cat_time)
+                                        IconCategory.TRAVEL    -> stringResource(R.string.icon_cat_travel)
+                                        IconCategory.CELEBRATE -> stringResource(R.string.icon_cat_celebrate)
+                                        IconCategory.WORK      -> stringResource(R.string.icon_cat_work)
+                                        IconCategory.SPORT     -> stringResource(R.string.icon_cat_sport)
+                                        IconCategory.NATURE    -> stringResource(R.string.icon_cat_nature)
+                                        IconCategory.HOME      -> stringResource(R.string.icon_cat_home)
+                                        IconCategory.OTHER     -> stringResource(R.string.icon_cat_other)
+                                    }
+                                )
+                            }
+                        )
+                    }
+                }
+
+                // Icon-Grid
                 LazyVerticalGrid(
-                    columns               = GridCells.Fixed(8),
+                    columns               = GridCells.Fixed(6),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement   = Arrangement.spacedBy(8.dp),
                     modifier              = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = 240.dp)
+                        .heightIn(max = 340.dp)
                 ) {
-                    items(QUICK_EMOJIS) { emoji ->
+                    items(visibleIcons) { nexIcon ->
+                        val isSelected = icon == nexIcon.name
                         Box(
-                            modifier         = Modifier
+                            modifier = Modifier
                                 .aspectRatio(1f)
                                 .clip(RoundedCornerShape(10.dp))
                                 .background(
-                                    if (icon == emoji)
-                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                                    if (isSelected)
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
                                     else
                                         MaterialTheme.colorScheme.surfaceVariant
                                 )
                                 .then(
-                                    if (icon == emoji)
-                                        Modifier.border(
-                                            1.5.dp,
-                                            MaterialTheme.colorScheme.primary,
-                                            RoundedCornerShape(10.dp)
-                                        )
-                                    else Modifier
+                                    if (isSelected)
+                                        Modifier.border(1.5.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(10.dp))
+                                    else
+                                        Modifier
                                 )
                                 .clickable {
                                     haptic.tick()
-                                    icon = emoji
+                                    icon = nexIcon.name
                                     showIconSheet = false
                                 },
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(text = emoji, fontSize = 22.sp)
+                            Icon(
+                                imageVector        = nexIcon.vector,
+                                contentDescription = nexIcon.name,
+                                tint               = if (isSelected)
+                                    MaterialTheme.colorScheme.primary
+                                else
+                                    MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier           = Modifier.size(24.dp)
+                            )
                         }
                     }
                 }
-
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-
-                OutlinedTextField(
-                    value         = icon,
-                    onValueChange = { if (it.length <= 2) icon = it },
-                    label         = { Text(stringResource(R.string.icon_placeholder)) },
-                    modifier      = Modifier.fillMaxWidth(),
-                    singleLine    = true,
-                    trailingIcon  = {
-                        if (icon.isNotBlank()) {
-                            Text(
-                                text     = icon,
-                                fontSize = 20.sp,
-                                modifier = Modifier.padding(end = 8.dp)
-                            )
-                        }
-                    },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor   = MaterialTheme.colorScheme.surface,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surface
-                    )
-                )
             }
         }
     }
@@ -875,7 +728,7 @@ fun AddEditScreen(
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Box(
                         modifier = Modifier
-                            .size(48.dp)
+                            .size(40.dp)
                             .clip(CircleShape)
                             .background(Color(android.graphics.Color.rgb(r, g, b)))
                     )
@@ -895,8 +748,7 @@ fun AddEditScreen(
                 TextButton(onClick = { haptic.tick(); showCustomColorPicker = false }) {
                     Text(stringResource(R.string.cancel))
                 }
-            },
-            containerColor = MaterialTheme.colorScheme.surface
+            }
         )
     }
 
@@ -986,62 +838,34 @@ private fun recurrenceLabel(type: RecurrenceType): String = when (type) {
     RecurrenceType.NONE    -> ""
 }
 
+// ─── Layout-Helfer ────────────────────────────────────────────────────────────
+
 @Composable
-private fun SectionCard(
-    title   : String? = null,
+private fun FormSection(
+    label   : String? = null,
     content : @Composable ColumnScope.() -> Unit
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors   = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        ),
-        shape = RoundedCornerShape(12.dp)
+    Column(
+        modifier            = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        Column(
-            modifier            = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            if (title != null) {
-                Text(
-                    text       = title,
-                    style      = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color      = MaterialTheme.colorScheme.primary
-                )
-            }
-            content()
+        if (label != null) {
+            Text(
+                text  = label,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
+        content()
     }
 }
 
 @Composable
-private fun ColorCircle(
-    color      : Color,
-    isSelected : Boolean,
-    onClick    : () -> Unit,
-    modifier   : Modifier = Modifier
-) {
-    Box(
-        modifier         = modifier
-            .clip(CircleShape)
-            .background(color)
-            .then(
-                if (isSelected)
-                    Modifier.border(3.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                else
-                    Modifier.border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f), CircleShape)
-            )
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center
-    ) {
-        if (isSelected) {
-            Icon(
-                Icons.Default.Check,
-                null,
-                tint     = Color.White,
-                modifier = Modifier.size(14.dp)
-            )
-        }
-    }
+private fun FormDivider() {
+    HorizontalDivider(
+        color     = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+        thickness = 0.5.dp
+    )
 }
