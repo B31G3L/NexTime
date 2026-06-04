@@ -33,6 +33,7 @@ import todo.beigelwick.de.todolist.data.model.DisplayFormat
 import todo.beigelwick.de.todolist.data.model.DisplayUnit
 import todo.beigelwick.de.todolist.data.model.buildDisplaySegments
 import todo.beigelwick.de.todolist.data.model.calculateTimeRemaining
+import todo.beigelwick.de.todolist.ui.theme.AppPreferences
 import java.time.format.DateTimeFormatter
 
 class CountdownWidget : GlanceAppWidget() {
@@ -56,19 +57,35 @@ class CountdownWidget : GlanceAppWidget() {
 
         val appWidgetId = try {
             glanceManager.getAppWidgetId(id)
-        } catch (e: Exception) {
-            AppWidgetManager.INVALID_APPWIDGET_ID
-        }
+        } catch (e: Exception) { AppWidgetManager.INVALID_APPWIDGET_ID }
 
-        val selectedCountdownId = if (appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
+        val selectedCountdownId = if (appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID)
             WidgetConfigActivity.loadCountdownId(context, appWidgetId)
-        } else null
+        else null
 
         val database  = CountdownDatabase.getDatabase(context)
-        val countdown = if (selectedCountdownId != null) {
+        val countdown = if (selectedCountdownId != null)
             database.countdownDao().getCountdownById(selectedCountdownId)
-        } else {
+        else
             database.countdownDao().getAllCountdowns().first().firstOrNull()
+
+        // BUG FIX: Globale Settings lesen wenn countdown.displayFormat leer
+        val globalDateUnits  = AppPreferences.getDefaultDateUnits(context).first()
+        val globalShowTime   = AppPreferences.getShowTimeOnCard(context).first()
+
+        // Effektives Format bestimmen (eigenes Format hat Vorrang)
+        val effectiveDateUnits: Set<DisplayUnit>
+        val effectiveShowTime: Boolean
+        if (countdown != null && countdown.displayFormat.isNotBlank()) {
+            val decoded = DisplayFormat.decode(countdown.displayFormat)
+            effectiveDateUnits = decoded
+                .filter { it !in setOf(DisplayUnit.HOURS, DisplayUnit.MINUTES, DisplayUnit.SECONDS) }
+                .toSet()
+                .ifEmpty { globalDateUnits }
+            effectiveShowTime = decoded.any { it in setOf(DisplayUnit.HOURS, DisplayUnit.MINUTES, DisplayUnit.SECONDS) }
+        } else {
+            effectiveDateUnits = globalDateUnits
+            effectiveShowTime  = globalShowTime
         }
 
         provideContent {
@@ -84,234 +101,21 @@ class CountdownWidget : GlanceAppWidget() {
             val accentColor = parseColor(countdown.color)
 
             when {
-                size.width >= SIZE_XLARGE.width                                      -> XLargeLayout(context, countdown, timeInfo, accentColor, clickAction)
-                size.width >= SIZE_LARGE.width                                       -> LargeLayout(context, countdown, timeInfo, accentColor, clickAction)
-                size.width >= SIZE_MEDIUM.width && size.height >= SIZE_MEDIUM.height -> MediumLayout(context, countdown, timeInfo, accentColor, clickAction)
-                size.width >= SIZE_WIDE.width                                        -> WideLayout(context, countdown, timeInfo, accentColor, clickAction)
-                size.height >= SIZE_TALL.height                                      -> TallLayout(context, countdown, timeInfo, accentColor, clickAction)
-                else                                                                 -> SmallLayout(context, countdown, timeInfo, accentColor, clickAction)
-            }
-        }
-    }
-
-    // ─── 1×1 ─────────────────────────────────────────────────────────────────
-
-    @Composable
-    private fun SmallLayout(context: Context, countdown: Countdown, timeInfo: CountdownInfo, accentColor: Color, clickAction: Action) {
-        val darker   = darken(accentColor)
-        val mainVal  = formatMainValue(timeInfo, countdown.displayFormat)
-        val mainUnit = formatMainUnitShort(context, timeInfo, countdown.displayFormat)
-
-        Box(modifier = GlanceModifier.fillMaxSize().background(accentColor).cornerRadius(16.dp).clickable(clickAction), contentAlignment = Alignment.Center) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalAlignment = Alignment.CenterVertically, modifier = GlanceModifier.fillMaxSize().padding(4.dp)) {
-                Box(modifier = GlanceModifier.fillMaxWidth().height(3.dp).background(darker)) {}
-                Spacer(GlanceModifier.defaultWeight())
-                Text(text = countdown.icon.ifBlank { "⏰" }, style = TextStyle(fontSize = 22.sp, textAlign = TextAlign.Center))
-                Spacer(GlanceModifier.height(2.dp))
-                Text(text = mainVal, style = TextStyle(fontSize = 22.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White), textAlign = TextAlign.Center))
-                Text(text = mainUnit, style = TextStyle(fontSize = 9.sp, color = ColorProvider(Color.White.copy(alpha = 0.8f)), textAlign = TextAlign.Center))
-                Spacer(GlanceModifier.defaultWeight())
-                Box(modifier = GlanceModifier.fillMaxWidth().height(3.dp).background(darker)) {}
-            }
-        }
-    }
-
-    // ─── 1×2 ─────────────────────────────────────────────────────────────────
-
-    @Composable
-    private fun TallLayout(context: Context, countdown: Countdown, timeInfo: CountdownInfo, accentColor: Color, clickAction: Action) {
-        val darker   = darken(accentColor)
-        val mainVal  = formatMainValue(timeInfo, countdown.displayFormat)
-        val mainUnit = formatMainUnitShort(context, timeInfo, countdown.displayFormat)
-
-        Box(modifier = GlanceModifier.fillMaxSize().background(accentColor).cornerRadius(16.dp).clickable(clickAction)) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = GlanceModifier.fillMaxSize()) {
-                Box(modifier = GlanceModifier.fillMaxWidth().height(3.dp).background(darker)) {}
-                Spacer(GlanceModifier.defaultWeight())
-                Text(text = countdown.icon.ifBlank { "⏰" }, style = TextStyle(fontSize = 26.sp, textAlign = TextAlign.Center))
-                Spacer(GlanceModifier.height(4.dp))
-                Text(text = countdown.title, style = TextStyle(fontSize = 10.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White.copy(alpha = 0.85f)), textAlign = TextAlign.Center), maxLines = 1)
-                Spacer(GlanceModifier.height(6.dp))
-                Text(text = mainVal, style = TextStyle(fontSize = 28.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White), textAlign = TextAlign.Center))
-                Text(text = mainUnit, style = TextStyle(fontSize = 10.sp, color = ColorProvider(Color.White.copy(alpha = 0.8f)), textAlign = TextAlign.Center))
-                Spacer(GlanceModifier.defaultWeight())
-                Box(modifier = GlanceModifier.fillMaxWidth().height(3.dp).background(darker)) {}
-            }
-        }
-    }
-
-    // ─── 2×1 ─────────────────────────────────────────────────────────────────
-
-    @Composable
-    private fun WideLayout(context: Context, countdown: Countdown, timeInfo: CountdownInfo, accentColor: Color, clickAction: Action) {
-        val darker   = darken(accentColor)
-        val mainVal  = formatMainValue(timeInfo, countdown.displayFormat)
-        val mainUnit = formatMainUnitShort(context, timeInfo, countdown.displayFormat)
-
-        Box(modifier = GlanceModifier.fillMaxSize().background(accentColor).cornerRadius(16.dp).clickable(clickAction)) {
-            Column(modifier = GlanceModifier.fillMaxSize()) {
-                Box(modifier = GlanceModifier.fillMaxWidth().height(3.dp).background(darker)) {}
-                Row(modifier = GlanceModifier.fillMaxSize().padding(horizontal = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Box(modifier = GlanceModifier.size(44.dp).background(Color.White.copy(alpha = 0.2f)).cornerRadius(10.dp), contentAlignment = Alignment.Center) {
-                        Text(text = countdown.icon.ifBlank { "⏰" }, style = TextStyle(fontSize = 22.sp))
-                    }
-                    Spacer(GlanceModifier.width(10.dp))
-                    Column(modifier = GlanceModifier.defaultWeight()) {
-                        Text(text = countdown.title, style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White.copy(alpha = 0.85f))), maxLines = 1)
-                        Spacer(GlanceModifier.height(2.dp))
-                        Text(text = "$mainVal $mainUnit", style = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White)))
-                        Text(text = countdown.effectiveTarget.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")), style = TextStyle(fontSize = 9.sp, color = ColorProvider(Color.White.copy(alpha = 0.65f))))
-                    }
-                }
-            }
-        }
-    }
-
-    // ─── 2×2 ─────────────────────────────────────────────────────────────────
-
-    @Composable
-    private fun MediumLayout(context: Context, countdown: Countdown, timeInfo: CountdownInfo, accentColor: Color, clickAction: Action) {
-        val darker   = darken(accentColor)
-        val mainVal  = formatMainValue(timeInfo, countdown.displayFormat)
-        val mainUnit = formatMainUnitFull(context, timeInfo, countdown.displayFormat)
-
-        Box(modifier = GlanceModifier.fillMaxSize().background(accentColor).cornerRadius(16.dp).clickable(clickAction)) {
-            Column(modifier = GlanceModifier.fillMaxSize()) {
-                Box(modifier = GlanceModifier.fillMaxWidth().height(3.dp).background(darker)) {}
-                Column(modifier = GlanceModifier.fillMaxSize().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(modifier = GlanceModifier.size(36.dp).background(Color.White.copy(alpha = 0.2f)).cornerRadius(8.dp), contentAlignment = Alignment.Center) {
-                            Text(text = countdown.icon.ifBlank { "⏰" }, style = TextStyle(fontSize = 18.sp))
-                        }
-                        Spacer(GlanceModifier.width(8.dp))
-                        Text(text = countdown.title, style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White.copy(alpha = 0.85f))), maxLines = 1, modifier = GlanceModifier.defaultWeight())
-                    }
-                    Spacer(GlanceModifier.defaultWeight())
-                    Text(text = mainVal, style = TextStyle(fontSize = 28.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White)))
-                    Text(text = mainUnit, style = TextStyle(fontSize = 13.sp, color = ColorProvider(Color.White.copy(alpha = 0.8f))))
-                    if (countdown.hasTime) {
-                        Text(text = "%02d:%02d:%02d".format(timeInfo.hours, timeInfo.minutes, timeInfo.seconds), style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White.copy(alpha = 0.9f))))
-                    }
-                    Spacer(GlanceModifier.defaultWeight())
-                    Text(text = countdown.effectiveTarget.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")), style = TextStyle(fontSize = 9.sp, color = ColorProvider(Color.White.copy(alpha = 0.6f))))
-                }
-                Box(modifier = GlanceModifier.fillMaxWidth().height(3.dp).background(darker)) {}
-            }
-        }
-    }
-
-    // ─── 3×2 ─────────────────────────────────────────────────────────────────
-
-    @Composable
-    private fun LargeLayout(context: Context, countdown: Countdown, timeInfo: CountdownInfo, accentColor: Color, clickAction: Action) {
-        val darker   = darken(accentColor)
-        val mainVal  = formatMainValue(timeInfo, countdown.displayFormat)
-        val mainUnit = formatMainUnitFull(context, timeInfo, countdown.displayFormat)
-
-        Box(modifier = GlanceModifier.fillMaxSize().background(accentColor).cornerRadius(16.dp).clickable(clickAction)) {
-            Column(modifier = GlanceModifier.fillMaxSize()) {
-                Box(modifier = GlanceModifier.fillMaxWidth().height(3.dp).background(darker)) {}
-                Row(modifier = GlanceModifier.fillMaxSize().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Box(modifier = GlanceModifier.size(52.dp).background(Color.White.copy(alpha = 0.2f)).cornerRadius(12.dp), contentAlignment = Alignment.Center) {
-                        Text(text = countdown.icon.ifBlank { "⏰" }, style = TextStyle(fontSize = 26.sp))
-                    }
-                    Spacer(GlanceModifier.width(12.dp))
-                    Column(modifier = GlanceModifier.defaultWeight(), verticalAlignment = Alignment.CenterVertically) {
-                        Text(text = countdown.title, style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White.copy(alpha = 0.85f))), maxLines = 1)
-                        Spacer(GlanceModifier.height(4.dp))
-                        Text(text = mainVal, style = TextStyle(fontSize = 32.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White)))
-                        Text(text = mainUnit, style = TextStyle(fontSize = 14.sp, color = ColorProvider(Color.White.copy(alpha = 0.8f))))
-                        if (countdown.hasTime) {
-                            Spacer(GlanceModifier.height(2.dp))
-                            Text(text = "%02d:%02d:%02d".format(timeInfo.hours, timeInfo.minutes, timeInfo.seconds), style = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White.copy(alpha = 0.9f))))
-                        }
-                        Spacer(GlanceModifier.height(4.dp))
-                        Row {
-                            Text(text = countdown.effectiveTarget.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")), style = TextStyle(fontSize = 10.sp, color = ColorProvider(Color.White.copy(alpha = 0.65f))))
-                            if (countdown.isRecurring) {
-                                Spacer(GlanceModifier.width(6.dp))
-                                Text(text = "↻ ${countdown.recurrenceType.name.lowercase()}", style = TextStyle(fontSize = 10.sp, color = ColorProvider(Color.White.copy(alpha = 0.65f))))
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // ─── 4×2 ─────────────────────────────────────────────────────────────────
-
-    @Composable
-    private fun XLargeLayout(context: Context, countdown: Countdown, timeInfo: CountdownInfo, accentColor: Color, clickAction: Action) {
-        val darker   = darken(accentColor)
-        val mainVal  = formatMainValue(timeInfo, countdown.displayFormat)
-        val mainUnit = formatMainUnitFull(context, timeInfo, countdown.displayFormat)
-
-        Box(modifier = GlanceModifier.fillMaxSize().background(accentColor).cornerRadius(16.dp).clickable(clickAction)) {
-            Column(modifier = GlanceModifier.fillMaxSize()) {
-                Box(modifier = GlanceModifier.fillMaxWidth().height(3.dp).background(darker)) {}
-                Row(modifier = GlanceModifier.fillMaxSize().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Box(modifier = GlanceModifier.size(60.dp).background(Color.White.copy(alpha = 0.2f)).cornerRadius(14.dp), contentAlignment = Alignment.Center) {
-                        Text(text = countdown.icon.ifBlank { "⏰" }, style = TextStyle(fontSize = 30.sp))
-                    }
-                    Spacer(GlanceModifier.width(14.dp))
-                    Column(modifier = GlanceModifier.defaultWeight(), verticalAlignment = Alignment.CenterVertically) {
-                        Text(text = countdown.title, style = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White.copy(alpha = 0.85f))), maxLines = 1)
-                        Spacer(GlanceModifier.height(4.dp))
-                        Text(text = mainVal, style = TextStyle(fontSize = 36.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White)))
-                        Text(text = mainUnit, style = TextStyle(fontSize = 16.sp, color = ColorProvider(Color.White.copy(alpha = 0.8f))))
-                        if (countdown.hasTime) {
-                            Spacer(GlanceModifier.height(2.dp))
-                            Text(text = "%02d:%02d:%02d".format(timeInfo.hours, timeInfo.minutes, timeInfo.seconds), style = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White.copy(alpha = 0.9f))))
-                        }
-                    }
-                    Spacer(GlanceModifier.width(16.dp))
-                    Column(horizontalAlignment = Alignment.End, verticalAlignment = Alignment.CenterVertically) {
-                        Text(text = countdown.effectiveTarget.format(DateTimeFormatter.ofPattern("dd. MMM yyyy")), style = TextStyle(fontSize = 11.sp, color = ColorProvider(Color.White.copy(alpha = 0.75f))))
-                        if (countdown.hasTime) {
-                            Spacer(GlanceModifier.height(2.dp))
-                            Text(text = countdown.effectiveTarget.format(DateTimeFormatter.ofPattern("HH:mm")) + " Uhr", style = TextStyle(fontSize = 11.sp, color = ColorProvider(Color.White.copy(alpha = 0.75f))))
-                        }
-                        if (countdown.isRecurring) {
-                            Spacer(GlanceModifier.height(4.dp))
-                            Text(text = "↻ ${countdown.recurrenceType.name.lowercase()}", style = TextStyle(fontSize = 10.sp, color = ColorProvider(Color.White.copy(alpha = 0.65f))))
-                        }
-                        Spacer(GlanceModifier.height(4.dp))
-                        val totalDaysLabel = if (timeInfo.days == 1L) context.getString(R.string.day) else context.getString(R.string.days)
-                        Text(text = "${timeInfo.days} $totalDaysLabel gesamt", style = TextStyle(fontSize = 10.sp, color = ColorProvider(Color.White.copy(alpha = 0.6f))))
-                    }
-                }
-                Box(modifier = GlanceModifier.fillMaxWidth().height(3.dp).background(darker)) {}
-            }
-        }
-    }
-
-    // ─── Leer ─────────────────────────────────────────────────────────────────
-
-    @Composable
-    private fun EmptyWidget(context: Context, size: DpSize, clickAction: Action) {
-        Box(
-            modifier         = GlanceModifier.fillMaxSize().background(Color(0xFF2A2A2A)).cornerRadius(16.dp).clickable(clickAction),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalAlignment = Alignment.CenterVertically) {
-                Text(text = "⏰", style = TextStyle(fontSize = 24.sp, textAlign = TextAlign.Center))
-                if (size.height > 60.dp) {
-                    Spacer(GlanceModifier.height(4.dp))
-                    Text(text = context.getString(R.string.widget_no_countdowns), style = TextStyle(fontSize = 10.sp, color = ColorProvider(Color(0xFF888888)), textAlign = TextAlign.Center))
-                }
+                size.width >= SIZE_XLARGE.width                                      -> XLargeLayout(context, countdown, timeInfo, accentColor, clickAction, effectiveDateUnits, effectiveShowTime)
+                size.width >= SIZE_LARGE.width                                       -> LargeLayout(context, countdown, timeInfo, accentColor, clickAction, effectiveDateUnits, effectiveShowTime)
+                size.width >= SIZE_MEDIUM.width && size.height >= SIZE_MEDIUM.height -> MediumLayout(context, countdown, timeInfo, accentColor, clickAction, effectiveDateUnits, effectiveShowTime)
+                size.width >= SIZE_WIDE.width                                        -> WideLayout(context, countdown, timeInfo, accentColor, clickAction, effectiveDateUnits)
+                size.height >= SIZE_TALL.height                                      -> TallLayout(context, countdown, timeInfo, accentColor, clickAction, effectiveDateUnits)
+                else                                                                 -> SmallLayout(context, countdown, timeInfo, accentColor, clickAction, effectiveDateUnits)
             }
         }
     }
 
     // ─── Hilfsfunktionen ──────────────────────────────────────────────────────
 
-    /**
-     * Wert der ersten (größten) aktiven Einheit in der gespeicherten Reihenfolge.
-     */
-    private fun formatMainValue(timeInfo: CountdownInfo, displayFormat: String): String {
-        val units = DisplayFormat.decodeOrdered(displayFormat)
-        return when (units.firstOrNull() ?: DisplayUnit.DAYS) {
+    private fun formatMainValue(timeInfo: CountdownInfo, units: Set<DisplayUnit>): String {
+        val ordered = DisplayFormat.sorted(units)
+        return when (ordered.firstOrNull() ?: DisplayUnit.DAYS) {
             DisplayUnit.YEARS   -> "${timeInfo.years}"
             DisplayUnit.MONTHS  -> "${timeInfo.months}"
             DisplayUnit.WEEKS   -> "${timeInfo.weeks}"
@@ -322,29 +126,18 @@ class CountdownWidget : GlanceAppWidget() {
         }
     }
 
-    /**
-     * Kurze Einheitsbezeichnung für die erste Einheit (Small/Tall-Layouts).
-     */
-    private fun formatMainUnitShort(context: Context, timeInfo: CountdownInfo, displayFormat: String): String {
-        val units = DisplayFormat.decodeOrdered(displayFormat)
-        val first = units.firstOrNull() ?: DisplayUnit.DAYS
+    private fun formatMainUnitShort(context: Context, timeInfo: CountdownInfo, units: Set<DisplayUnit>): String {
+        val ordered = DisplayFormat.sorted(units)
+        val first   = ordered.firstOrNull() ?: DisplayUnit.DAYS
         return getUnitLabel(context, first, getFirstValue(timeInfo, first))
     }
 
-    /**
-     * Vollständige Einheitenliste für Medium/Large-Layouts.
-     * Respektiert die vom Nutzer festgelegte Reihenfolge.
-     */
-    private fun formatMainUnitFull(context: Context, timeInfo: CountdownInfo, displayFormat: String): String {
-        val units    = DisplayFormat.decodeOrdered(displayFormat)
-        val segments = timeInfo.buildDisplaySegments(units)
-        if (segments.size == 1) {
-            return getUnitLabel(context, segments[0].unit, segments[0].value)
-        }
+    private fun formatMainUnitFull(context: Context, timeInfo: CountdownInfo, units: Set<DisplayUnit>): String {
+        val ordered  = DisplayFormat.sorted(units)
+        val segments = timeInfo.buildDisplaySegments(ordered)
+        if (segments.size == 1) return getUnitLabel(context, segments[0].unit, segments[0].value)
         val firstLabel = getUnitLabel(context, segments[0].unit, segments[0].value)
-        val rest = segments.drop(1).joinToString(", ") { seg ->
-            "${seg.value} ${getUnitLabel(context, seg.unit, seg.value)}"
-        }
+        val rest = segments.drop(1).joinToString(", ") { "${it.value} ${getUnitLabel(context, it.unit, it.value)}" }
         return "$firstLabel, $rest"
     }
 
@@ -377,17 +170,201 @@ class CountdownWidget : GlanceAppWidget() {
         green = (color.green * 0.7f).coerceIn(0f, 1f),
         blue  = (color.blue  * 0.7f).coerceIn(0f, 1f)
     )
-}
 
-// ─── Widget Receiver ──────────────────────────────────────────────────────────
+    // ─── Layouts ──────────────────────────────────────────────────────────────
+
+    @Composable
+    private fun SmallLayout(context: Context, countdown: Countdown, timeInfo: CountdownInfo, accentColor: Color, clickAction: Action, units: Set<DisplayUnit>) {
+        val darker   = darken(accentColor)
+        val mainVal  = formatMainValue(timeInfo, units)
+        val mainUnit = formatMainUnitShort(context, timeInfo, units)
+        Box(modifier = GlanceModifier.fillMaxSize().background(accentColor).cornerRadius(16.dp).clickable(clickAction), contentAlignment = Alignment.Center) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalAlignment = Alignment.CenterVertically, modifier = GlanceModifier.fillMaxSize().padding(4.dp)) {
+                Box(modifier = GlanceModifier.fillMaxWidth().height(3.dp).background(darker)) {}
+                Spacer(GlanceModifier.defaultWeight())
+                Text(text = countdown.icon.ifBlank { "⏰" }, style = TextStyle(fontSize = 22.sp, textAlign = TextAlign.Center))
+                Spacer(GlanceModifier.height(2.dp))
+                Text(text = mainVal, style = TextStyle(fontSize = 22.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White), textAlign = TextAlign.Center))
+                Text(text = mainUnit, style = TextStyle(fontSize = 9.sp, color = ColorProvider(Color.White.copy(alpha = 0.8f)), textAlign = TextAlign.Center))
+                Spacer(GlanceModifier.defaultWeight())
+                Box(modifier = GlanceModifier.fillMaxWidth().height(3.dp).background(darker)) {}
+            }
+        }
+    }
+
+    @Composable
+    private fun TallLayout(context: Context, countdown: Countdown, timeInfo: CountdownInfo, accentColor: Color, clickAction: Action, units: Set<DisplayUnit>) {
+        val darker   = darken(accentColor)
+        val mainVal  = formatMainValue(timeInfo, units)
+        val mainUnit = formatMainUnitShort(context, timeInfo, units)
+        Box(modifier = GlanceModifier.fillMaxSize().background(accentColor).cornerRadius(16.dp).clickable(clickAction)) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = GlanceModifier.fillMaxSize()) {
+                Box(modifier = GlanceModifier.fillMaxWidth().height(3.dp).background(darker)) {}
+                Spacer(GlanceModifier.defaultWeight())
+                Text(text = countdown.icon.ifBlank { "⏰" }, style = TextStyle(fontSize = 26.sp, textAlign = TextAlign.Center))
+                Spacer(GlanceModifier.height(4.dp))
+                Text(text = countdown.title, style = TextStyle(fontSize = 10.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White.copy(alpha = 0.85f)), textAlign = TextAlign.Center), maxLines = 1)
+                Spacer(GlanceModifier.height(6.dp))
+                Text(text = mainVal, style = TextStyle(fontSize = 28.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White), textAlign = TextAlign.Center))
+                Text(text = mainUnit, style = TextStyle(fontSize = 10.sp, color = ColorProvider(Color.White.copy(alpha = 0.8f)), textAlign = TextAlign.Center))
+                Spacer(GlanceModifier.defaultWeight())
+                Box(modifier = GlanceModifier.fillMaxWidth().height(3.dp).background(darker)) {}
+            }
+        }
+    }
+
+    @Composable
+    private fun WideLayout(context: Context, countdown: Countdown, timeInfo: CountdownInfo, accentColor: Color, clickAction: Action, units: Set<DisplayUnit>) {
+        val darker   = darken(accentColor)
+        val mainVal  = formatMainValue(timeInfo, units)
+        val mainUnit = formatMainUnitShort(context, timeInfo, units)
+        Box(modifier = GlanceModifier.fillMaxSize().background(accentColor).cornerRadius(16.dp).clickable(clickAction)) {
+            Column(modifier = GlanceModifier.fillMaxSize()) {
+                Box(modifier = GlanceModifier.fillMaxWidth().height(3.dp).background(darker)) {}
+                Row(modifier = GlanceModifier.fillMaxSize().padding(horizontal = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Box(modifier = GlanceModifier.size(44.dp).background(Color.White.copy(alpha = 0.2f)).cornerRadius(10.dp), contentAlignment = Alignment.Center) {
+                        Text(text = countdown.icon.ifBlank { "⏰" }, style = TextStyle(fontSize = 22.sp))
+                    }
+                    Spacer(GlanceModifier.width(10.dp))
+                    Column(modifier = GlanceModifier.defaultWeight()) {
+                        Text(text = countdown.title, style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White.copy(alpha = 0.85f))), maxLines = 1)
+                        Spacer(GlanceModifier.height(2.dp))
+                        Text(text = "$mainVal $mainUnit", style = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White)))
+                        Text(text = countdown.effectiveTarget.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")), style = TextStyle(fontSize = 9.sp, color = ColorProvider(Color.White.copy(alpha = 0.65f))))
+                    }
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun MediumLayout(context: Context, countdown: Countdown, timeInfo: CountdownInfo, accentColor: Color, clickAction: Action, units: Set<DisplayUnit>, showTime: Boolean) {
+        val darker   = darken(accentColor)
+        val mainVal  = formatMainValue(timeInfo, units)
+        val mainUnit = formatMainUnitFull(context, timeInfo, units)
+        Box(modifier = GlanceModifier.fillMaxSize().background(accentColor).cornerRadius(16.dp).clickable(clickAction)) {
+            Column(modifier = GlanceModifier.fillMaxSize()) {
+                Box(modifier = GlanceModifier.fillMaxWidth().height(3.dp).background(darker)) {}
+                Column(modifier = GlanceModifier.fillMaxSize().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(modifier = GlanceModifier.size(36.dp).background(Color.White.copy(alpha = 0.2f)).cornerRadius(8.dp), contentAlignment = Alignment.Center) {
+                            Text(text = countdown.icon.ifBlank { "⏰" }, style = TextStyle(fontSize = 18.sp))
+                        }
+                        Spacer(GlanceModifier.width(8.dp))
+                        Text(text = countdown.title, style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White.copy(alpha = 0.85f))), maxLines = 1, modifier = GlanceModifier.defaultWeight())
+                    }
+                    Spacer(GlanceModifier.defaultWeight())
+                    Text(text = mainVal, style = TextStyle(fontSize = 28.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White)))
+                    Text(text = mainUnit, style = TextStyle(fontSize = 13.sp, color = ColorProvider(Color.White.copy(alpha = 0.8f))))
+                    if (showTime) {
+                        Text(text = "%02d:%02d:%02d".format(timeInfo.hours, timeInfo.minutes, timeInfo.seconds), style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White.copy(alpha = 0.9f))))
+                    }
+                    Spacer(GlanceModifier.defaultWeight())
+                    Text(text = countdown.effectiveTarget.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")), style = TextStyle(fontSize = 9.sp, color = ColorProvider(Color.White.copy(alpha = 0.6f))))
+                }
+                Box(modifier = GlanceModifier.fillMaxWidth().height(3.dp).background(darker)) {}
+            }
+        }
+    }
+
+    @Composable
+    private fun LargeLayout(context: Context, countdown: Countdown, timeInfo: CountdownInfo, accentColor: Color, clickAction: Action, units: Set<DisplayUnit>, showTime: Boolean) {
+        val darker   = darken(accentColor)
+        val mainVal  = formatMainValue(timeInfo, units)
+        val mainUnit = formatMainUnitFull(context, timeInfo, units)
+        Box(modifier = GlanceModifier.fillMaxSize().background(accentColor).cornerRadius(16.dp).clickable(clickAction)) {
+            Column(modifier = GlanceModifier.fillMaxSize()) {
+                Box(modifier = GlanceModifier.fillMaxWidth().height(3.dp).background(darker)) {}
+                Row(modifier = GlanceModifier.fillMaxSize().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Box(modifier = GlanceModifier.size(52.dp).background(Color.White.copy(alpha = 0.2f)).cornerRadius(12.dp), contentAlignment = Alignment.Center) {
+                        Text(text = countdown.icon.ifBlank { "⏰" }, style = TextStyle(fontSize = 26.sp))
+                    }
+                    Spacer(GlanceModifier.width(12.dp))
+                    Column(modifier = GlanceModifier.defaultWeight(), verticalAlignment = Alignment.CenterVertically) {
+                        Text(text = countdown.title, style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White.copy(alpha = 0.85f))), maxLines = 1)
+                        Spacer(GlanceModifier.height(4.dp))
+                        Text(text = mainVal, style = TextStyle(fontSize = 32.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White)))
+                        Text(text = mainUnit, style = TextStyle(fontSize = 14.sp, color = ColorProvider(Color.White.copy(alpha = 0.8f))))
+                        if (showTime) {
+                            Spacer(GlanceModifier.height(2.dp))
+                            Text(text = "%02d:%02d:%02d".format(timeInfo.hours, timeInfo.minutes, timeInfo.seconds), style = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White.copy(alpha = 0.9f))))
+                        }
+                        Spacer(GlanceModifier.height(4.dp))
+                        Row {
+                            Text(text = countdown.effectiveTarget.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")), style = TextStyle(fontSize = 10.sp, color = ColorProvider(Color.White.copy(alpha = 0.65f))))
+                            if (countdown.isRecurring) {
+                                Spacer(GlanceModifier.width(6.dp))
+                                Text(text = "↻ ${countdown.recurrenceType.name.lowercase()}", style = TextStyle(fontSize = 10.sp, color = ColorProvider(Color.White.copy(alpha = 0.65f))))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun XLargeLayout(context: Context, countdown: Countdown, timeInfo: CountdownInfo, accentColor: Color, clickAction: Action, units: Set<DisplayUnit>, showTime: Boolean) {
+        val darker   = darken(accentColor)
+        val mainVal  = formatMainValue(timeInfo, units)
+        val mainUnit = formatMainUnitFull(context, timeInfo, units)
+        Box(modifier = GlanceModifier.fillMaxSize().background(accentColor).cornerRadius(16.dp).clickable(clickAction)) {
+            Column(modifier = GlanceModifier.fillMaxSize()) {
+                Box(modifier = GlanceModifier.fillMaxWidth().height(3.dp).background(darker)) {}
+                Row(modifier = GlanceModifier.fillMaxSize().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Box(modifier = GlanceModifier.size(60.dp).background(Color.White.copy(alpha = 0.2f)).cornerRadius(14.dp), contentAlignment = Alignment.Center) {
+                        Text(text = countdown.icon.ifBlank { "⏰" }, style = TextStyle(fontSize = 30.sp))
+                    }
+                    Spacer(GlanceModifier.width(14.dp))
+                    Column(modifier = GlanceModifier.defaultWeight(), verticalAlignment = Alignment.CenterVertically) {
+                        Text(text = countdown.title, style = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White.copy(alpha = 0.85f))), maxLines = 1)
+                        Spacer(GlanceModifier.height(4.dp))
+                        Text(text = mainVal, style = TextStyle(fontSize = 36.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White)))
+                        Text(text = mainUnit, style = TextStyle(fontSize = 16.sp, color = ColorProvider(Color.White.copy(alpha = 0.8f))))
+                        if (showTime) {
+                            Spacer(GlanceModifier.height(2.dp))
+                            Text(text = "%02d:%02d:%02d".format(timeInfo.hours, timeInfo.minutes, timeInfo.seconds), style = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White.copy(alpha = 0.9f))))
+                        }
+                    }
+                    Spacer(GlanceModifier.width(16.dp))
+                    Column(horizontalAlignment = Alignment.End, verticalAlignment = Alignment.CenterVertically) {
+                        Text(text = countdown.effectiveTarget.format(DateTimeFormatter.ofPattern("dd. MMM yyyy")), style = TextStyle(fontSize = 11.sp, color = ColorProvider(Color.White.copy(alpha = 0.75f))))
+                        if (countdown.hasTime) {
+                            Spacer(GlanceModifier.height(2.dp))
+                            Text(text = countdown.effectiveTarget.format(DateTimeFormatter.ofPattern("HH:mm")) + " Uhr", style = TextStyle(fontSize = 11.sp, color = ColorProvider(Color.White.copy(alpha = 0.75f))))
+                        }
+                        if (countdown.isRecurring) {
+                            Spacer(GlanceModifier.height(4.dp))
+                            Text(text = "↻ ${countdown.recurrenceType.name.lowercase()}", style = TextStyle(fontSize = 10.sp, color = ColorProvider(Color.White.copy(alpha = 0.65f))))
+                        }
+                        Spacer(GlanceModifier.height(4.dp))
+                        val totalDaysLabel = if (timeInfo.days == 1L) context.getString(R.string.day) else context.getString(R.string.days)
+                        Text(text = "${timeInfo.days} $totalDaysLabel gesamt", style = TextStyle(fontSize = 10.sp, color = ColorProvider(Color.White.copy(alpha = 0.6f))))
+                    }
+                }
+                Box(modifier = GlanceModifier.fillMaxWidth().height(3.dp).background(darker)) {}
+            }
+        }
+    }
+
+    @Composable
+    private fun EmptyWidget(context: Context, size: DpSize, clickAction: Action) {
+        Box(modifier = GlanceModifier.fillMaxSize().background(Color(0xFF2A2A2A)).cornerRadius(16.dp).clickable(clickAction), contentAlignment = Alignment.Center) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalAlignment = Alignment.CenterVertically) {
+                Text(text = "⏰", style = TextStyle(fontSize = 24.sp, textAlign = TextAlign.Center))
+                if (size.height > 60.dp) {
+                    Spacer(GlanceModifier.height(4.dp))
+                    Text(text = context.getString(R.string.widget_no_countdowns), style = TextStyle(fontSize = 10.sp, color = ColorProvider(Color(0xFF888888)), textAlign = TextAlign.Center))
+                }
+            }
+        }
+    }
+}
 
 class CountdownWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = CountdownWidget()
-
     override fun onDeleted(context: Context, appWidgetIds: IntArray) {
         super.onDeleted(context, appWidgetIds)
-        appWidgetIds.forEach { appWidgetId ->
-            WidgetConfigActivity.deleteCountdownId(context, appWidgetId)
-        }
+        appWidgetIds.forEach { WidgetConfigActivity.deleteCountdownId(context, it) }
     }
 }

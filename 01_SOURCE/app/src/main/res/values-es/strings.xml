@@ -211,4 +211,14 @@
     <string name="format_active_label">Activo — arrastra para reordenar</string>
     <string name="format_inactive_label">Añadir unidad</string>
 
+    <string name="recurrence_countup_hint">La recurrencia solo está disponible para eventos futuros.</string>
+    <string name="settings_display_style">Visualización</string>
+    <string name="settings_display_style_hint">Elige cómo se muestran las cuentas atrás.</string>
+    <string name="display_style_compact">Compacto</string>
+    <string name="display_style_normal">Normal</string>
+    <string name="display_style_generous">Generoso</string>
+    <string name="preview_placeholder">Vista previa</string>
+    <string name="action_pin">Fijar</string>
+    <string name="action_unpin">Desfijar</string>
+
 </resources>

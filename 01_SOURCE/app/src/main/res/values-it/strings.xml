@@ -210,4 +210,15 @@
     <string name="format_time_required">Attiva prima «Includi ora»</string>
     <string name="format_active_label">Attivo — trascina per riordinare</string>
     <string name="format_inactive_label">Aggiungi unità</string>
+
+
+    <string name="recurrence_countup_hint">La ricorrenza è disponibile solo per eventi futuri.</string>
+    <string name="settings_display_style">Visualizzazione</string>
+    <string name="settings_display_style_hint">Scegli come vengono visualizzati i conti alla rovescia.</string>
+    <string name="display_style_compact">Compatto</string>
+    <string name="display_style_normal">Normale</string>
+    <string name="display_style_generous">Generoso</string>
+    <string name="preview_placeholder">Anteprima</string>
+    <string name="action_pin">Fissa</string>
+    <string name="action_unpin">Rimuovi</string>
 </resources>

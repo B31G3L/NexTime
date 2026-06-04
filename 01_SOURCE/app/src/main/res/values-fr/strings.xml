@@ -210,4 +210,14 @@
     <string name="format_time_required">Activez d\'abord « Inclure l\'heure »</string>
     <string name="format_active_label">Actif — glisser pour réordonner</string>
     <string name="format_inactive_label">Ajouter une unité</string>
+
+    <string name="recurrence_countup_hint">La récurrence n\'est disponible que pour les événements futurs.</string>
+    <string name="settings_display_style">Affichage</string>
+    <string name="settings_display_style_hint">Choisissez comment les comptes à rebours sont affichés.</string>
+    <string name="display_style_compact">Compact</string>
+    <string name="display_style_normal">Normal</string>
+    <string name="display_style_generous">Généreux</string>
+    <string name="preview_placeholder">Aperçu</string>
+    <string name="action_pin">Épingler</string>
+    <string name="action_unpin">Désépingler</string>
 </resources>

@@ -37,6 +37,7 @@ import todo.beigelwick.de.todolist.R
 import todo.beigelwick.de.todolist.data.model.Countdown
 import todo.beigelwick.de.todolist.data.model.DisplayFormat
 import todo.beigelwick.de.todolist.data.model.DisplayUnit
+import todo.beigelwick.de.todolist.data.model.DISPLAY_UNIT_ORDER
 import todo.beigelwick.de.todolist.data.model.RecurrenceType
 import todo.beigelwick.de.todolist.data.model.ReminderOption
 import todo.beigelwick.de.todolist.ui.components.CountdownCard
@@ -98,6 +99,10 @@ fun AddEditScreen(
     var selectedColor       by remember { mutableStateOf("#FF7043") }
     var notificationEnabled by remember { mutableStateOf(false) }
     val selectedReminders   = remember { mutableStateListOf<ReminderOption>() }
+    // Abweichendes Format pro Eintrag (leer = globale Settings verwenden)
+    var useCustomFormat      by remember { mutableStateOf(false) }
+    var customDateUnits      by remember { mutableStateOf(setOf(DisplayUnit.DAYS)) }
+    var customShowTime       by remember { mutableStateOf(false) }
 
     val initialized = remember { mutableStateOf(false) }
 
@@ -114,6 +119,18 @@ fun AddEditScreen(
         selectedRecurrence  = cd?.recurrenceType ?: RecurrenceType.NONE
         selectedColor       = cd?.color ?: defaultColor
         notificationEnabled = cd?.notificationEnabled ?: false
+
+        // Abweichendes Format laden falls vorhanden
+        if (cd != null && cd.displayFormat.isNotBlank()) {
+            val decoded = DisplayFormat.decode(cd.displayFormat)
+            val dateUnits = decoded.filter { it !in setOf(DisplayUnit.HOURS, DisplayUnit.MINUTES, DisplayUnit.SECONDS) }.toSet()
+            val hasTime = decoded.any { it in setOf(DisplayUnit.HOURS, DisplayUnit.MINUTES, DisplayUnit.SECONDS) }
+            if (dateUnits.isNotEmpty()) {
+                useCustomFormat = true
+                customDateUnits = dateUnits
+                customShowTime  = hasTime
+            }
+        }
 
         if (cd != null && cd.reminderOptions.isNotEmpty()) {
             selectedReminders.clear()
@@ -135,12 +152,21 @@ fun AddEditScreen(
         if (isCountUp && selectedRecurrence != RecurrenceType.NONE) selectedRecurrence = RecurrenceType.NONE
     }
 
+    // previewCountdown zeigt das eigene Format wenn aktiviert
+    val previewDisplayFormat = if (useCustomFormat) {
+        val units = customDateUnits.toMutableSet()
+        if (customShowTime) {
+            units += DisplayUnit.HOURS; units += DisplayUnit.MINUTES; units += DisplayUnit.SECONDS
+        }
+        DisplayFormat.encode(units)
+    } else ""
+
     val previewCountdown = Countdown(
         id             = existingCountdown?.id ?: 0L,
         title          = title.ifBlank { stringResource(R.string.preview_placeholder) },
         icon           = icon.ifBlank { "⏰" },
         targetDateTime = LocalDateTime.of(selectedDate, if (showTime) selectedTime else LocalTime.MIDNIGHT),
-        displayFormat  = "",
+        displayFormat  = previewDisplayFormat,
         color          = selectedColor,
         recurrence     = selectedRecurrence.name
     )
@@ -152,7 +178,15 @@ fun AddEditScreen(
             title               = title,
             icon                = icon.ifBlank { "⏰" },
             targetDateTime      = target,
-            displayFormat       = "",
+            displayFormat       = if (useCustomFormat) {
+                val units = customDateUnits.toMutableSet()
+                if (customShowTime) {
+                    units += DisplayUnit.HOURS
+                    units += DisplayUnit.MINUTES
+                    units += DisplayUnit.SECONDS
+                }
+                DisplayFormat.encode(units)
+            } else "",
             color               = selectedColor,
             notificationEnabled = notificationEnabled,
             reminderOptions     = selectedReminders.joinToString(",") { it.name },
@@ -224,6 +258,7 @@ fun AddEditScreen(
                     previewCountdown.color,
                     previewCountdown.title,
                     previewCountdown.icon,
+                    previewDisplayFormat,
                 ) {
                     CountdownCard(countdown = previewCountdown)
                 }
@@ -452,7 +487,96 @@ fun AddEditScreen(
                     }
                 }
 
-                // ── 6. Wiederholung ───────────────────────────────────────────
+                // ── 6. Abweichendes Anzeigeformat ────────────────────────
+                SectionCard(title = "Anzeigeformat") {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(
+                            modifier              = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment     = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text  = if (useCustomFormat) "Eigenes Format" else "Globale Einstellung",
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                Text(
+                                    text  = if (useCustomFormat) "Dieses Format überschreibt die Settings"
+                                    else "Format aus den Einstellungen wird verwendet",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Switch(
+                                checked         = useCustomFormat,
+                                onCheckedChange = { haptic.tick(); useCustomFormat = it }
+                            )
+                        }
+
+                        AnimatedVisibility(
+                            visible = useCustomFormat,
+                            enter   = fadeIn() + expandVertically(),
+                            exit    = fadeOut() + shrinkVertically()
+                        ) {
+                            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                                // Datumseinheiten
+                                listOf(
+                                    DisplayUnit.YEARS  to "Jahre",
+                                    DisplayUnit.MONTHS to "Monate",
+                                    DisplayUnit.WEEKS  to "Wochen",
+                                    DisplayUnit.DAYS   to "Tage",
+                                ).forEach { (unit, label) ->
+                                    val isChecked = unit in customDateUnits
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .clickable {
+                                                haptic.tick()
+                                                customDateUnits = if (isChecked) {
+                                                    if (customDateUnits.size > 1) customDateUnits - unit
+                                                    else customDateUnits
+                                                } else customDateUnits + unit
+                                            }
+                                            .padding(horizontal = 8.dp, vertical = 8.dp),
+                                        verticalAlignment     = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text(
+                                            text       = label,
+                                            style      = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = if (isChecked) FontWeight.SemiBold else FontWeight.Normal,
+                                            color      = if (isChecked) MaterialTheme.colorScheme.primary
+                                            else MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Checkbox(checked = isChecked, onCheckedChange = null)
+                                    }
+                                }
+                                // Uhrzeit-Toggle
+                                Row(
+                                    modifier              = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment     = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text       = "Uhrzeit (HH:mm:ss)",
+                                        style      = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = if (customShowTime) FontWeight.SemiBold else FontWeight.Normal,
+                                        color      = if (customShowTime) MaterialTheme.colorScheme.primary
+                                        else MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Switch(
+                                        checked         = customShowTime,
+                                        onCheckedChange = { haptic.tick(); customShowTime = it }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // ── 7. Wiederholung ───────────────────────────────────────────
                 SectionCard(title = stringResource(R.string.section_recurrence)) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Row(

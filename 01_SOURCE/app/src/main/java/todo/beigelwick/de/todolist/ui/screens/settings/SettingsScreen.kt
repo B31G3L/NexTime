@@ -20,6 +20,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -35,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.os.LocaleListCompat
 import kotlinx.coroutines.launch
+import todo.beigelwick.de.todolist.BuildConfig
 import todo.beigelwick.de.todolist.R
 import todo.beigelwick.de.todolist.data.model.Countdown
 import todo.beigelwick.de.todolist.data.model.RecurrenceType
@@ -157,7 +160,11 @@ private fun ExpandableSection(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(onBack: () -> Unit) {
+fun SettingsScreen(
+    onBack              : () -> Unit,
+    onNavigateToSim     : () -> Unit = {},
+    onNavigateToWelcome : () -> Unit = {}
+) {
     val context     = LocalContext.current
     val scope       = rememberCoroutineScope()
     val haptic      = remember { HapticFeedback(context) }
@@ -351,6 +358,20 @@ fun SettingsScreen(onBack: () -> Unit) {
                 key(defaultDateUnits, showTimeOnCard) {
                     CountdownCard(countdown = PREVIEW_COUNTDOWN)
                 }
+
+                // ── Simulate-Button ───────────────────────────────────────
+                OutlinedButton(
+                    onClick  = { haptic.tick(); onNavigateToSim() },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(
+                        imageVector        = Icons.Default.PlayArrow,
+                        contentDescription = null,
+                        modifier           = Modifier.size(18.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text("Alle Formate simulieren")
+                }
             }
 
             // ── 3. Farbschema ─────────────────────────────────────────────────
@@ -440,7 +461,69 @@ fun SettingsScreen(onBack: () -> Unit) {
                 )
             }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(8.dp))
+
+            // ── Willkommensscreen ─────────────────────────────────────────────
+            OutlinedButton(
+                onClick  = { haptic.tick(); onNavigateToWelcome() },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    imageVector        = Icons.Default.WbSunny,
+                    contentDescription = null,
+                    modifier           = Modifier.size(18.dp)
+                )
+                Spacer(Modifier.width(8.dp))
+                Text("Willkommensscreen anzeigen")
+            }
+
+            Spacer(Modifier.height(24.dp))
+
+            // ── App-Info Footer ───────────────────────────────────────────────
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape    = RoundedCornerShape(16.dp),
+                color    = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+            ) {
+                Column(
+                    modifier            = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text       = "NexTime",
+                        style      = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color      = MaterialTheme.colorScheme.onSurface
+                    )
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer
+                    ) {
+                        Text(
+                            text     = "v${BuildConfig.VERSION_NAME}",
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),
+                            style    = MaterialTheme.typography.labelMedium,
+                            color    = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        text      = "Entwickelt mit ❤️ von Beigel",
+                        style     = MaterialTheme.typography.bodySmall,
+                        color     = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                    Text(
+                        text      = "Solo-Entwickler • NexTime ist kostenlos",
+                        style     = MaterialTheme.typography.bodySmall,
+                        color     = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(24.dp))
         }
     }
 

@@ -267,4 +267,14 @@
     <string name="format_time_required">Aktiviere zuerst „Uhrzeit einbeziehen"</string>
     <string name="format_active_label">Aktiv — ziehen zum Umsortieren</string>
     <string name="format_inactive_label">Einheit hinzufügen</string>
+
+    <string name="recurrence_countup_hint">Wiederholung ist nur bei zukünftigen Ereignissen verfügbar.</string>
+    <string name="settings_display_style">Darstellung</string>
+    <string name="settings_display_style_hint">Wähle wie Countdowns angezeigt werden.</string>
+    <string name="display_style_compact">Kompakt</string>
+    <string name="display_style_normal">Normal</string>
+    <string name="display_style_generous">Großzügig</string>
+    <string name="preview_placeholder">Vorschau</string>
+    <string name="action_pin">Anheften</string>
+    <string name="action_unpin">Lösen</string>
 </resources>

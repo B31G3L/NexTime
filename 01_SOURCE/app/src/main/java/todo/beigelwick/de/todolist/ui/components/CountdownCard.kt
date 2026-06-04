@@ -124,17 +124,33 @@ fun CountdownCard(
     val showTimeOnCard by AppPreferences.getShowTimeOnCard(context)
         .collectAsState(initial = false)
 
-    val cfg   = remember(displayStyle) { styleConfig(displayStyle) }
-    val split = remember(defaultDateUnits, showTimeOnCard) {
-        buildUnitSplit(defaultDateUnits, showTimeOnCard)
+    // Eigenes Format pro Eintrag hat Vorrang vor den globalen Settings
+    val hasCustomFormat = countdown.displayFormat.isNotBlank()
+    val effectiveDateUnits = remember(countdown.displayFormat, defaultDateUnits) {
+        if (hasCustomFormat) {
+            val decoded = DisplayFormat.decode(countdown.displayFormat)
+            val dateOnly = decoded.filter { it !in setOf(DisplayUnit.HOURS, DisplayUnit.MINUTES, DisplayUnit.SECONDS) }.toSet()
+            dateOnly.ifEmpty { defaultDateUnits }
+        } else defaultDateUnits
+    }
+    val effectiveShowTime = remember(countdown.displayFormat, showTimeOnCard) {
+        if (hasCustomFormat) {
+            val decoded = DisplayFormat.decode(countdown.displayFormat)
+            decoded.any { it in setOf(DisplayUnit.HOURS, DisplayUnit.MINUTES, DisplayUnit.SECONDS) }
+        } else showTimeOnCard
     }
 
-    val tick by if (showTimeOnCard)
+    val cfg   = remember(displayStyle) { styleConfig(displayStyle) }
+    val split = remember(effectiveDateUnits, effectiveShowTime) {
+        buildUnitSplit(effectiveDateUnits, effectiveShowTime)
+    }
+
+    val tick by if (effectiveShowTime)
         viewModel.tickSeconds.collectAsState()
     else
         viewModel.tickMinutes.collectAsState()
 
-    val timeInfo = remember(countdown.id, defaultDateUnits, showTimeOnCard, tick) {
+    val timeInfo = remember(countdown.id, effectiveDateUnits, effectiveShowTime, tick) {
         countdown.calculateTimeRemaining()
     }
 

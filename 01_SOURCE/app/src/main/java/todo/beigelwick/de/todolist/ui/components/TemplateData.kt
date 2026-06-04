@@ -114,7 +114,8 @@ fun CountdownTemplate.toCountdown(defaultTime: LocalTime = LocalTime.of(12, 0)):
         title          = titleKey,
         icon           = icon,
         color          = color,
-        displayFormat  = DisplayFormat.encode(displayUnits),
+        // BUG FIX: Kein displayFormat mehr speichern — globale Settings werden verwendet
+        displayFormat  = "",
         targetDateTime = LocalDateTime.of(date, defaultTime)
     )
 }
