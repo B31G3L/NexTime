@@ -28,6 +28,7 @@ import todo.beigelwick.de.todolist.R
 import todo.beigelwick.de.todolist.data.database.CountdownDatabase
 import todo.beigelwick.de.todolist.data.model.Countdown
 import todo.beigelwick.de.todolist.data.model.calculateTimeRemaining
+import todo.beigelwick.de.todolist.ui.components.iconByName
 import todo.beigelwick.de.todolist.ui.theme.AccentColor
 import todo.beigelwick.de.todolist.ui.theme.AccentColorPreferences
 import todo.beigelwick.de.todolist.ui.theme.NexTimeTheme
@@ -54,8 +55,6 @@ class WidgetConfigActivity : AppCompatActivity() {
             val themeMode   by ThemePreferences.getThemeMode(this).collectAsState(initial = ThemeMode.SYSTEM)
             val accentColor by AccentColorPreferences.getAccentColor(this).collectAsState(initial = AccentColor.ORANGE)
 
-            // BUG FIX: isNightModeActive() statt isSystemInDarkTheme() um Namenskonflikt
-            // mit der Compose-Funktion zu vermeiden
             val isDark = when (themeMode) {
                 ThemeMode.DARK   -> true
                 ThemeMode.LIGHT  -> false
@@ -79,11 +78,6 @@ class WidgetConfigActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * Gibt true zurück wenn das System im Nacht-/Dunkelmodus ist.
-     * Bewusst NICHT isSystemInDarkTheme() genannt, da das der Name der
-     * Compose-Funktion ist und zu einem Namenskonflikt führen würde.
-     */
     private fun isNightModeActive(): Boolean {
         val uiMode = resources.configuration.uiMode and
                 android.content.res.Configuration.UI_MODE_NIGHT_MASK
@@ -173,7 +167,12 @@ private fun WidgetConfigScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Text("⏰", style = MaterialTheme.typography.displayLarge)
+                        Icon(
+                            imageVector        = iconByName("Timer"),
+                            contentDescription = null,
+                            modifier           = Modifier.size(64.dp),
+                            tint               = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                         Text(
                             stringResource(R.string.widget_no_countdowns),
                             style      = MaterialTheme.typography.titleLarge,
@@ -263,6 +262,7 @@ private fun WidgetCountdownCard(countdown: Countdown, onClick: () -> Unit) {
                         color = cardColor
                     )
                 }
+                // Material Icon statt Emoji-Text
                 Surface(
                     modifier = Modifier.size(48.dp),
                     shape    = RoundedCornerShape(12.dp),
@@ -272,9 +272,11 @@ private fun WidgetCountdownCard(countdown: Countdown, onClick: () -> Unit) {
                         contentAlignment = Alignment.Center,
                         modifier         = Modifier.fillMaxSize()
                     ) {
-                        Text(
-                            text  = countdown.icon.ifBlank { "⏰" },
-                            style = MaterialTheme.typography.titleLarge
+                        Icon(
+                            imageVector        = iconByName(countdown.icon),
+                            contentDescription = countdown.title,
+                            tint               = cardColor,
+                            modifier           = Modifier.size(26.dp)
                         )
                     }
                 }

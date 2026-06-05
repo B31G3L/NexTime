@@ -82,7 +82,7 @@ fun WelcomeScreen(onDone: () -> Unit) {
     ) {
         Spacer(Modifier.height(56.dp))
 
-        // ── App-Icon + Name ───────────────────────────────────────────────────
+        // ── App-Icon ──────────────────────────────────────────────────────────
         Box(
             modifier         = Modifier
                 .size(96.dp)
@@ -90,12 +90,17 @@ fun WelcomeScreen(onDone: () -> Unit) {
                 .clip(RoundedCornerShape(24.dp))
                 .background(
                     Brush.linearGradient(
-                        listOf(primary, primary.copy(red = (primary.red * 0.7f).coerceIn(0f,1f)))
+                        listOf(primary, primary.copy(red = (primary.red * 0.7f).coerceIn(0f, 1f)))
                     )
                 ),
             contentAlignment = Alignment.Center
         ) {
-            Text("⏰", fontSize = 48.sp)
+            Icon(
+                imageVector        = Icons.Outlined.Timer,
+                contentDescription = null,
+                tint               = Color.White,
+                modifier           = Modifier.size(52.dp)
+            )
         }
 
         Spacer(Modifier.height(24.dp))
@@ -157,18 +162,28 @@ fun WelcomeScreen(onDone: () -> Unit) {
                 .height(56.dp),
             shape = RoundedCornerShape(16.dp)
         ) {
-            Text(
-                text       = "Los geht's  →",
-                style      = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment     = Alignment.CenterVertically
+            ) {
+                Text(
+                    text       = "Los geht's",
+                    style      = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Icon(
+                    imageVector        = Icons.Outlined.ArrowForward,
+                    contentDescription = null,
+                    modifier           = Modifier.size(20.dp)
+                )
+            }
         }
 
         Spacer(Modifier.height(16.dp))
 
         // ── Footer ────────────────────────────────────────────────────────────
         Text(
-            text      = "v${BuildConfig.VERSION_NAME}  •  Entwickelt mit ❤️ von Beigel",
+            text      = "v${BuildConfig.VERSION_NAME}  •  Entwickelt von Beigel",
             style     = MaterialTheme.typography.bodySmall,
             color     = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
             textAlign = TextAlign.Center

@@ -50,8 +50,6 @@ fun ExpandableFab(
     var expanded by remember { mutableStateOf(false) }
     var showTemplateDialog by remember { mutableStateOf(false) }
 
-    // BUG FIX: Default-Zeit aus AppPreferences lesen, damit toCountdown() sie
-    // verwenden kann – statt der aktuellen Sekunde zur Laufzeit.
     val defaultTime by AppPreferences.getDefaultTime(context).collectAsState(initial = LocalTime.of(12, 0))
 
     val rotation by animateFloatAsState(
@@ -104,7 +102,6 @@ fun ExpandableFab(
             onDismiss          = { showTemplateDialog = false },
             onTemplateSelected = { template ->
                 showTemplateDialog = false
-                // defaultTime weitergeben statt aktuelle Uhrzeit zu verwenden
                 onTemplateSelected(template.toCountdown(defaultTime))
             }
         )
@@ -282,6 +279,7 @@ private fun TemplateCard(template: CountdownTemplate, onClick: () -> Unit) {
             verticalAlignment     = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
+            // Material Icon statt Emoji-Text
             Box(
                 modifier         = Modifier
                     .size(48.dp)
@@ -289,7 +287,12 @@ private fun TemplateCard(template: CountdownTemplate, onClick: () -> Unit) {
                     .background(cardColor.copy(alpha = 0.15f)),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = template.icon, fontSize = 24.sp)
+                Icon(
+                    imageVector        = iconByName(template.icon),
+                    contentDescription = template.titleKey,
+                    tint               = cardColor,
+                    modifier           = Modifier.size(26.dp)
+                )
             }
             Column(modifier = Modifier.weight(1f)) {
                 Text(

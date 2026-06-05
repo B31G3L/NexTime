@@ -53,7 +53,11 @@ object CountdownNotificationManager {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val title = if (isAtTime) "🎉 ${countdown.title}" else "⏰ ${context.getString(R.string.topbar_nextime)}: ${countdown.title}"
+        val title = if (isAtTime)
+            countdown.title
+        else
+            "${context.getString(R.string.topbar_nextime)}: ${countdown.title}"
+
         val message = if (isAtTime) {
             context.getString(R.string.dialog_expired_banner)
         } else {

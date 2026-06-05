@@ -18,6 +18,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Brightness4
+import androidx.compose.material.icons.filled.Brightness7
+import androidx.compose.material.icons.filled.BrightnessAuto
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.*
@@ -27,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -57,7 +61,7 @@ import java.time.format.DateTimeFormatter
 private val PREVIEW_COUNTDOWN = Countdown(
     id             = -1L,
     title          = "Sommerurlaub",
-    icon           = "✈️",
+    icon           = "FlightTakeoff",
     targetDateTime = LocalDateTime.now().plusDays(42),
     displayFormat  = "",
     color          = "#FF7043",
@@ -309,17 +313,20 @@ fun SettingsScreen(onBack: () -> Unit) {
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     ThemeModeOption(
-                        label      = "⚙️  ${stringResource(R.string.design_system)}",
+                        label      = stringResource(R.string.design_system),
+                        icon       = Icons.Default.BrightnessAuto,
                         isSelected = themeMode == ThemeMode.SYSTEM,
                         onClick    = { haptic.tick(); scope.launch { ThemePreferences.setThemeMode(context, ThemeMode.SYSTEM) } }
                     )
                     ThemeModeOption(
-                        label      = "🌞  ${stringResource(R.string.design_light)}",
+                        label      = stringResource(R.string.design_light),
+                        icon       = Icons.Default.Brightness7,
                         isSelected = themeMode == ThemeMode.LIGHT,
                         onClick    = { haptic.tick(); scope.launch { ThemePreferences.setThemeMode(context, ThemeMode.LIGHT) } }
                     )
                     ThemeModeOption(
-                        label      = "🌙  ${stringResource(R.string.design_dark)}",
+                        label      = stringResource(R.string.design_dark),
+                        icon       = Icons.Default.Brightness4,
                         isSelected = themeMode == ThemeMode.DARK,
                         onClick    = { haptic.tick(); scope.launch { ThemePreferences.setThemeMode(context, ThemeMode.DARK) } }
                     )
@@ -559,7 +566,6 @@ private fun AccentColorPicker(
     onAccentSelected : (AccentColor) -> Unit
 ) {
     val allAccents = AccentColor.values().toList()
-    // 4 pro Reihe
     val rows = allAccents.chunked(4)
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -752,14 +758,6 @@ private fun LanguagePickerSection(
     currentLanguage    : AppLanguage,
     onLanguageSelected : (AppLanguage) -> Unit
 ) {
-    val flags = mapOf(
-        AppLanguage.SYSTEM  to "🌐",
-        AppLanguage.GERMAN  to "🇩🇪",
-        AppLanguage.ENGLISH to "🇬🇧",
-        AppLanguage.FRENCH  to "🇫🇷",
-        AppLanguage.SPANISH to "🇪🇸",
-        AppLanguage.ITALIAN to "🇮🇹"
-    )
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         AppLanguage.values().forEach { language ->
             val isSelected = currentLanguage == language
@@ -788,7 +786,26 @@ private fun LanguagePickerSection(
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                         verticalAlignment     = Alignment.CenterVertically
                     ) {
-                        Text(text = flags[language] ?: "🌐", fontSize = 18.sp)
+                        // Sprach-Icon statt Emoji-Flagge
+                        Surface(
+                            shape    = RoundedCornerShape(6.dp),
+                            color    = if (isSelected)
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                            else
+                                MaterialTheme.colorScheme.surfaceVariant,
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                                Text(
+                                    text  = language.tag.uppercase().ifEmpty { "sys" }.take(2),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isSelected) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontSize = 10.sp
+                                )
+                            }
+                        }
                         Text(
                             text       = language.displayName,
                             style      = MaterialTheme.typography.bodyMedium,
@@ -814,7 +831,12 @@ private fun LanguagePickerSection(
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 @Composable
-private fun ThemeModeOption(label: String, isSelected: Boolean, onClick: () -> Unit) {
+private fun ThemeModeOption(
+    label      : String,
+    icon       : ImageVector,
+    isSelected : Boolean,
+    onClick    : () -> Unit
+) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape    = MaterialTheme.shapes.medium,
@@ -836,13 +858,25 @@ private fun ThemeModeOption(label: String, isSelected: Boolean, onClick: () -> U
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment     = Alignment.CenterVertically
         ) {
-            Text(
-                text       = label,
-                style      = MaterialTheme.typography.bodyMedium,
-                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                color      = if (isSelected) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.onSurface
-            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment     = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector        = icon,
+                    contentDescription = null,
+                    modifier           = Modifier.size(20.dp),
+                    tint               = if (isSelected) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text       = label,
+                    style      = MaterialTheme.typography.bodyMedium,
+                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                    color      = if (isSelected) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurface
+                )
+            }
             RadioButton(selected = isSelected, onClick = onClick)
         }
     }

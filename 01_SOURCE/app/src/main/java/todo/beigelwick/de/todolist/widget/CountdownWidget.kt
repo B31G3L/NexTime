@@ -72,10 +72,6 @@ class CountdownWidget : GlanceAppWidget() {
             database.countdownDao().getAllCountdowns().first().firstOrNull()
         }
 
-        // BUG FIX: Das Anzeigeformat wird global in AppPreferences gespeichert
-        // (default_date_units + show_time_on_card). countdown.displayFormat ist
-        // immer leer (""), weshalb das Widget bisher immer nur Tage angezeigt hat.
-        // Jetzt lesen wir die echten Einstellungen aus dem DataStore.
         val globalDateUnits  = AppPreferences.getDefaultDateUnits(context).first()
         val showTimeOnWidget = AppPreferences.getShowTimeOnCard(context).first()
         val resolvedFormat   = buildWidgetFormat(globalDateUnits, showTimeOnWidget)
@@ -103,6 +99,27 @@ class CountdownWidget : GlanceAppWidget() {
         }
     }
 
+    // ─── Icon-Box (ersetzt Emoji-Text) ────────────────────────────────────────
+    // Glance unterstützt keine Material ImageVector-Icons; wir nutzen daher
+    // das App-Drawable als generisches Widget-Icon.
+
+    @Composable
+    private fun WidgetIconBox(accentColor: Color, size: Int = 44) {
+        Box(
+            modifier         = GlanceModifier
+                .size(size.dp)
+                .background(Color.White.copy(alpha = 0.2f))
+                .cornerRadius(12.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Image(
+                provider           = ImageProvider(R.drawable.ic_launcher_foreground),
+                contentDescription = null,
+                modifier           = GlanceModifier.size((size * 0.6f).toInt().dp)
+            )
+        }
+    }
+
     // ─── 1×1 ─────────────────────────────────────────────────────────────────
 
     @Composable
@@ -115,7 +132,7 @@ class CountdownWidget : GlanceAppWidget() {
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalAlignment = Alignment.CenterVertically, modifier = GlanceModifier.fillMaxSize().padding(4.dp)) {
                 Box(modifier = GlanceModifier.fillMaxWidth().height(3.dp).background(darker)) {}
                 Spacer(GlanceModifier.defaultWeight())
-                Text(text = countdown.icon.ifBlank { "⏰" }, style = TextStyle(fontSize = 22.sp, textAlign = TextAlign.Center))
+                WidgetIconBox(accentColor, 28)
                 Spacer(GlanceModifier.height(2.dp))
                 Text(text = mainVal, style = TextStyle(fontSize = 22.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White), textAlign = TextAlign.Center))
                 Text(text = mainUnit, style = TextStyle(fontSize = 9.sp, color = ColorProvider(Color.White.copy(alpha = 0.8f)), textAlign = TextAlign.Center))
@@ -137,7 +154,7 @@ class CountdownWidget : GlanceAppWidget() {
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = GlanceModifier.fillMaxSize()) {
                 Box(modifier = GlanceModifier.fillMaxWidth().height(3.dp).background(darker)) {}
                 Spacer(GlanceModifier.defaultWeight())
-                Text(text = countdown.icon.ifBlank { "⏰" }, style = TextStyle(fontSize = 26.sp, textAlign = TextAlign.Center))
+                WidgetIconBox(accentColor, 32)
                 Spacer(GlanceModifier.height(4.dp))
                 Text(text = countdown.title, style = TextStyle(fontSize = 10.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White.copy(alpha = 0.85f)), textAlign = TextAlign.Center), maxLines = 1)
                 Spacer(GlanceModifier.height(6.dp))
@@ -161,9 +178,7 @@ class CountdownWidget : GlanceAppWidget() {
             Column(modifier = GlanceModifier.fillMaxSize()) {
                 Box(modifier = GlanceModifier.fillMaxWidth().height(3.dp).background(darker)) {}
                 Row(modifier = GlanceModifier.fillMaxSize().padding(horizontal = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Box(modifier = GlanceModifier.size(44.dp).background(Color.White.copy(alpha = 0.2f)).cornerRadius(10.dp), contentAlignment = Alignment.Center) {
-                        Text(text = countdown.icon.ifBlank { "⏰" }, style = TextStyle(fontSize = 22.sp))
-                    }
+                    WidgetIconBox(accentColor, 44)
                     Spacer(GlanceModifier.width(10.dp))
                     Column(modifier = GlanceModifier.defaultWeight()) {
                         Text(text = countdown.title, style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White.copy(alpha = 0.85f))), maxLines = 1)
@@ -189,9 +204,7 @@ class CountdownWidget : GlanceAppWidget() {
                 Box(modifier = GlanceModifier.fillMaxWidth().height(3.dp).background(darker)) {}
                 Column(modifier = GlanceModifier.fillMaxSize().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(modifier = GlanceModifier.size(36.dp).background(Color.White.copy(alpha = 0.2f)).cornerRadius(8.dp), contentAlignment = Alignment.Center) {
-                            Text(text = countdown.icon.ifBlank { "⏰" }, style = TextStyle(fontSize = 18.sp))
-                        }
+                        WidgetIconBox(accentColor, 36)
                         Spacer(GlanceModifier.width(8.dp))
                         Text(text = countdown.title, style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White.copy(alpha = 0.85f))), maxLines = 1, modifier = GlanceModifier.defaultWeight())
                     }
@@ -221,9 +234,7 @@ class CountdownWidget : GlanceAppWidget() {
             Column(modifier = GlanceModifier.fillMaxSize()) {
                 Box(modifier = GlanceModifier.fillMaxWidth().height(3.dp).background(darker)) {}
                 Row(modifier = GlanceModifier.fillMaxSize().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Box(modifier = GlanceModifier.size(52.dp).background(Color.White.copy(alpha = 0.2f)).cornerRadius(12.dp), contentAlignment = Alignment.Center) {
-                        Text(text = countdown.icon.ifBlank { "⏰" }, style = TextStyle(fontSize = 26.sp))
-                    }
+                    WidgetIconBox(accentColor, 52)
                     Spacer(GlanceModifier.width(12.dp))
                     Column(modifier = GlanceModifier.defaultWeight(), verticalAlignment = Alignment.CenterVertically) {
                         Text(text = countdown.title, style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White.copy(alpha = 0.85f))), maxLines = 1)
@@ -239,7 +250,7 @@ class CountdownWidget : GlanceAppWidget() {
                             Text(text = countdown.effectiveTarget.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")), style = TextStyle(fontSize = 10.sp, color = ColorProvider(Color.White.copy(alpha = 0.65f))))
                             if (countdown.isRecurring) {
                                 Spacer(GlanceModifier.width(6.dp))
-                                Text(text = "↻ ${countdown.recurrenceType.name.lowercase()}", style = TextStyle(fontSize = 10.sp, color = ColorProvider(Color.White.copy(alpha = 0.65f))))
+                                Text(text = "${countdown.recurrenceType.name.lowercase()}", style = TextStyle(fontSize = 10.sp, color = ColorProvider(Color.White.copy(alpha = 0.65f))))
                             }
                         }
                     }
@@ -260,9 +271,7 @@ class CountdownWidget : GlanceAppWidget() {
             Column(modifier = GlanceModifier.fillMaxSize()) {
                 Box(modifier = GlanceModifier.fillMaxWidth().height(3.dp).background(darker)) {}
                 Row(modifier = GlanceModifier.fillMaxSize().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Box(modifier = GlanceModifier.size(60.dp).background(Color.White.copy(alpha = 0.2f)).cornerRadius(14.dp), contentAlignment = Alignment.Center) {
-                        Text(text = countdown.icon.ifBlank { "⏰" }, style = TextStyle(fontSize = 30.sp))
-                    }
+                    WidgetIconBox(accentColor, 60)
                     Spacer(GlanceModifier.width(14.dp))
                     Column(modifier = GlanceModifier.defaultWeight(), verticalAlignment = Alignment.CenterVertically) {
                         Text(text = countdown.title, style = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold, color = ColorProvider(Color.White.copy(alpha = 0.85f))), maxLines = 1)
@@ -283,11 +292,11 @@ class CountdownWidget : GlanceAppWidget() {
                         }
                         if (countdown.isRecurring) {
                             Spacer(GlanceModifier.height(4.dp))
-                            Text(text = "↻ ${countdown.recurrenceType.name.lowercase()}", style = TextStyle(fontSize = 10.sp, color = ColorProvider(Color.White.copy(alpha = 0.65f))))
+                            Text(text = countdown.recurrenceType.name.lowercase(), style = TextStyle(fontSize = 10.sp, color = ColorProvider(Color.White.copy(alpha = 0.65f))))
                         }
                         Spacer(GlanceModifier.height(4.dp))
                         val totalDaysLabel = if (timeInfo.days == 1L) context.getString(R.string.day) else context.getString(R.string.days)
-                        Text(text = "${timeInfo.days} $totalDaysLabel gesamt", style = TextStyle(fontSize = 10.sp, color = ColorProvider(Color.White.copy(alpha = 0.6f))))
+                        Text(text = "${timeInfo.days} $totalDaysLabel ${context.getString(R.string.label_total)}", style = TextStyle(fontSize = 10.sp, color = ColorProvider(Color.White.copy(alpha = 0.6f))))
                     }
                 }
                 Box(modifier = GlanceModifier.fillMaxWidth().height(3.dp).background(darker)) {}
@@ -304,7 +313,11 @@ class CountdownWidget : GlanceAppWidget() {
             contentAlignment = Alignment.Center
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalAlignment = Alignment.CenterVertically) {
-                Text(text = "⏰", style = TextStyle(fontSize = 24.sp, textAlign = TextAlign.Center))
+                Image(
+                    provider           = ImageProvider(R.drawable.ic_launcher_foreground),
+                    contentDescription = null,
+                    modifier           = GlanceModifier.size(32.dp)
+                )
                 if (size.height > 60.dp) {
                     Spacer(GlanceModifier.height(4.dp))
                     Text(text = context.getString(R.string.widget_no_countdowns), style = TextStyle(fontSize = 10.sp, color = ColorProvider(Color(0xFF888888)), textAlign = TextAlign.Center))
@@ -315,9 +328,6 @@ class CountdownWidget : GlanceAppWidget() {
 
     // ─── Hilfsfunktionen ──────────────────────────────────────────────────────
 
-    /**
-     * Wert der ersten (größten) aktiven Einheit in der gespeicherten Reihenfolge.
-     */
     private fun formatMainValue(timeInfo: CountdownInfo, displayFormat: String): String {
         val units = DisplayFormat.decodeOrdered(displayFormat)
         return when (units.firstOrNull() ?: DisplayUnit.DAYS) {
@@ -331,19 +341,12 @@ class CountdownWidget : GlanceAppWidget() {
         }
     }
 
-    /**
-     * Kurze Einheitsbezeichnung für die erste Einheit (Small/Tall-Layouts).
-     */
     private fun formatMainUnitShort(context: Context, timeInfo: CountdownInfo, displayFormat: String): String {
         val units = DisplayFormat.decodeOrdered(displayFormat)
         val first = units.firstOrNull() ?: DisplayUnit.DAYS
         return getUnitLabel(context, first, getFirstValue(timeInfo, first))
     }
 
-    /**
-     * Vollständige Einheitenliste für Medium/Large-Layouts.
-     * Respektiert die vom Nutzer festgelegte Reihenfolge.
-     */
     private fun formatMainUnitFull(context: Context, timeInfo: CountdownInfo, displayFormat: String): String {
         val units    = DisplayFormat.decodeOrdered(displayFormat)
         val segments = timeInfo.buildDisplaySegments(units)
@@ -390,11 +393,6 @@ class CountdownWidget : GlanceAppWidget() {
 
 // ─── Widget Format Builder ────────────────────────────────────────────────────
 
-/**
- * Baut den displayFormat-String aus den globalen AppPreferences-Einstellungen.
- * [showTime] wird ignoriert – Zeiteinheiten (H/m/s) werden im Widget nicht
- * als separate Chips unterstützt, sondern bei hasTime separat dargestellt.
- */
 private fun buildWidgetFormat(dateUnits: Set<DisplayUnit>, showTime: Boolean): String {
     return DisplayFormat.encode(dateUnits)
 }
