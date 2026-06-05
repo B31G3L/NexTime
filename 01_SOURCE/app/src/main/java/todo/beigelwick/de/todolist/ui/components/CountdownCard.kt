@@ -63,8 +63,8 @@ private fun styleConfig(style: DisplayStyle): CardStyleConfig = when (style) {
     DisplayStyle.COMPACT -> CardStyleConfig(
         iconSize = 36.dp,
         cardPaddingH = 12.dp, cardPaddingV = 10.dp,
-        rowSpacing = 10.dp, numberSize = 20.sp,
-        unitSize = 12.sp, titleSize = 11.sp,
+        rowSpacing = 10.dp, numberSize = 24.sp,
+        unitSize = 10.sp, titleSize = 11.sp,
         subInfoSize = 0.sp, dateSize = 0.sp,
         showSubInfo = false, showDate = false,
         columnSpacing = 2.dp, barHeight = 2.dp,
@@ -72,8 +72,8 @@ private fun styleConfig(style: DisplayStyle): CardStyleConfig = when (style) {
     DisplayStyle.NORMAL -> CardStyleConfig(
         iconSize = 48.dp,
         cardPaddingH = 14.dp, cardPaddingV = 12.dp,
-        rowSpacing = 12.dp, numberSize = 26.sp,
-        unitSize = 14.sp, titleSize = 13.sp,
+        rowSpacing = 12.dp, numberSize = 32.sp,
+        unitSize = 11.sp, titleSize = 13.sp,
         subInfoSize = 11.sp, dateSize = 11.sp,
         showSubInfo = true, showDate = true,
         columnSpacing = 3.dp, barHeight = 3.dp,
@@ -81,8 +81,8 @@ private fun styleConfig(style: DisplayStyle): CardStyleConfig = when (style) {
     DisplayStyle.GENEROUS -> CardStyleConfig(
         iconSize = 60.dp,
         cardPaddingH = 16.dp, cardPaddingV = 16.dp,
-        rowSpacing = 14.dp, numberSize = 34.sp,
-        unitSize = 17.sp, titleSize = 14.sp,
+        rowSpacing = 14.dp, numberSize = 42.sp,
+        unitSize = 12.sp, titleSize = 14.sp,
         subInfoSize = 12.sp, dateSize = 12.sp,
         showSubInfo = true, showDate = true,
         columnSpacing = 4.dp, barHeight = 3.dp,
@@ -153,9 +153,22 @@ fun CountdownCard(
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape    = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(
+            topStart     = 0.dp,
+            topEnd       = 14.dp,
+            bottomStart  = 0.dp,
+            bottomEnd    = 14.dp
+        ),
         tonalElevation = 0.dp,
     ) {
+        Row {
+            // Linker Akzentbalken
+            Box(
+                modifier = Modifier
+                    .width(cfg.barHeight)   // gleiche Breite wie barHeight (3dp)
+                    .fillMaxHeight()
+                    .background(accentColor)
+            )
         Column {
             // ── Oberer Akzentbalken ───────────────────────────────────────────
             Box(
@@ -165,6 +178,7 @@ fun CountdownCard(
                     .background(accentColor)
             )
 
+
             // ── Inhalt ────────────────────────────────────────────────────────
             Row(
                 modifier = Modifier
@@ -173,6 +187,7 @@ fun CountdownCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(cfg.rowSpacing)
             ) {
+
                 // Material Icon ohne Hintergrund
                 Icon(
                     imageVector        = iconByName(countdown.icon),
@@ -245,13 +260,7 @@ fun CountdownCard(
                 }
             }
 
-            // ── Unterer Akzentbalken ──────────────────────────────────────────
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(cfg.barHeight)
-                    .background(accentColor)
-            )
+        }
         }
     }
 }
