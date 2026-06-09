@@ -79,8 +79,8 @@ val MIGRATION_2_3 = object : Migration(2, 3) {
     }
 }
 
-/** v3 → v4: no schema change, version bump only */
-val MIGRATION_3_4 = object : Migration(3, 4) {
+/** v3 → v5: no schema change; skips v4 which had an unknown schema */
+val MIGRATION_3_5 = object : Migration(3, 5) {
     override fun migrate(database: SupportSQLiteDatabase) { }
 }
 
@@ -100,7 +100,7 @@ class Converters {
 
 @Database(
     entities     = [Countdown::class],
-    version      = 4,
+    version      = 5,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -119,7 +119,7 @@ abstract class CountdownDatabase : RoomDatabase() {
                     CountdownDatabase::class.java,
                     "nextime_database"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_5)
                     .fallbackToDestructiveMigrationFrom(4)
                     .build()
                 INSTANCE = instance
