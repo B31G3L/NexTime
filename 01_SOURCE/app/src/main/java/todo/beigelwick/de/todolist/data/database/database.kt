@@ -120,6 +120,7 @@ abstract class CountdownDatabase : RoomDatabase() {
                     "nextime_database"
                 )
                     .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                    .fallbackToDestructiveMigrationFrom(4)
                     .build()
                 INSTANCE = instance
                 instance
