@@ -161,14 +161,6 @@ fun CountdownCard(
         ),
         tonalElevation = 0.dp,
     ) {
-        Row {
-            // Linker Akzentbalken
-            Box(
-                modifier = Modifier
-                    .width(cfg.barHeight)   // gleiche Breite wie barHeight (3dp)
-                    .fillMaxHeight()
-                    .background(accentColor)
-            )
         Column {
             // ── Oberer Akzentbalken ───────────────────────────────────────────
             Box(
@@ -261,7 +253,7 @@ fun CountdownCard(
             }
 
         }
-        }
+
     }
 }
 

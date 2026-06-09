@@ -294,4 +294,8 @@
     <string name="icon_cat_nature">Nature</string>
     <string name="icon_cat_home">Home</string>
     <string name="icon_cat_other">Other</string>
+
+    <string name="format_custom_toggle">Use custom display format</string>
+    <string name="format_uses_global">Using global setting</string>
+    <string name="format_overrides_global">Overrides global setting</string>
 </resources>
