@@ -33,124 +33,108 @@ interface CountdownDao {
 }
 
 // ─── Migrations ───────────────────────────────────────────────────────────────
+//
+// Alle nicht-trivialen Migrationen rufen rebuildCountdownsTable() auf. Diese
+// Funktion ist schema-agnostisch: Sie liest die tatsächlich vorhandenen Spalten
+// aus und kopiert nur die Schnittmenge mit dem v5-Zielschema. Dadurch funktioniert
+// sie unabhängig davon, ob das Quellschema überzählige Spalten (z. B. includeTime)
+// oder fehlende Spalten (z. B. icon) hat. Kein Datenverlust für vorhandene Spalten.
 
-/** v1 → v2: includeTime entfernt (Tabelle neu gebaut) */
+/** v1 → v2 */
 val MIGRATION_1_2 = object : Migration(1, 2) {
-    override fun migrate(database: SupportSQLiteDatabase) {
-        database.execSQL(
-            """
-            CREATE TABLE IF NOT EXISTS `countdowns_new` (
-                `id`                    INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                `title`                 TEXT NOT NULL,
-                `targetDateTime`        TEXT NOT NULL,
-                `displayFormat`         TEXT NOT NULL,
-                `createdAt`             TEXT NOT NULL,
-                `color`                 TEXT NOT NULL,
-                `icon`                  TEXT NOT NULL,
-                `notificationEnabled`   INTEGER NOT NULL,
-                `reminderOptions`       TEXT NOT NULL,
-                `lastNotificationSent`  TEXT,
-                `showNights`            INTEGER NOT NULL,
-                `recurrence`            TEXT NOT NULL
-            )
-            """.trimIndent()
-        )
-        database.execSQL(
-            """
-            INSERT INTO `countdowns_new` (
-                `id`, `title`, `targetDateTime`, `displayFormat`, `createdAt`,
-                `color`, `icon`, `notificationEnabled`, `reminderOptions`,
-                `lastNotificationSent`, `showNights`, `recurrence`
-            )
-            SELECT
-                `id`, `title`, `targetDateTime`, `displayFormat`, `createdAt`,
-                `color`, `icon`, `notificationEnabled`, `reminderOptions`,
-                `lastNotificationSent`, `showNights`, `recurrence`
-            FROM `countdowns`
-            """.trimIndent()
-        )
-        database.execSQL("DROP TABLE `countdowns`")
-        database.execSQL("ALTER TABLE `countdowns_new` RENAME TO `countdowns`")
-    }
+    override fun migrate(database: SupportSQLiteDatabase) = rebuildCountdownsTable(database)
 }
 
-/** v2 → v3: isPinned Spalte hinzugefügt, Standard false */
+/** v2 → v3 */
 val MIGRATION_2_3 = object : Migration(2, 3) {
-    override fun migrate(database: SupportSQLiteDatabase) {
-        database.execSQL(
-            "ALTER TABLE `countdowns` ADD COLUMN `isPinned` INTEGER NOT NULL DEFAULT 0"
-        )
-    }
+    override fun migrate(database: SupportSQLiteDatabase) = rebuildCountdownsTable(database)
 }
 
-/**
- * v3 → v5: Geräte mit korrektem v3-Schema sind eigentlich identisch zu v5.
- * Trotzdem bauen wir die Tabelle sauber neu (idempotent) — falls auf einzelnen
- * v3-Geräten doch noch die alte `includeTime`-Spalte existiert, wird sie hier
- * mit entfernt. Daten bleiben vollständig erhalten.
- */
+/** v3 → v5 */
 val MIGRATION_3_5 = object : Migration(3, 5) {
-    override fun migrate(database: SupportSQLiteDatabase) {
-        rebuildCountdownsTable(database)
-    }
+    override fun migrate(database: SupportSQLiteDatabase) = rebuildCountdownsTable(database)
 }
 
-/**
- * v4 → v5: Das (nicht dokumentierte) v4-Schema enthält die überzählige Spalte
- * `includeTime`, die in v5 nicht mehr existiert. SQLite kann auf minSdk 31 kein
- * zuverlässiges DROP COLUMN → wir bauen die Tabelle ohne `includeTime` neu und
- * kopieren alle Daten. KEIN Datenverlust.
- */
+/** v4 → v5 */
 val MIGRATION_4_5 = object : Migration(4, 5) {
-    override fun migrate(database: SupportSQLiteDatabase) {
-        rebuildCountdownsTable(database)
-    }
+    override fun migrate(database: SupportSQLiteDatabase) = rebuildCountdownsTable(database)
+}
+
+/** Zusätzliche Pfade, damit jede Ausgangsversion das v5-Schema erreicht */
+val MIGRATION_1_5 = object : Migration(1, 5) {
+    override fun migrate(database: SupportSQLiteDatabase) = rebuildCountdownsTable(database)
+}
+val MIGRATION_2_5 = object : Migration(2, 5) {
+    override fun migrate(database: SupportSQLiteDatabase) = rebuildCountdownsTable(database)
 }
 
 /**
- * Baut die Tabelle `countdowns` exakt nach dem aktuellen v5-Entity neu auf.
+ * Alle Spalten des aktuellen v5-Entity in kanonischer Reihenfolge.
+ * Bei künftigen Schema-Änderungen hier UND im CREATE-Statement mitpflegen.
+ */
+private val TARGET_COLUMNS = listOf(
+    "id", "title", "targetDateTime", "displayFormat", "createdAt", "color",
+    "icon", "notificationEnabled", "reminderOptions", "lastNotificationSent",
+    "showNights", "recurrence", "isPinned"
+)
+
+/**
+ * Baut die Tabelle `countdowns` schema-agnostisch nach dem v5-Entity neu auf.
  *
- * Der INSERT … SELECT listet nur die 13 Zielspalten explizit auf. Dadurch wird
- * eine eventuell vorhandene Alt-Spalte (z. B. `includeTime`) automatisch
- * ignoriert und verschwindet. Funktioniert sowohl für v3- als auch v4-Schemata,
- * da beide alle 13 Zielspalten besitzen.
+ * Vorgehen:
+ *  1. Vorhandene Spalten der aktuellen Tabelle per PRAGMA table_info auslesen.
+ *  2. Neue Tabelle mit vollständigem v5-Schema erstellen — alle NOT-NULL-Spalten
+ *     mit DEFAULT, damit fehlende Quell-Spalten (z. B. icon) automatisch einen
+ *     gültigen Wert erhalten.
+ *  3. Nur die Schnittmenge aus Quell- und Zielspalten kopieren. Überzählige
+ *     Quell-Spalten (z. B. includeTime) werden dabei ignoriert.
+ *  4. Alte Tabelle ersetzen.
  *
- * WICHTIG: Bei künftigen Schema-Änderungen Spaltenliste hier mitpflegen.
+ * Hinweis: Die DEFAULT-Klauseln stören Room beim Schema-Check nicht, da die
+ * Countdown-Entity keine @ColumnInfo(defaultValue=…) definiert — Room prüft
+ * Defaults nur, wenn die Entity selbst welche vorgibt.
  */
 private fun rebuildCountdownsTable(database: SupportSQLiteDatabase) {
+    // 1. Vorhandene Spalten ermitteln
+    val existing = mutableSetOf<String>()
+    database.query("PRAGMA table_info(`countdowns`)").use { cursor ->
+        val nameIndex = cursor.getColumnIndex("name")
+        while (cursor.moveToNext()) {
+            if (nameIndex >= 0) existing.add(cursor.getString(nameIndex))
+        }
+    }
+
+    // 2. Zieltabelle mit vollständigem Schema (Defaults sichern fehlende Spalten ab)
     database.execSQL(
         """
         CREATE TABLE IF NOT EXISTS `countdowns_new` (
             `id`                    INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-            `title`                 TEXT NOT NULL,
-            `targetDateTime`        TEXT NOT NULL,
-            `displayFormat`         TEXT NOT NULL,
-            `createdAt`             TEXT NOT NULL,
-            `color`                 TEXT NOT NULL,
-            `icon`                  TEXT NOT NULL,
-            `notificationEnabled`   INTEGER NOT NULL,
-            `reminderOptions`       TEXT NOT NULL,
+            `title`                 TEXT NOT NULL DEFAULT '',
+            `targetDateTime`        TEXT NOT NULL DEFAULT '2024-01-01T00:00:00',
+            `displayFormat`         TEXT NOT NULL DEFAULT '',
+            `createdAt`             TEXT NOT NULL DEFAULT '2024-01-01T00:00:00',
+            `color`                 TEXT NOT NULL DEFAULT '#FF7043',
+            `icon`                  TEXT NOT NULL DEFAULT 'Timer',
+            `notificationEnabled`   INTEGER NOT NULL DEFAULT 0,
+            `reminderOptions`       TEXT NOT NULL DEFAULT '',
             `lastNotificationSent`  TEXT,
-            `showNights`            INTEGER NOT NULL,
-            `recurrence`            TEXT NOT NULL,
+            `showNights`            INTEGER NOT NULL DEFAULT 0,
+            `recurrence`            TEXT NOT NULL DEFAULT 'NONE',
             `isPinned`              INTEGER NOT NULL DEFAULT 0
         )
         """.trimIndent()
     )
-    database.execSQL(
-        """
-        INSERT INTO `countdowns_new` (
-            `id`, `title`, `targetDateTime`, `displayFormat`, `createdAt`,
-            `color`, `icon`, `notificationEnabled`, `reminderOptions`,
-            `lastNotificationSent`, `showNights`, `recurrence`, `isPinned`
+
+    // 3. Nur gemeinsame Spalten kopieren (fehlende erhalten ihren DEFAULT)
+    val common = TARGET_COLUMNS.filter { it in existing }
+    if (common.isNotEmpty()) {
+        val colList = common.joinToString(", ") { "`$it`" }
+        database.execSQL(
+            "INSERT INTO `countdowns_new` ($colList) SELECT $colList FROM `countdowns`"
         )
-        SELECT
-            `id`, `title`, `targetDateTime`, `displayFormat`, `createdAt`,
-            `color`, `icon`, `notificationEnabled`, `reminderOptions`,
-            `lastNotificationSent`, `showNights`, `recurrence`, `isPinned`
-        FROM `countdowns`
-        """.trimIndent()
-    )
+    }
+
+    // 4. Alte Tabelle ersetzen
     database.execSQL("DROP TABLE `countdowns`")
     database.execSQL("ALTER TABLE `countdowns_new` RENAME TO `countdowns`")
 }
@@ -194,7 +178,9 @@ abstract class CountdownDatabase : RoomDatabase() {
                         MIGRATION_1_2,
                         MIGRATION_2_3,
                         MIGRATION_3_5,
-                        MIGRATION_4_5
+                        MIGRATION_4_5,
+                        MIGRATION_1_5,
+                        MIGRATION_2_5
                     )
                     // KEIN fallbackToDestructiveMigration* — verhindert Datenverlust.
                     .build()
