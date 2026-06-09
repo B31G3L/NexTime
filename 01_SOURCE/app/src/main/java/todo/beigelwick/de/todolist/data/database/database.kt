@@ -79,6 +79,10 @@ val MIGRATION_2_3 = object : Migration(2, 3) {
     }
 }
 
+val MIGRATION_3_4 = object : Migration(3, 4) {
+    override fun migrate(database: SupportSQLiteDatabase) { }
+}
+
 // ─── Type Converters ──────────────────────────────────────────────────────────
 
 class Converters {
@@ -95,7 +99,7 @@ class Converters {
 
 @Database(
     entities     = [Countdown::class],
-    version      = 3,
+    version      = 4,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -114,7 +118,7 @@ abstract class CountdownDatabase : RoomDatabase() {
                     CountdownDatabase::class.java,
                     "nextime_database"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4 )
                     .build()
                 INSTANCE = instance
                 instance
