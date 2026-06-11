@@ -17,9 +17,11 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalView
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
@@ -64,6 +66,16 @@ class MainActivity : AppCompatActivity() {
                 ThemeMode.SYSTEM -> systemDark
                 ThemeMode.LIGHT  -> false
                 ThemeMode.DARK   -> true
+            }
+
+            // ── Statusleisten-/Navigationsleisten-Symbole an App-Theme koppeln ──
+            // Hell-Modus → dunkle Symbole (Uhr sichtbar), Dunkel-Modus → helle Symbole.
+            // Folgt dem APP-Theme, nicht dem System-Theme.
+            val view = LocalView.current
+            SideEffect {
+                val controller = WindowCompat.getInsetsController(window, view)
+                controller.isAppearanceLightStatusBars     = !isDark
+                controller.isAppearanceLightNavigationBars  = !isDark
             }
 
             NexTimeTheme(darkTheme = isDark, accentColor = accentColor) {

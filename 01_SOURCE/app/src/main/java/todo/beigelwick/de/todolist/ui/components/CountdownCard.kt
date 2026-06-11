@@ -19,6 +19,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
@@ -44,60 +45,35 @@ import java.time.format.DateTimeFormatter
 // ─── Style-Konfiguration ──────────────────────────────────────────────────────
 
 private data class CardStyleConfig(
-    val iconSize      : Dp,
-    val cardPaddingH  : Dp,
-    val cardPaddingV  : Dp,
-    val rowSpacing    : Dp,
-    val numberSize    : TextUnit,
-    val unitSize      : TextUnit,
-    val titleSize     : TextUnit,
-    val subInfoSize   : TextUnit,
-    val dateSize      : TextUnit,
-    val showSubInfo   : Boolean,
-    val showDate      : Boolean,
-    val columnSpacing : Dp,
-    val barHeight     : Dp,
+    val cardPaddingH   : Dp,
+    val cardPaddingV   : Dp,
+    val numberSize     : TextUnit,
+    val unitSize       : TextUnit,
+    val titleSize      : TextUnit,
+    val dateSize       : TextUnit,
+    val iconBoxSize    : Dp,
+    val iconGlyphSize  : Dp,
+    val rowSpacing     : Dp,
+    val showDate       : Boolean,
 )
 
 private fun styleConfig(style: DisplayStyle): CardStyleConfig = when (style) {
     DisplayStyle.COMPACT -> CardStyleConfig(
-        iconSize = 36.dp,
-        cardPaddingH = 12.dp, cardPaddingV = 10.dp,
-        rowSpacing = 10.dp, numberSize = 24.sp,
-        unitSize = 10.sp, titleSize = 11.sp,
-        subInfoSize = 0.sp, dateSize = 0.sp,
-        showSubInfo = false, showDate = false,
-        columnSpacing = 2.dp, barHeight = 2.dp,
+        cardPaddingH = 14.dp, cardPaddingV = 12.dp,
+        numberSize = 32.sp, unitSize = 12.sp, titleSize = 12.sp, dateSize = 11.sp,
+        iconBoxSize = 28.dp, iconGlyphSize = 16.dp, rowSpacing = 10.dp, showDate = false,
     )
     DisplayStyle.NORMAL -> CardStyleConfig(
-        iconSize = 48.dp,
-        cardPaddingH = 14.dp, cardPaddingV = 12.dp,
-        rowSpacing = 12.dp, numberSize = 32.sp,
-        unitSize = 11.sp, titleSize = 13.sp,
-        subInfoSize = 11.sp, dateSize = 11.sp,
-        showSubInfo = true, showDate = true,
-        columnSpacing = 3.dp, barHeight = 3.dp,
+        cardPaddingH = 18.dp, cardPaddingV = 16.dp,
+        numberSize = 42.sp, unitSize = 15.sp, titleSize = 13.sp, dateSize = 12.sp,
+        iconBoxSize = 30.dp, iconGlyphSize = 17.dp, rowSpacing = 14.dp, showDate = true,
     )
     DisplayStyle.GENEROUS -> CardStyleConfig(
-        iconSize = 60.dp,
-        cardPaddingH = 16.dp, cardPaddingV = 16.dp,
-        rowSpacing = 14.dp, numberSize = 42.sp,
-        unitSize = 12.sp, titleSize = 14.sp,
-        subInfoSize = 12.sp, dateSize = 12.sp,
-        showSubInfo = true, showDate = true,
-        columnSpacing = 4.dp, barHeight = 3.dp,
+        cardPaddingH = 20.dp, cardPaddingV = 20.dp,
+        numberSize = 52.sp, unitSize = 17.sp, titleSize = 14.sp, dateSize = 13.sp,
+        iconBoxSize = 34.dp, iconGlyphSize = 19.dp, rowSpacing = 16.dp, showDate = true,
     )
 }
-
-// ─── UnitSplit ────────────────────────────────────────────────────────────────
-
-private data class UnitSplit(
-    val mainUnits     : List<DisplayUnit>,
-    val timeInSubInfo : Boolean
-)
-
-private fun buildUnitSplit(dateUnits: Set<DisplayUnit>, showTime: Boolean) =
-    UnitSplit(mainUnits = DisplayFormat.sorted(dateUnits), timeInSubInfo = showTime)
 
 // ─── CountdownCard ────────────────────────────────────────────────────────────
 
@@ -115,145 +91,123 @@ fun CountdownCard(
         AppPreferences.getDisplayStyle(context).collectAsState(initial = DisplayStyle.NORMAL)
     }
 
-    val defaultDateUnits by AppPreferences.getDefaultDateUnits(context)
+    // Custom-Format pro Countdown hat Vorrang, sonst globale Einstellungen
+    val globalDateUnits by AppPreferences.getDefaultDateUnits(context)
         .collectAsState(initial = setOf(DisplayUnit.DAYS))
     val showTimeOnCard by AppPreferences.getShowTimeOnCard(context)
         .collectAsState(initial = false)
 
-    val cfg   = remember(displayStyle) { styleConfig(displayStyle) }
-    val split = remember(defaultDateUnits, showTimeOnCard) {
-        buildUnitSplit(defaultDateUnits, showTimeOnCard)
+    val hasCustomFormat = countdown.displayFormat.isNotBlank()
+    val activeUnits = remember(countdown.displayFormat, globalDateUnits) {
+        if (hasCustomFormat) countdown.activeDisplayUnitsOrdered
+        else DisplayFormat.sorted(globalDateUnits)
     }
+    val needsSecondTick = showTimeOnCard ||
+            (hasCustomFormat && activeUnits.any { it in TIME_UNITS })
 
-    val tick by if (showTimeOnCard)
+    val cfg = remember(displayStyle) { styleConfig(displayStyle) }
+
+    val tick by if (needsSecondTick)
         viewModel.tickSeconds.collectAsState()
     else
         viewModel.tickMinutes.collectAsState()
 
-    val timeInfo = remember(countdown.id, defaultDateUnits, showTimeOnCard, tick) {
+    val timeInfo = remember(countdown.id, activeUnits, needsSecondTick, tick) {
         countdown.calculateTimeRemaining()
     }
 
-    // Akzentfarbe des Countdowns (für die 2 Balken)
-    // MaterialTheme darf nicht in remember{} aufgerufen werden → Fallback separat
+    // Akzentfarbe des Countdowns — trägt Icon-Kästchen + Rand
     val fallbackAccent = MaterialTheme.colorScheme.primary
     val accentColor = remember(countdown.color, fallbackAccent) {
         runCatching { Color(android.graphics.Color.parseColor(countdown.color)) }
             .getOrElse { fallbackAccent }
     }
 
-    // BUG FIX: tick als Key, damit isToday nach Mitternacht korrekt neu berechnet wird
     val isToday = remember(countdown.id, countdown.effectiveTarget, tick) {
         countdown.effectiveTarget.toLocalDate() == LocalDate.now()
     }
 
-    // Hintergrund = App-Oberfläche (surfaceVariant für leichte Abhebung)
-    val contentColor   = MaterialTheme.colorScheme.onSurface
-    val subtleColor    = MaterialTheme.colorScheme.onSurfaceVariant
+    val contentColor = MaterialTheme.colorScheme.onSurface
+    val subtleColor  = MaterialTheme.colorScheme.onSurfaceVariant
 
     Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(
-            topStart     = 0.dp,
-            topEnd       = 14.dp,
-            bottomStart  = 0.dp,
-            bottomEnd    = 14.dp
-        ),
-        tonalElevation = 0.dp,
+        modifier        = Modifier.fillMaxWidth(),
+        shape           = RoundedCornerShape(14.dp),
+        color           = MaterialTheme.colorScheme.background,
+        tonalElevation  = 0.dp,
+        shadowElevation = 0.dp,
+        border          = androidx.compose.foundation.BorderStroke(0.5.dp, accentColor.copy(alpha = 0.28f)),
     ) {
-        Column {
-            // ── Oberer Akzentbalken ───────────────────────────────────────────
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(cfg.barHeight)
-                    .background(accentColor)
-            )
+        Box(modifier = Modifier.fillMaxWidth()) {
 
-
-            // ── Inhalt ────────────────────────────────────────────────────────
-            Row(
+            // ── Inhalt: Zahl oben, Rest darunter verteilt ──────────────────────
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = cfg.cardPaddingH, vertical = cfg.cardPaddingV),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(cfg.rowSpacing)
+                verticalArrangement = Arrangement.spacedBy(cfg.rowSpacing)
             ) {
 
-                // Material Icon ohne Hintergrund
-                Icon(
-                    imageVector        = iconByName(countdown.icon),
-                    contentDescription = countdown.title,
-                    tint               = accentColor,
-                    modifier           = Modifier.size(cfg.iconSize)
+                // Obere Hälfte: nur die Countdown-Zahl (Hauptelement)
+                CountdownMainDisplay(
+                    timeInfo    = timeInfo,
+                    units       = activeUnits,
+                    numberSize  = cfg.numberSize,
+                    unitSize    = cfg.unitSize,
+                    accentColor = contentColor,  // Zahl monochrom (Textfarbe)
+                    textColor   = contentColor,
                 )
 
-                Column(
-                    modifier            = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(cfg.columnSpacing)
+                // Untere Zeile: Icon + Titel (links), Badges, Datum (rechts)
+                Row(
+                    verticalAlignment     = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    // Titel + Badges
-                    Row(
-                        verticalAlignment      = Alignment.CenterVertically,
-                        horizontalArrangement  = Arrangement.spacedBy(6.dp)
+                    // Icon im getönten Kästchen (trägt die Akzentfarbe)
+                    Box(
+                        modifier = Modifier
+                            .size(cfg.iconBoxSize)
+                            .clip(RoundedCornerShape(9.dp))
+                            .background(accentColor.copy(alpha = 0.12f)),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text     = countdown.title,
-                            fontSize = cfg.titleSize,
-                            color    = subtleColor,
-                            maxLines = 1,
-                            modifier = Modifier.weight(1f, fill = false)
+                        Icon(
+                            imageVector        = iconByName(countdown.icon),
+                            contentDescription = countdown.title,
+                            tint               = accentColor,
+                            modifier           = Modifier.size(cfg.iconGlyphSize)
                         )
-                        if (countdown.isPinned)    PinBadge(accentColor)
-                        if (countdown.isRecurring) RecurringBadge(countdown.recurrenceType, accentColor)
-                        if (isToday)               TodayBadge(accentColor)
                     }
 
-                    // Hauptanzeige: Zahl + Einheit in Akzentfarbe
-                    CountdownMainDisplay(
-                        timeInfo    = timeInfo,
-                        units       = split.mainUnits,
-                        numberSize  = cfg.numberSize,
-                        unitSize    = cfg.unitSize,
-                        accentColor = accentColor,
-                        textColor   = contentColor,
+                    // Titel füllt den Raum → Datum sitzt immer konsistent rechts.
+                    // Ellipsis kürzt lange Titel, statt das Datum zu verschieben.
+                    Text(
+                        text     = countdown.title,
+                        fontSize = cfg.titleSize,
+                        color    = subtleColor,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
                     )
 
-                    // SubInfo-Zeile
-                    if (cfg.showSubInfo || cfg.showDate) {
-                        Row(
-                            modifier              = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment     = Alignment.CenterVertically
-                        ) {
-                            if (cfg.showSubInfo) {
-                                Text(
-                                    text       = buildSubInfo(timeInfo, countdown, isToday, split.timeInSubInfo),
-                                    fontSize   = cfg.subInfoSize,
-                                    color      = if (split.timeInSubInfo) accentColor else subtleColor,
-                                    fontWeight = if (split.timeInSubInfo) FontWeight.SemiBold else FontWeight.Normal,
-                                    letterSpacing = if (split.timeInSubInfo) 0.5.sp else 0.sp
-                                )
-                            } else {
-                                Spacer(Modifier.weight(1f))
-                            }
-                            if (cfg.showDate) {
-                                val datePattern = if (countdown.hasTime) "dd.MM.yyyy  HH:mm" else "dd.MM.yyyy"
-                                Text(
-                                    text     = countdown.effectiveTarget.format(
-                                        DateTimeFormatter.ofPattern(datePattern)
-                                    ),
-                                    fontSize = cfg.dateSize,
-                                    color    = subtleColor.copy(alpha = 0.7f)
-                                )
-                            }
-                        }
+                    if (countdown.isPinned)    PinBadge(accentColor)
+                    if (countdown.isRecurring) RecurringBadge(countdown.recurrenceType, accentColor)
+                    if (isToday)               TodayBadge(accentColor)
+
+                    if (cfg.showDate) {
+                        val datePattern = if (countdown.hasTime) "dd.MM.yyyy · HH:mm" else "dd.MM.yyyy"
+                        Text(
+                            text     = countdown.effectiveTarget.format(
+                                DateTimeFormatter.ofPattern(datePattern)
+                            ),
+                            fontSize = cfg.dateSize,
+                            color    = subtleColor.copy(alpha = 0.7f),
+                            maxLines = 1
+                        )
                     }
                 }
             }
-
         }
-
     }
 }
 
@@ -343,14 +297,13 @@ fun CountdownMainDisplay(
     accentColor : Color    = Color.Unspecified,
     textColor   : Color    = Color.Unspecified,
 ) {
-    val resolvedAccent = if (accentColor == Color.Unspecified)
-        MaterialTheme.colorScheme.primary else accentColor
+    val resolvedNumber = if (accentColor == Color.Unspecified)
+        MaterialTheme.colorScheme.onSurface else accentColor
     val resolvedText   = if (textColor   == Color.Unspecified)
         MaterialTheme.colorScheme.onSurface else textColor
 
     val segments = remember(timeInfo, units) { timeInfo.buildDisplaySegments(units) }
 
-    // Strings vorab auflösen – stringResource() darf nicht in buildAnnotatedString aufgerufen werden
     val strYear   = stringResource(R.string.year);   val strYears   = stringResource(R.string.years)
     val strMonth  = stringResource(R.string.month);  val strMonths  = stringResource(R.string.months)
     val strWeek   = stringResource(R.string.week);   val strWeeks   = stringResource(R.string.weeks)
@@ -383,8 +336,8 @@ fun CountdownMainDisplay(
             }
             withStyle(SpanStyle(
                 fontSize   = numberSize,
-                fontWeight = FontWeight.Bold,
-                color      = resolvedAccent
+                fontWeight = FontWeight.Medium,
+                color      = resolvedNumber
             )) {
                 append(
                     if (index > 0 && seg.unit in TIME_UNITS)
@@ -402,24 +355,4 @@ fun CountdownMainDisplay(
         }
     }
     Text(text = text, lineHeight = (numberSize.value * 1.2f).sp)
-}
-
-// ─── Subinfo ──────────────────────────────────────────────────────────────────
-
-@Composable
-private fun buildSubInfo(
-    timeInfo      : CountdownInfo,
-    countdown     : Countdown,
-    isToday       : Boolean,
-    timeInSubInfo : Boolean
-): String {
-    if (timeInSubInfo) return "%02d:%02d:%02d".format(
-        timeInfo.hours, timeInfo.minutes, timeInfo.seconds
-    )
-    if (isToday) return stringResource(R.string.card_today_message)
-    if (countdown.isRecurring) return stringResource(
-        R.string.card_next_occurrence,
-        countdown.effectiveTarget.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))
-    )
-    return ""
 }
