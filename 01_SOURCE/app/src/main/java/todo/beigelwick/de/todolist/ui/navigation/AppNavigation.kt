@@ -5,20 +5,27 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import kotlinx.coroutines.flow.first
 import todo.beigelwick.de.todolist.ui.screens.addedit.AddEditScreen
 import todo.beigelwick.de.todolist.ui.screens.info.InfoScreen
 import todo.beigelwick.de.todolist.ui.screens.main.MainScreen
 import todo.beigelwick.de.todolist.ui.screens.settings.SettingsScreen
+import todo.beigelwick.de.todolist.ui.screens.welcome.WelcomeScreen
+import todo.beigelwick.de.todolist.ui.screens.welcome.isWelcomeSeen
 
 // ─── Routen ───────────────────────────────────────────────────────────────────
 
 object Routes {
+    const val WELCOME  = "welcome"
     const val MAIN     = "main"
     const val SETTINGS = "settings"
     const val INFO     = "info"
@@ -39,10 +46,38 @@ private const val ANIM_DURATION = 380
 fun AppNavigation(
     navController: NavHostController = rememberNavController()
 ) {
+    val context = LocalContext.current
+
+    // welcome_seen einmalig auslesen, um das Startziel zu bestimmen.
+    // null = noch nicht geladen → nichts rendern (MainActivity zeigt den Surface-Hintergrund).
+    val welcomeSeen by produceState<Boolean?>(initialValue = null) {
+        value = isWelcomeSeen(context).first()
+    }
+    val seen = welcomeSeen ?: return
+
     NavHost(
         navController    = navController,
-        startDestination = Routes.MAIN
+        startDestination = if (seen) Routes.MAIN else Routes.WELCOME
     ) {
+
+        // ── Welcome / Onboarding ───────────────────────────────────────────────
+        composable(
+            route = Routes.WELCOME,
+            exitTransition = {
+                slideOutOfContainer(
+                    towards       = AnimatedContentTransitionScope.SlideDirection.Left,
+                    animationSpec = tween(ANIM_DURATION)
+                ) + fadeOut(tween(ANIM_DURATION))
+            }
+        ) {
+            WelcomeScreen(
+                onDone = {
+                    navController.navigate(Routes.MAIN) {
+                        popUpTo(Routes.WELCOME) { inclusive = true }
+                    }
+                }
+            )
+        }
 
         // ── Hauptscreen ───────────────────────────────────────────────────────
         composable(

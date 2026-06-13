@@ -349,7 +349,7 @@ fun AddEditScreen(
                             ) {
                                 Icon(if (showInlineTimePicker) Icons.Default.KeyboardArrowUp else Icons.Default.Schedule, null, modifier = Modifier.size(16.dp))
                                 Spacer(Modifier.width(6.dp))
-                                Text(selectedTime.format(DateTimeFormatter.ofPattern("HH:mm")) + " Uhr")
+                                Text(stringResource(R.string.time_oclock, selectedTime.format(DateTimeFormatter.ofPattern("HH:mm"))))
                             }
                             AnimatedVisibility(visible = showInlineTimePicker, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) {
                                 Box(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), contentAlignment = Alignment.Center) {

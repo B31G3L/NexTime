@@ -262,18 +262,20 @@
     <string name="format_unit_minutes">Minutes</string>
     <string name="format_unit_seconds">Seconds</string>
     <string name="format_checkbox_hint">Choose which units to display (at least one)</string>
-    <string name="format_time_required">Activate "Include time" first</string>
+    <string name="format_time_required">Activate \"Include time\" first</string>
     <string name="format_active_label">Active — drag to reorder</string>
     <string name="format_inactive_label">Add unit</string>
-    <string name="recurrence_countup_hint">Wiederholung ist nur bei zukünftigen Ereignissen verfügbar.</string>
-    <string name="settings_display_style">Darstellung</string>
-    <string name="settings_display_style_hint">Wähle wie Countdowns angezeigt werden.</string>
-    <string name="display_style_compact">Kompakt</string>
+
+    <!-- ── KORRIGIERT: vorher deutsche Werte in der EN-Default-Datei ─────────── -->
+    <string name="recurrence_countup_hint">Recurrence is only available for future events.</string>
+    <string name="settings_display_style">Appearance</string>
+    <string name="settings_display_style_hint">Choose how countdowns are displayed.</string>
+    <string name="display_style_compact">Compact</string>
     <string name="display_style_normal">Normal</string>
-    <string name="display_style_generous">Großzügig</string>
-    <string name="preview_placeholder">Vorschau</string>
-    <string name="action_pin">Anheften</string>
-    <string name="action_unpin">Lösen</string>
+    <string name="display_style_generous">Generous</string>
+    <string name="preview_placeholder">Preview</string>
+    <string name="action_pin">Pin</string>
+    <string name="action_unpin">Unpin</string>
 
     <string name="theme_hourglass_name">Hourglass</string>
     <string name="theme_hourglass_desc">Orange · Sage · Violet</string>
@@ -298,4 +300,33 @@
     <string name="format_custom_toggle">Use custom display format</string>
     <string name="format_uses_global">Using global setting</string>
     <string name="format_overrides_global">Overrides global setting</string>
+
+    <!-- ── NEU: lokalisierte, vorher hartcodierte Texte ──────────────────────── -->
+    <string name="time_oclock">%1$s</string>
+    <string name="settings_time_display_label">Time (HH:mm:ss)</string>
+    <string name="settings_time_display_hint">Shown below the date units</string>
+    <string name="welcome_title">Welcome to NexTime</string>
+    <string name="welcome_cta">Let\'s go</string>
+    <string name="welcome_footer">v%1$s  •  Developed by Beigel</string>
+    <string name="welcome_feat_countdown_title">Countdown &amp; Count-up</string>
+    <string name="welcome_feat_countdown_sub">Keep track of future and past events</string>
+    <string name="welcome_feat_themes_title">Themes &amp; Colors</string>
+    <string name="welcome_feat_themes_sub">Various color schemes, light and dark design</string>
+    <string name="welcome_feat_reminders_title">Reminders</string>
+    <string name="welcome_feat_reminders_sub">Timely notifications for your events</string>
+    <string name="welcome_feat_widget_title">Home screen widget</string>
+    <string name="welcome_feat_widget_sub">Your countdown right on the home screen</string>
+    <string name="welcome_feat_format_title">Flexible format</string>
+    <string name="welcome_feat_format_sub">Choose whether days, weeks, months or years are shown</string>
+    <string name="welcome_feat_pin_title">Pin &amp; Sort</string>
+    <string name="welcome_feat_pin_sub">Important countdowns always at the top</string>
+
+    <plurals name="widget_days_remaining">
+        <item quantity="one">%d day left</item>
+        <item quantity="other">%d days left</item>
+    </plurals>
+    <plurals name="widget_days_passed">
+        <item quantity="one">%d day passed</item>
+        <item quantity="other">%d days passed</item>
+    </plurals>
 </resources>

@@ -1,6 +1,7 @@
 package todo.beigelwick.de.todolist.ui.screens.welcome
 
 import android.content.Context
+import androidx.annotation.StringRes
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -19,19 +20,27 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import todo.beigelwick.de.todolist.BuildConfig
+import todo.beigelwick.de.todolist.R
 import todo.beigelwick.de.todolist.ui.theme.dataStore
 
 // ─── Preference Key ───────────────────────────────────────────────────────────
 
 private val WELCOME_SEEN = booleanPreferencesKey("welcome_seen")
+
+/** Liefert, ob der Welcome-Screen bereits gesehen wurde (für die Navigation). */
+fun isWelcomeSeen(context: Context): Flow<Boolean> =
+    context.dataStore.data.map { it[WELCOME_SEEN] ?: false }
 
 suspend fun markWelcomeSeen(context: Context) {
     context.dataStore.edit { it[WELCOME_SEEN] = true }
@@ -40,18 +49,18 @@ suspend fun markWelcomeSeen(context: Context) {
 // ─── Feature-Eintrag ─────────────────────────────────────────────────────────
 
 private data class Feature(
-    val icon    : ImageVector,
-    val title   : String,
-    val subtitle: String
+    val icon        : ImageVector,
+    @StringRes val titleRes    : Int,
+    @StringRes val subtitleRes : Int
 )
 
 private val FEATURES = listOf(
-    Feature(Icons.Outlined.Timer,        "Countdown & Count-up",  "Zukünftige und vergangene Ereignisse im Blick behalten"),
-    Feature(Icons.Outlined.Palette,      "Themes & Farben",       "6 Farbschemata, helles und dunkles Design"),
-    Feature(Icons.Outlined.Notifications,"Erinnerungen",          "Pünktliche Benachrichtigungen für deine Ereignisse"),
-    Feature(Icons.Outlined.Widgets,      "Homescreen-Widget",     "Dein Countdown direkt auf dem Homescreen"),
-    Feature(Icons.Outlined.Tune,         "Flexibles Format",      "Wähle selbst ob Tage, Wochen, Monate oder Jahre angezeigt werden"),
-    Feature(Icons.Outlined.PushPin,      "Anheften & Sortieren",  "Wichtige Countdowns immer ganz oben"),
+    Feature(Icons.Outlined.Timer,         R.string.welcome_feat_countdown_title, R.string.welcome_feat_countdown_sub),
+    Feature(Icons.Outlined.Palette,       R.string.welcome_feat_themes_title,    R.string.welcome_feat_themes_sub),
+    Feature(Icons.Outlined.Notifications, R.string.welcome_feat_reminders_title, R.string.welcome_feat_reminders_sub),
+    Feature(Icons.Outlined.Widgets,       R.string.welcome_feat_widget_title,    R.string.welcome_feat_widget_sub),
+    Feature(Icons.Outlined.Tune,          R.string.welcome_feat_format_title,    R.string.welcome_feat_format_sub),
+    Feature(Icons.Outlined.PushPin,       R.string.welcome_feat_pin_title,       R.string.welcome_feat_pin_sub),
 )
 
 // ─── WelcomeScreen ────────────────────────────────────────────────────────────
@@ -106,7 +115,7 @@ fun WelcomeScreen(onDone: () -> Unit) {
         Spacer(Modifier.height(24.dp))
 
         Text(
-            text       = "Willkommen bei NexTime",
+            text       = stringResource(R.string.welcome_title),
             style      = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             textAlign  = TextAlign.Center,
@@ -116,7 +125,7 @@ fun WelcomeScreen(onDone: () -> Unit) {
         Spacer(Modifier.height(8.dp))
 
         Text(
-            text      = "Behalte wichtige Momente im Blick —\nCountdowns & Count-ups für alles was zählt.",
+            text      = stringResource(R.string.about_tagline),
             style     = MaterialTheme.typography.bodyMedium,
             color     = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -167,7 +176,7 @@ fun WelcomeScreen(onDone: () -> Unit) {
                 verticalAlignment     = Alignment.CenterVertically
             ) {
                 Text(
-                    text       = "Los geht's",
+                    text       = stringResource(R.string.welcome_cta),
                     style      = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -183,7 +192,7 @@ fun WelcomeScreen(onDone: () -> Unit) {
 
         // ── Footer ────────────────────────────────────────────────────────────
         Text(
-            text      = "v${BuildConfig.VERSION_NAME}  •  Entwickelt von Beigel",
+            text      = stringResource(R.string.welcome_footer, BuildConfig.VERSION_NAME),
             style     = MaterialTheme.typography.bodySmall,
             color     = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
             textAlign = TextAlign.Center
@@ -220,13 +229,13 @@ private fun FeatureRow(feature: Feature) {
         }
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
-                text       = feature.title,
+                text       = stringResource(feature.titleRes),
                 style      = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold,
                 color      = MaterialTheme.colorScheme.onSurface
             )
             Text(
-                text  = feature.subtitle,
+                text  = stringResource(feature.subtitleRes),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 lineHeight = 18.sp

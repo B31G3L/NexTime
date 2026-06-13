@@ -220,4 +220,72 @@
     <string name="preview_placeholder">Aperçu</string>
     <string name="action_pin">Épingler</string>
     <string name="action_unpin">Désépingler</string>
+
+    <!-- ── AJOUTÉ : manquait jusqu\'ici (revenait à l\'anglais) ────────────────── -->
+    <string name="theme_hourglass_name">Hourglass</string>
+    <string name="theme_hourglass_desc">Orange · Sauge · Violet</string>
+    <string name="settings_accent_hint">Choisissez votre couleur d\'accent. L\'arrière-plan neutre reste le même en mode clair et sombre.</string>
+    <string name="accent_orange">Orange</string>
+    <string name="accent_sage">Sauge</string>
+    <string name="accent_violet">Violet</string>
+    <string name="accent_crimson">Cramoisi</string>
+    <string name="accent_teal">Canard</string>
+    <string name="accent_gold">Or</string>
+    <string name="accent_slate">Ardoise</string>
+
+    <string name="icon_cat_time">Temps</string>
+    <string name="icon_cat_travel">Voyage</string>
+    <string name="icon_cat_celebrate">Fêtes</string>
+    <string name="icon_cat_work">Travail</string>
+    <string name="icon_cat_sport">Sport</string>
+    <string name="icon_cat_nature">Nature</string>
+    <string name="icon_cat_home">Maison</string>
+    <string name="icon_cat_other">Autre</string>
+
+    <string name="format_custom_toggle">Utiliser un format personnalisé</string>
+    <string name="format_uses_global">Utilise le réglage global</string>
+    <string name="format_overrides_global">Remplace le réglage global</string>
+
+    <!-- ── Thèmes hérités (non utilisés, pour parité des clés / éviter MissingTranslation) ── -->
+    <string name="theme_burgundy_name">Deep Burgundy</string>
+    <string name="theme_burgundy_desc">Bordeaux &amp; Or</string>
+    <string name="theme_sage_name">Soft Sage</string>
+    <string name="theme_sage_desc">Sauge &amp; Olive foncé</string>
+    <string name="theme_pumpkin_name">Pumpkin</string>
+    <string name="theme_pumpkin_desc">Orange &amp; Anthracite</string>
+    <string name="theme_ocean_name">Ocean Blue</string>
+    <string name="theme_ocean_desc">Ciel &amp; Océan</string>
+    <string name="theme_violet_name">Ultra Violet</string>
+    <string name="theme_violet_desc">Citron &amp; Violet</string>
+    <string name="theme_peach_name">Peach Ice</string>
+    <string name="theme_peach_desc">Pêche &amp; Aqua</string>
+
+    <!-- ── NEU: lokalisierte, vorher hartcodierte Texte ──────────────────────── -->
+    <string name="time_oclock">%1$s</string>
+    <string name="settings_time_display_label">Heure (HH:mm:ss)</string>
+    <string name="settings_time_display_hint">Affiché sous les unités de date</string>
+    <string name="welcome_title">Bienvenue dans NexTime</string>
+    <string name="welcome_cta">Allons-y</string>
+    <string name="welcome_footer">v%1$s  •  Développé par Beigel</string>
+    <string name="welcome_feat_countdown_title">Countdown &amp; Count-up</string>
+    <string name="welcome_feat_countdown_sub">Gardez un œil sur les événements futurs et passés</string>
+    <string name="welcome_feat_themes_title">Thèmes &amp; Couleurs</string>
+    <string name="welcome_feat_themes_sub">Différents schémas de couleurs, design clair et sombre</string>
+    <string name="welcome_feat_reminders_title">Rappels</string>
+    <string name="welcome_feat_reminders_sub">Des notifications ponctuelles pour vos événements</string>
+    <string name="welcome_feat_widget_title">Widget d\'écran d\'accueil</string>
+    <string name="welcome_feat_widget_sub">Votre compte à rebours directement sur l\'écran d\'accueil</string>
+    <string name="welcome_feat_format_title">Format flexible</string>
+    <string name="welcome_feat_format_sub">Choisissez d\'afficher les jours, semaines, mois ou années</string>
+    <string name="welcome_feat_pin_title">Épingler &amp; Trier</string>
+    <string name="welcome_feat_pin_sub">Les comptes à rebours importants toujours en haut</string>
+
+    <plurals name="widget_days_remaining">
+        <item quantity="one">Encore %d jour</item>
+        <item quantity="other">Encore %d jours</item>
+    </plurals>
+    <plurals name="widget_days_passed">
+        <item quantity="one">Il y a %d jour</item>
+        <item quantity="other">Il y a %d jours</item>
+    </plurals>
 </resources>

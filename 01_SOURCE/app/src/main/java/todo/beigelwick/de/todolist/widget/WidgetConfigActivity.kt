@@ -35,6 +35,8 @@ import todo.beigelwick.de.todolist.ui.theme.NexTimeTheme
 import todo.beigelwick.de.todolist.ui.theme.ThemeMode
 import todo.beigelwick.de.todolist.ui.theme.ThemePreferences
 import java.time.format.DateTimeFormatter
+import androidx.compose.ui.res.pluralStringResource
+
 
 class WidgetConfigActivity : AppCompatActivity() {
 
@@ -253,11 +255,12 @@ private fun WidgetCountdownCard(countdown: Countdown, onClick: () -> Unit) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     val timeInfo = countdown.calculateTimeRemaining()
+                    val days     = timeInfo.days.toInt()
                     Text(
                         text  = if (timeInfo.isPast)
-                            "${timeInfo.days} ${if (timeInfo.days == 1L) "Tag" else "Tage"} vergangen"
+                            pluralStringResource(R.plurals.widget_days_passed, days, days)
                         else
-                            "Noch ${timeInfo.days} ${if (timeInfo.days == 1L) "Tag" else "Tage"}",
+                            pluralStringResource(R.plurals.widget_days_remaining, days, days),
                         style = MaterialTheme.typography.bodySmall,
                         color = cardColor
                     )

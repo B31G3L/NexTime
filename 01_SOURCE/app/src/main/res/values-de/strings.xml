@@ -241,7 +241,6 @@
     <string name="success_created">Countdown erstellt ✅</string>
     <string name="success_updated">Countdown aktualisiert ✅</string>
     <string name="success_deleted">Countdown gelöscht ✅</string>
-    <!-- ── In values-de/strings.xml (DE) ersetzen ── -->
 
     <string name="theme_burgundy_name">Deep Burgundy</string>
     <string name="theme_burgundy_desc">Weinrot &amp; Gold</string>
@@ -277,4 +276,58 @@
     <string name="preview_placeholder">Vorschau</string>
     <string name="action_pin">Anheften</string>
     <string name="action_unpin">Lösen</string>
+
+    <!-- ── ERGÄNZT: fehlten bisher (fielen auf EN zurück) ────────────────────── -->
+    <string name="theme_hourglass_name">Hourglass</string>
+    <string name="theme_hourglass_desc">Orange · Salbei · Violett</string>
+    <string name="settings_accent_hint">Wähle deine Akzentfarbe. Der neutrale Hintergrund bleibt in Hell und Dunkel gleich.</string>
+    <string name="accent_orange">Orange</string>
+    <string name="accent_sage">Salbei</string>
+    <string name="accent_violet">Violett</string>
+    <string name="accent_crimson">Karmesin</string>
+    <string name="accent_teal">Petrol</string>
+    <string name="accent_gold">Gold</string>
+    <string name="accent_slate">Schiefer</string>
+
+    <string name="icon_cat_time">Zeit</string>
+    <string name="icon_cat_travel">Reisen</string>
+    <string name="icon_cat_celebrate">Feiern</string>
+    <string name="icon_cat_work">Arbeit</string>
+    <string name="icon_cat_sport">Sport</string>
+    <string name="icon_cat_nature">Natur</string>
+    <string name="icon_cat_home">Zuhause</string>
+    <string name="icon_cat_other">Sonstiges</string>
+
+    <string name="format_custom_toggle">Eigenes Anzeigeformat verwenden</string>
+    <string name="format_uses_global">Globale Einstellung wird verwendet</string>
+    <string name="format_overrides_global">Überschreibt globale Einstellung</string>
+
+    <!-- ── NEU: lokalisierte, vorher hartcodierte Texte ──────────────────────── -->
+    <string name="time_oclock">%1$s Uhr</string>
+    <string name="settings_time_display_label">Uhrzeit (HH:mm:ss)</string>
+    <string name="settings_time_display_hint">Wird unter den Datumseinheiten angezeigt</string>
+    <string name="welcome_title">Willkommen bei NexTime</string>
+    <string name="welcome_cta">Los geht\'s</string>
+    <string name="welcome_footer">v%1$s  •  Entwickelt von Beigel</string>
+    <string name="welcome_feat_countdown_title">Countdown &amp; Count-up</string>
+    <string name="welcome_feat_countdown_sub">Zukünftige und vergangene Ereignisse im Blick behalten</string>
+    <string name="welcome_feat_themes_title">Themes &amp; Farben</string>
+    <string name="welcome_feat_themes_sub">Verschiedene Farbschemata, helles und dunkles Design</string>
+    <string name="welcome_feat_reminders_title">Erinnerungen</string>
+    <string name="welcome_feat_reminders_sub">Pünktliche Benachrichtigungen für deine Ereignisse</string>
+    <string name="welcome_feat_widget_title">Homescreen-Widget</string>
+    <string name="welcome_feat_widget_sub">Dein Countdown direkt auf dem Homescreen</string>
+    <string name="welcome_feat_format_title">Flexibles Format</string>
+    <string name="welcome_feat_format_sub">Wähle selbst ob Tage, Wochen, Monate oder Jahre angezeigt werden</string>
+    <string name="welcome_feat_pin_title">Anheften &amp; Sortieren</string>
+    <string name="welcome_feat_pin_sub">Wichtige Countdowns immer ganz oben</string>
+
+    <plurals name="widget_days_remaining">
+        <item quantity="one">Noch %d Tag</item>
+        <item quantity="other">Noch %d Tage</item>
+    </plurals>
+    <plurals name="widget_days_passed">
+        <item quantity="one">%d Tag vergangen</item>
+        <item quantity="other">%d Tage vergangen</item>
+    </plurals>
 </resources>

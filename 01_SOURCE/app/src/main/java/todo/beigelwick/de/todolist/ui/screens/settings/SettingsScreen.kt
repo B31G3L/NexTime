@@ -115,7 +115,7 @@ fun SettingsScreen(onBack: () -> Unit) {
         append(sorted.joinToString(" + "))
         if (showTimeOnCard) append(" + ${stringResource(R.string.format_unit_hours)}")
     }
-    val standardsSummary = defaultTime.format(DateTimeFormatter.ofPattern("HH:mm")) + " Uhr"
+    val standardsSummary = stringResource(R.string.time_oclock, defaultTime.format(DateTimeFormatter.ofPattern("HH:mm")))
 
     Scaffold(
         topBar = {
@@ -294,8 +294,8 @@ fun SettingsScreen(onBack: () -> Unit) {
                             verticalAlignment     = Alignment.CenterVertically
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
-                                Text("Uhrzeit (HH:mm:ss)", style = MaterialTheme.typography.bodyMedium, fontWeight = if (showTimeOnCard) FontWeight.SemiBold else FontWeight.Normal, color = if (showTimeOnCard) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
-                                Text("Wird unter den Datumseinheiten angezeigt", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(stringResource(R.string.settings_time_display_label), style = MaterialTheme.typography.bodyMedium, fontWeight = if (showTimeOnCard) FontWeight.SemiBold else FontWeight.Normal, color = if (showTimeOnCard) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
+                                Text(stringResource(R.string.settings_time_display_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                             Switch(checked = showTimeOnCard, onCheckedChange = { checked -> haptic.tick(); scope.launch { AppPreferences.setShowTimeOnCard(context, checked) } })
                         }
@@ -447,7 +447,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                             verticalAlignment     = Alignment.CenterVertically
                         ) {
                             Text(stringResource(R.string.settings_time_label), style = MaterialTheme.typography.bodyMedium)
-                            Text(defaultTime.format(DateTimeFormatter.ofPattern("HH:mm")) + " Uhr", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
+                            Text(stringResource(R.string.time_oclock, defaultTime.format(DateTimeFormatter.ofPattern("HH:mm"))), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
                         }
 
                         if (showTimePicker) {

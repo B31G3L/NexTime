@@ -211,7 +211,6 @@
     <string name="format_active_label">Attivo — trascina per riordinare</string>
     <string name="format_inactive_label">Aggiungi unità</string>
 
-
     <string name="recurrence_countup_hint">La ricorrenza è disponibile solo per eventi futuri.</string>
     <string name="settings_display_style">Visualizzazione</string>
     <string name="settings_display_style_hint">Scegli come vengono visualizzati i conti alla rovescia.</string>
@@ -221,4 +220,72 @@
     <string name="preview_placeholder">Anteprima</string>
     <string name="action_pin">Fissa</string>
     <string name="action_unpin">Rimuovi</string>
+
+    <!-- ── AGGIUNTO: mancava finora (ripiegava sull\'inglese) ─────────────────── -->
+    <string name="theme_hourglass_name">Hourglass</string>
+    <string name="theme_hourglass_desc">Arancione · Salvia · Viola</string>
+    <string name="settings_accent_hint">Scegli il tuo colore d\'accento. Lo sfondo neutro rimane invariato in modalità chiara e scura.</string>
+    <string name="accent_orange">Arancione</string>
+    <string name="accent_sage">Salvia</string>
+    <string name="accent_violet">Viola</string>
+    <string name="accent_crimson">Cremisi</string>
+    <string name="accent_teal">Verde acqua</string>
+    <string name="accent_gold">Oro</string>
+    <string name="accent_slate">Ardesia</string>
+
+    <string name="icon_cat_time">Tempo</string>
+    <string name="icon_cat_travel">Viaggi</string>
+    <string name="icon_cat_celebrate">Festeggiare</string>
+    <string name="icon_cat_work">Lavoro</string>
+    <string name="icon_cat_sport">Sport</string>
+    <string name="icon_cat_nature">Natura</string>
+    <string name="icon_cat_home">Casa</string>
+    <string name="icon_cat_other">Altro</string>
+
+    <string name="format_custom_toggle">Usa formato personalizzato</string>
+    <string name="format_uses_global">Usa l\'impostazione globale</string>
+    <string name="format_overrides_global">Sostituisce l\'impostazione globale</string>
+
+    <!-- ── Temi legacy (non usati, per parità delle chiavi / evitare MissingTranslation) ── -->
+    <string name="theme_burgundy_name">Deep Burgundy</string>
+    <string name="theme_burgundy_desc">Bordeaux &amp; Oro</string>
+    <string name="theme_sage_name">Soft Sage</string>
+    <string name="theme_sage_desc">Salvia &amp; Oliva scuro</string>
+    <string name="theme_pumpkin_name">Pumpkin</string>
+    <string name="theme_pumpkin_desc">Arancione &amp; Antracite</string>
+    <string name="theme_ocean_name">Ocean Blue</string>
+    <string name="theme_ocean_desc">Cielo &amp; Oceano</string>
+    <string name="theme_violet_name">Ultra Violet</string>
+    <string name="theme_violet_desc">Limone &amp; Viola</string>
+    <string name="theme_peach_name">Peach Ice</string>
+    <string name="theme_peach_desc">Pesca &amp; Acqua</string>
+
+    <!-- ── NEU: lokalisierte, vorher hartcodierte Texte ──────────────────────── -->
+    <string name="time_oclock">%1$s</string>
+    <string name="settings_time_display_label">Ora (HH:mm:ss)</string>
+    <string name="settings_time_display_hint">Mostrato sotto le unità di data</string>
+    <string name="welcome_title">Benvenuto in NexTime</string>
+    <string name="welcome_cta">Iniziamo</string>
+    <string name="welcome_footer">v%1$s  •  Sviluppato da Beigel</string>
+    <string name="welcome_feat_countdown_title">Countdown &amp; Count-up</string>
+    <string name="welcome_feat_countdown_sub">Tieni d\'occhio eventi futuri e passati</string>
+    <string name="welcome_feat_themes_title">Temi e Colori</string>
+    <string name="welcome_feat_themes_sub">Vari schemi di colore, design chiaro e scuro</string>
+    <string name="welcome_feat_reminders_title">Promemoria</string>
+    <string name="welcome_feat_reminders_sub">Notifiche puntuali per i tuoi eventi</string>
+    <string name="welcome_feat_widget_title">Widget nella schermata Home</string>
+    <string name="welcome_feat_widget_sub">Il tuo conto alla rovescia direttamente nella schermata Home</string>
+    <string name="welcome_feat_format_title">Formato flessibile</string>
+    <string name="welcome_feat_format_sub">Scegli se mostrare giorni, settimane, mesi o anni</string>
+    <string name="welcome_feat_pin_title">Fissa e Ordina</string>
+    <string name="welcome_feat_pin_sub">I conti alla rovescia importanti sempre in cima</string>
+
+    <plurals name="widget_days_remaining">
+        <item quantity="one">Ancora %d giorno</item>
+        <item quantity="other">Ancora %d giorni</item>
+    </plurals>
+    <plurals name="widget_days_passed">
+        <item quantity="one">%d giorno fa</item>
+        <item quantity="other">%d giorni fa</item>
+    </plurals>
 </resources>

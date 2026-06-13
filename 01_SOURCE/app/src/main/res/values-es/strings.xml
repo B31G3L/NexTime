@@ -221,4 +221,71 @@
     <string name="action_pin">Fijar</string>
     <string name="action_unpin">Desfijar</string>
 
+    <!-- ── AÑADIDO: faltaba hasta ahora (recurría al inglés) ─────────────────── -->
+    <string name="theme_hourglass_name">Hourglass</string>
+    <string name="theme_hourglass_desc">Naranja · Salvia · Violeta</string>
+    <string name="settings_accent_hint">Elige tu color de acento. El fondo neutro permanece igual en modo claro y oscuro.</string>
+    <string name="accent_orange">Naranja</string>
+    <string name="accent_sage">Salvia</string>
+    <string name="accent_violet">Violeta</string>
+    <string name="accent_crimson">Carmesí</string>
+    <string name="accent_teal">Turquesa</string>
+    <string name="accent_gold">Oro</string>
+    <string name="accent_slate">Pizarra</string>
+
+    <string name="icon_cat_time">Tiempo</string>
+    <string name="icon_cat_travel">Viajes</string>
+    <string name="icon_cat_celebrate">Celebrar</string>
+    <string name="icon_cat_work">Trabajo</string>
+    <string name="icon_cat_sport">Deporte</string>
+    <string name="icon_cat_nature">Naturaleza</string>
+    <string name="icon_cat_home">Hogar</string>
+    <string name="icon_cat_other">Otros</string>
+
+    <string name="format_custom_toggle">Usar formato personalizado</string>
+    <string name="format_uses_global">Usando el ajuste global</string>
+    <string name="format_overrides_global">Anula el ajuste global</string>
+
+    <!-- ── Temas heredados (sin uso, para paridad de claves / evitar MissingTranslation) ── -->
+    <string name="theme_burgundy_name">Deep Burgundy</string>
+    <string name="theme_burgundy_desc">Borgoña &amp; Oro</string>
+    <string name="theme_sage_name">Soft Sage</string>
+    <string name="theme_sage_desc">Salvia &amp; Oliva oscuro</string>
+    <string name="theme_pumpkin_name">Pumpkin</string>
+    <string name="theme_pumpkin_desc">Naranja &amp; Antracita</string>
+    <string name="theme_ocean_name">Ocean Blue</string>
+    <string name="theme_ocean_desc">Cielo &amp; Océano</string>
+    <string name="theme_violet_name">Ultra Violet</string>
+    <string name="theme_violet_desc">Limón &amp; Violeta</string>
+    <string name="theme_peach_name">Peach Ice</string>
+    <string name="theme_peach_desc">Melocotón &amp; Aqua</string>
+
+    <!-- ── NEU: lokalisierte, vorher hartcodierte Texte ──────────────────────── -->
+    <string name="time_oclock">%1$s</string>
+    <string name="settings_time_display_label">Hora (HH:mm:ss)</string>
+    <string name="settings_time_display_hint">Se muestra debajo de las unidades de fecha</string>
+    <string name="welcome_title">Bienvenido a NexTime</string>
+    <string name="welcome_cta">Empezar</string>
+    <string name="welcome_footer">v%1$s  •  Desarrollado por Beigel</string>
+    <string name="welcome_feat_countdown_title">Countdown &amp; Count-up</string>
+    <string name="welcome_feat_countdown_sub">Controla eventos futuros y pasados</string>
+    <string name="welcome_feat_themes_title">Temas y Colores</string>
+    <string name="welcome_feat_themes_sub">Varios esquemas de color, diseño claro y oscuro</string>
+    <string name="welcome_feat_reminders_title">Recordatorios</string>
+    <string name="welcome_feat_reminders_sub">Notificaciones puntuales para tus eventos</string>
+    <string name="welcome_feat_widget_title">Widget en pantalla de inicio</string>
+    <string name="welcome_feat_widget_sub">Tu cuenta atrás directamente en la pantalla de inicio</string>
+    <string name="welcome_feat_format_title">Formato flexible</string>
+    <string name="welcome_feat_format_sub">Elige si se muestran días, semanas, meses o años</string>
+    <string name="welcome_feat_pin_title">Fijar y Ordenar</string>
+    <string name="welcome_feat_pin_sub">Cuentas atrás importantes siempre arriba</string>
+
+    <plurals name="widget_days_remaining">
+        <item quantity="one">Queda %d día</item>
+        <item quantity="other">Quedan %d días</item>
+    </plurals>
+    <plurals name="widget_days_passed">
+        <item quantity="one">Hace %d día</item>
+        <item quantity="other">Hace %d días</item>
+    </plurals>
 </resources>
