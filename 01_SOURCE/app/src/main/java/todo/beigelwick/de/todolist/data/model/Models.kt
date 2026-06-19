@@ -87,7 +87,7 @@ data class Countdown(
     val displayFormat: String = "",
     val createdAt: LocalDateTime = LocalDateTime.now(),
     val color: String = "#FF7043",
-    val icon: String = "⏰",
+    val icon: String = "Timer",
     val notificationEnabled: Boolean = false,
     val reminderOptions: String = "",
     val lastNotificationSent: String? = null,

@@ -11,7 +11,6 @@ class NexTimeApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         LanguageManager.applyLanguageFromPrefs(this)
-        WidgetUpdateWorker.enqueue(this)
         scheduleMinutelyWidgetUpdate(this)
     }
 

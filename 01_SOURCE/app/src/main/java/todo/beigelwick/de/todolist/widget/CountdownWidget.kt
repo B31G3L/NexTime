@@ -49,10 +49,10 @@ private data class WidgetColors(
 )
 
 private fun widgetColors(dark: Boolean): WidgetColors = if (dark) WidgetColors(
-    background       = Color(0xFF171410),
+    background       = Color(0xFF211D17),
     onSurface        = Color(0xFFEDE8DF),
     onSurfaceVariant = Color(0xFFCDC8BF),
-    outline          = Color(0xFF3A3830),
+    outline          = Color(0xFF453F35),
 ) else WidgetColors(
     background       = Color(0xFFFAF8F2),
     onSurface        = Color(0xFF1E1A16),
@@ -97,8 +97,7 @@ class CountdownWidget : GlanceAppWidget() {
         }
 
         val globalDateUnits  = AppPreferences.getDefaultDateUnits(context).first()
-        val showTimeOnWidget = AppPreferences.getShowTimeOnCard(context).first()
-        val resolvedFormat   = buildWidgetFormat(globalDateUnits, showTimeOnWidget)
+        val resolvedFormat   = buildWidgetFormat(globalDateUnits)
 
         // App-Hell/Dunkel ermitteln (folgt App-Theme, bei SYSTEM der Geräteeinstellung)
         val dark   = isWidgetDark(context)
@@ -409,7 +408,7 @@ private suspend fun isWidgetDark(context: Context): Boolean {
 
 // ─── Widget Format Builder ─────────────────────────────────────────────────────
 
-private fun buildWidgetFormat(dateUnits: Set<DisplayUnit>, showTime: Boolean): String {
+private fun buildWidgetFormat(dateUnits: Set<DisplayUnit>): String {
     return DisplayFormat.encode(dateUnits)
 }
 

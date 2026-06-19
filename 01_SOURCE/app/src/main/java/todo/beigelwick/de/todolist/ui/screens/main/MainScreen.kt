@@ -352,10 +352,10 @@ private fun SearchField(query: String, onQueryChange: (String) -> Unit, onClose:
 private fun shareCountdown(context: Context, countdown: Countdown) {
     val timeInfo  = countdown.calculateTimeRemaining()
     val shareText = buildString {
-        append("${countdown.icon} ${countdown.title}\n\n")
+        append("${countdown.title}\n\n")
         if (timeInfo.isPast) append(context.getString(R.string.share_days_ago, timeInfo.days))
         else                 append(context.getString(R.string.share_days_remaining, timeInfo.days))
-        append("\n\n📅 ${countdown.effectiveTarget.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))}")
+        append("\n\n${countdown.effectiveTarget.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))}")
         append("\n\n${context.getString(R.string.share_created_with)}")
     }
     val intent = Intent(Intent.ACTION_SEND).apply {

@@ -12,36 +12,36 @@ import java.time.ZoneId
 
 object NotificationScheduler {
 
-    // ─── Notifications planen ─────────────────────────────────────────────────
-
     fun scheduleNotifications(context: Context, countdown: Countdown) {
         if (!countdown.notificationEnabled) {
             cancelAllNotifications(context, countdown)
             return
         }
 
-        // Vergangenes Datum → keine Notifications planen
-        if (countdown.targetDateTime.isBefore(LocalDateTime.now())) return
+        // effectiveTarget: bei wiederkehrenden Einträgen das nächste Vorkommen
+        val target = countdown.effectiveTarget
+        if (target.isBefore(LocalDateTime.now())) return
 
         val reminderOptions = countdown.getReminderOptionsList()
         if (reminderOptions.isEmpty()) return
 
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         reminderOptions.forEach { option ->
-            scheduleNotification(context, countdown, option, alarmManager)
+            scheduleNotification(context, countdown, target, option, alarmManager)
         }
     }
 
     private fun scheduleNotification(
         context        : Context,
         countdown      : Countdown,
+        target         : LocalDateTime,
         reminderOption : ReminderOption,
         alarmManager   : AlarmManager
     ) {
         val notificationTime = if (reminderOption == ReminderOption.AT_TIME) {
-            countdown.targetDateTime
+            target
         } else {
-            countdown.targetDateTime.minusMinutes(reminderOption.minutes)
+            target.minusMinutes(reminderOption.minutes)
         }
 
         if (!notificationTime.isAfter(LocalDateTime.now())) return
@@ -74,11 +74,8 @@ object NotificationScheduler {
             )
         } catch (e: SecurityException) {
             // SCHEDULE_EXACT_ALARM nicht erteilt → still ignorieren
-            // Nutzer wurde in MainActivity bereits darauf hingewiesen
         }
     }
-
-    // ─── Alle Notifications abbrechen ─────────────────────────────────────────
 
     fun cancelAllNotifications(context: Context, countdown: Countdown) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
@@ -97,8 +94,6 @@ object NotificationScheduler {
             }
         }
     }
-
-    // ─── Request Code ─────────────────────────────────────────────────────────
 
     private fun getRequestCode(countdownId: Long, reminderOption: ReminderOption): Int =
         (countdownId * 1000 + reminderOption.ordinal).toInt()

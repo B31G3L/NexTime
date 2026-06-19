@@ -2,8 +2,10 @@ package todo.beigelwick.de.todolist.widget
 
 import android.content.Context
 import androidx.glance.appwidget.updateAll
-import androidx.work.*
-import java.util.concurrent.TimeUnit
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.WorkerParameters
+import androidx.work.CoroutineWorker
 
 class WidgetUpdateWorker(
     context : Context,
@@ -20,25 +22,6 @@ class WidgetUpdateWorker(
     }
 
     companion object {
-        private const val WORK_NAME = "widget_update_worker"
-
-        fun enqueue(context: Context) {
-            val workRequest = PeriodicWorkRequestBuilder<WidgetUpdateWorker>(
-                repeatInterval         = 1,
-                repeatIntervalTimeUnit = TimeUnit.MINUTES
-            ).build()
-
-            WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-                WORK_NAME,
-                ExistingPeriodicWorkPolicy.KEEP,
-                workRequest
-            )
-        }
-
-        fun cancel(context: Context) {
-            WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
-        }
-
         fun updateNow(context: Context) {
             val workRequest = OneTimeWorkRequestBuilder<WidgetUpdateWorker>().build()
             WorkManager.getInstance(context).enqueue(workRequest)

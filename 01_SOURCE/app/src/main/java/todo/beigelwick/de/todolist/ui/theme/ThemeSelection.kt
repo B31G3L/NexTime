@@ -91,16 +91,16 @@ private fun buildDarkScheme(accent: AccentColor): ColorScheme = darkColorScheme(
     tertiaryContainer    = Color(0xFF252C3C),
     onTertiaryContainer  = Color(0xFFBDCAD5),
 
-    background           = Color(0xFF171410),   // Dunkles Cremeweiß
+    background           = Color(0xFF211D17),   // statt 0xFF171410
     onBackground         = Color(0xFFEDE8DF),
 
-    surface              = Color(0xFF171410),
+    surface              = Color(0xFF211D17),   // identisch mit background
     onSurface            = Color(0xFFEDE8DF),
-    surfaceVariant       = Color(0xFF252018),   // Etwas heller als background
+    surfaceVariant       = Color(0xFF2E2920),   // statt 0xFF252018 – hebt Cards ab
     onSurfaceVariant     = Color(0xFFCDC8BF),
 
-    outline              = Color(0xFF5A5550),
-    outlineVariant       = Color(0xFF3A3830),
+    outline              = Color(0xFF6A6458),   // statt 0xFF5A5550
+    outlineVariant       = Color(0xFF453F35),   // statt 0xFF3A3830
 
     error                = Color(0xFFFFB4AB),
     onError              = Color(0xFF690005),

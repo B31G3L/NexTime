@@ -26,6 +26,8 @@ import todo.beigelwick.de.todolist.data.model.calculateTimeRemaining
 import todo.beigelwick.de.todolist.ui.theme.AppPreferences
 import todo.beigelwick.de.todolist.ui.viewmodel.CountdownViewModel
 import todo.beigelwick.de.todolist.utils.HapticFeedback
+import todo.beigelwick.de.todolist.data.model.TIME_UNITS
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,12 +45,11 @@ fun CountdownCardDialog(
 
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
-    // BUG FIX: showTimeOnCard lesen damit wir wissen ob Sekunden-Tick nötig ist
     val showTimeOnCard by AppPreferences.getShowTimeOnCard(context)
         .collectAsState(initial = false)
     val hasCustomTime = remember(countdown.displayFormat) {
         countdown.displayFormat.isNotBlank() &&
-                countdown.displayFormat.contains("HOURS")
+                countdown.activeDisplayUnits.any { it in TIME_UNITS }
     }
     val needsSecondTick = showTimeOnCard || hasCustomTime
 
@@ -64,8 +65,7 @@ fun CountdownCardDialog(
 
     val showConfetti = remember(countdown.id) {
         countdown.calculateTimeRemaining().let { info ->
-            info.isPast &&
-                    !countdown.isRecurring &&
+            info.isPast && !countdown.isRecurring &&
                     countdown.targetDateTime.isAfter(countdown.createdAt)
         }
     }

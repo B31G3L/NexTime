@@ -16,11 +16,23 @@ class NotificationReceiver : BroadcastReceiver() {
 
         if (countdownId == -1L) return
 
+        val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
-            val database  = CountdownDatabase.getDatabase(context)
-            val countdown = database.countdownDao().getCountdownById(countdownId)
-            countdown?.let {
-                CountdownNotificationManager.showCountdownNotification(context, it, isAtTime)
+            try {
+                val database  = CountdownDatabase.getDatabase(context)
+                val countdown = database.countdownDao().getCountdownById(countdownId)
+                countdown?.let {
+                    CountdownNotificationManager.showCountdownNotification(context, it, isAtTime)
+
+                    // Wiederkehrende Einträge: nächstes Vorkommen neu planen.
+                    // effectiveTarget zeigt nach dem Auslösen bereits auf den
+                    // nächsten Termin, daher genügt ein erneuter Plan-Aufruf.
+                    if (isAtTime && it.isRecurring) {
+                        NotificationScheduler.scheduleNotifications(context, it)
+                    }
+                }
+            } finally {
+                pendingResult.finish()
             }
         }
     }
