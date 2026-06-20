@@ -77,16 +77,17 @@ fun SettingsScreen(onBack: () -> Unit) {
     val defaultDateUnits by AppPreferences.getDefaultDateUnits(context).collectAsState(initial = setOf(DisplayUnit.DAYS))
     val showTimeOnCard   by AppPreferences.getShowTimeOnCard(context).collectAsState(initial = false)
     val currentLang      by LanguageManager.getLanguage(context).collectAsState(initial = AppLanguage.SYSTEM)
-    val displayStyle     by AppPreferences.getDisplayStyle(context).collectAsState(initial = DisplayStyle.NORMAL)
+    val displayStyle     by AppPreferences.getDisplayStyle(context).collectAsState(initial = DisplayStyle.STANDARD)
 
     // ── Sheet-States ──────────────────────────────────────────────────────────
     var activeSheet by remember { mutableStateOf<SettingsSheet?>(null) }
 
     // ── Zusammenfassungstexte ─────────────────────────────────────────────────
     val darstellungSummary = when (displayStyle) {
-        DisplayStyle.COMPACT  -> stringResource(R.string.display_style_compact)
-        DisplayStyle.NORMAL   -> stringResource(R.string.display_style_normal)
-        DisplayStyle.GENEROUS -> stringResource(R.string.display_style_generous)
+        DisplayStyle.STANDARD   -> stringResource(R.string.card_style_standard)
+        DisplayStyle.KOMPAKT    -> stringResource(R.string.card_style_kompakt)
+        DisplayStyle.BANNER     -> stringResource(R.string.card_style_banner)
+        DisplayStyle.INVERTIERT -> stringResource(R.string.card_style_invertiert)
     }
     val accentSummary = when (accentColor) {
         AccentColor.ORANGE  -> stringResource(R.string.accent_orange)
@@ -224,13 +225,14 @@ fun SettingsScreen(onBack: () -> Unit) {
 
                 when (sheet) {
 
-                    // ── Darstellung ───────────────────────────────────────────
+                    // ── Darstellung (Karten-Art) ──────────────────────────────
                     SettingsSheet.DARSTELLUNG -> {
                         Text(stringResource(R.string.settings_display_style_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         listOf(
-                            DisplayStyle.COMPACT  to stringResource(R.string.display_style_compact),
-                            DisplayStyle.NORMAL   to stringResource(R.string.display_style_normal),
-                            DisplayStyle.GENEROUS to stringResource(R.string.display_style_generous),
+                            DisplayStyle.STANDARD   to stringResource(R.string.card_style_standard),
+                            DisplayStyle.KOMPAKT    to stringResource(R.string.card_style_kompakt),
+                            DisplayStyle.BANNER     to stringResource(R.string.card_style_banner),
+                            DisplayStyle.INVERTIERT to stringResource(R.string.card_style_invertiert),
                         ).forEach { (style, label) ->
                             val isSelected = displayStyle == style
                             Surface(

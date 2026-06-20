@@ -288,4 +288,8 @@
         <item quantity="one">Hace %d día</item>
         <item quantity="other">Hace %d días</item>
     </plurals>
+    <string name="card_style_standard">Estándar</string>
+    <string name="card_style_kompakt">Compacto</string>
+    <string name="card_style_banner">Banner</string>
+    <string name="card_style_invertiert">Invertido</string>
 </resources>

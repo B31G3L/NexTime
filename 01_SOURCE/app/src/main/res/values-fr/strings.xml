@@ -288,4 +288,9 @@
         <item quantity="one">Il y a %d jour</item>
         <item quantity="other">Il y a %d jours</item>
     </plurals>
+
+    <string name="card_style_standard">Standard</string>
+    <string name="card_style_kompakt">Compact</string>
+    <string name="card_style_banner">Bannière</string>
+    <string name="card_style_invertiert">Inversé</string>
 </resources>

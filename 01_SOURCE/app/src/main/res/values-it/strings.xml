@@ -288,4 +288,9 @@
         <item quantity="one">%d giorno fa</item>
         <item quantity="other">%d giorni fa</item>
     </plurals>
+
+    <string name="card_style_standard">Standard</string>
+    <string name="card_style_kompakt">Compatto</string>
+    <string name="card_style_banner">Banner</string>
+    <string name="card_style_invertiert">Invertito</string>
 </resources>

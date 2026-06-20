@@ -329,4 +329,8 @@
         <item quantity="one">%d day passed</item>
         <item quantity="other">%d days passed</item>
     </plurals>
+    <string name="card_style_standard">Standard</string>
+    <string name="card_style_kompakt">Compact</string>
+    <string name="card_style_banner">Banner</string>
+    <string name="card_style_invertiert">Inverted</string>
 </resources>

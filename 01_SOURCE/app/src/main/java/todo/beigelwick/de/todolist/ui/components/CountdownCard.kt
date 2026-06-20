@@ -42,40 +42,12 @@ import todo.beigelwick.de.todolist.ui.viewmodel.CountdownViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-// ─── Style-Konfiguration ──────────────────────────────────────────────────────
-
-private data class CardStyleConfig(
-    val cardPaddingH   : Dp,
-    val cardPaddingV   : Dp,
-    val numberSize     : TextUnit,
-    val unitSize       : TextUnit,
-    val titleSize      : TextUnit,
-    val dateSize       : TextUnit,
-    val iconBoxSize    : Dp,
-    val iconGlyphSize  : Dp,
-    val rowSpacing     : Dp,
-    val showDate       : Boolean,
-)
-
-private fun styleConfig(style: DisplayStyle): CardStyleConfig = when (style) {
-    DisplayStyle.COMPACT -> CardStyleConfig(
-        cardPaddingH = 14.dp, cardPaddingV = 12.dp,
-        numberSize = 32.sp, unitSize = 12.sp, titleSize = 12.sp, dateSize = 11.sp,
-        iconBoxSize = 28.dp, iconGlyphSize = 16.dp, rowSpacing = 10.dp, showDate = false,
-    )
-    DisplayStyle.NORMAL -> CardStyleConfig(
-        cardPaddingH = 18.dp, cardPaddingV = 16.dp,
-        numberSize = 42.sp, unitSize = 15.sp, titleSize = 13.sp, dateSize = 12.sp,
-        iconBoxSize = 30.dp, iconGlyphSize = 17.dp, rowSpacing = 14.dp, showDate = true,
-    )
-    DisplayStyle.GENEROUS -> CardStyleConfig(
-        cardPaddingH = 20.dp, cardPaddingV = 20.dp,
-        numberSize = 52.sp, unitSize = 17.sp, titleSize = 14.sp, dateSize = 13.sp,
-        iconBoxSize = 34.dp, iconGlyphSize = 19.dp, rowSpacing = 16.dp, showDate = true,
-    )
-}
-
 // ─── CountdownCard ────────────────────────────────────────────────────────────
+//
+// Die Card-Darstellung wird über die ART der Karte gesteuert. DisplayStyle bietet
+// vier Layout-Varianten: STANDARD, KOMPAKT, BANNER, INVERTIERT.
+// Gemeinsame Logik (Zeitberechnung, Tick, Akzentfarbe …) liegt hier zentral;
+// nur das eigentliche Layout verzweigt am Ende.
 
 @Composable
 fun CountdownCard(
@@ -88,7 +60,7 @@ fun CountdownCard(
     val displayStyle by if (previewStyle != null) {
         produceState(initialValue = previewStyle) { value = previewStyle }
     } else {
-        AppPreferences.getDisplayStyle(context).collectAsState(initial = DisplayStyle.NORMAL)
+        AppPreferences.getDisplayStyle(context).collectAsState(initial = DisplayStyle.STANDARD)
     }
 
     // Custom-Format pro Countdown hat Vorrang, sonst globale Einstellungen
@@ -104,8 +76,6 @@ fun CountdownCard(
     }
     val needsSecondTick = showTimeOnCard ||
             (hasCustomFormat && activeUnits.any { it in TIME_UNITS })
-
-    val cfg = remember(displayStyle) { styleConfig(displayStyle) }
 
     val tick by if (needsSecondTick)
         viewModel.tickSeconds.collectAsState()
@@ -130,6 +100,11 @@ fun CountdownCard(
     val contentColor = MaterialTheme.colorScheme.onSurface
     val subtleColor  = MaterialTheme.colorScheme.onSurfaceVariant
 
+    val datePattern = if (countdown.hasTime) "dd.MM.yyyy · HH:mm" else "dd.MM.yyyy"
+    val dateText = remember(countdown.effectiveTarget, datePattern, tick) {
+        countdown.effectiveTarget.format(DateTimeFormatter.ofPattern(datePattern))
+    }
+
     Surface(
         modifier        = Modifier.fillMaxWidth(),
         shape           = RoundedCornerShape(14.dp),
@@ -138,77 +113,190 @@ fun CountdownCard(
         shadowElevation = 0.dp,
         border          = androidx.compose.foundation.BorderStroke(0.5.dp, accentColor.copy(alpha = 0.28f)),
     ) {
-        Box(modifier = Modifier.fillMaxWidth()) {
-
-            // ── Inhalt: Zahl oben, Rest darunter verteilt ──────────────────────
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = cfg.cardPaddingH, vertical = cfg.cardPaddingV),
-                verticalArrangement = Arrangement.spacedBy(cfg.rowSpacing)
-            ) {
-
-                // Obere Hälfte: nur die Countdown-Zahl (Hauptelement)
-                CountdownMainDisplay(
-                    timeInfo    = timeInfo,
-                    units       = activeUnits,
-                    numberSize  = cfg.numberSize,
-                    unitSize    = cfg.unitSize,
-                    accentColor = contentColor,  // Zahl monochrom (Textfarbe)
-                    textColor   = contentColor,
-                )
-
-                // Untere Zeile: Icon + Titel (links), Badges, Datum (rechts)
-                Row(
-                    verticalAlignment     = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    // Icon im getönten Kästchen (trägt die Akzentfarbe)
-                    Box(
-                        modifier = Modifier
-                            .size(cfg.iconBoxSize)
-                            .clip(RoundedCornerShape(9.dp))
-                            .background(accentColor.copy(alpha = 0.12f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector        = iconByName(countdown.icon),
-                            contentDescription = countdown.title,
-                            tint               = accentColor,
-                            modifier           = Modifier.size(cfg.iconGlyphSize)
-                        )
-                    }
-
-                    // Titel füllt den Raum → Datum sitzt immer konsistent rechts.
-                    // Ellipsis kürzt lange Titel, statt das Datum zu verschieben.
-                    Text(
-                        text     = countdown.title,
-                        fontSize = cfg.titleSize,
-                        color    = subtleColor,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                    )
-
-                    if (countdown.isPinned)    PinBadge(accentColor)
-                    if (countdown.isRecurring) RecurringBadge(countdown.recurrenceType, accentColor)
-                    if (isToday)               TodayBadge(accentColor)
-
-                    if (cfg.showDate) {
-                        val datePattern = if (countdown.hasTime) "dd.MM.yyyy · HH:mm" else "dd.MM.yyyy"
-                        Text(
-                            text     = countdown.effectiveTarget.format(
-                                DateTimeFormatter.ofPattern(datePattern)
-                            ),
-                            fontSize = cfg.dateSize,
-                            color    = subtleColor.copy(alpha = 0.7f),
-                            maxLines = 1
-                        )
-                    }
-                }
-            }
+        when (displayStyle) {
+            DisplayStyle.STANDARD   -> StandardLayout(countdown, timeInfo, activeUnits, accentColor, contentColor, subtleColor, isToday, dateText)
+            DisplayStyle.KOMPAKT    -> KompaktLayout(countdown, timeInfo, activeUnits, accentColor, contentColor, subtleColor, isToday, dateText)
+            DisplayStyle.BANNER     -> BannerLayout(countdown, timeInfo, activeUnits, accentColor, contentColor, subtleColor, isToday, dateText)
+            DisplayStyle.INVERTIERT -> InvertiertLayout(countdown, timeInfo, activeUnits, accentColor, contentColor, subtleColor, isToday, dateText)
         }
     }
+}
+
+// ─── Layout 1: STANDARD ───────────────────────────────────────────────────────
+// Große Zahl oben, darunter Icon + Titel (links) und Datum (rechts).
+
+@Composable
+private fun StandardLayout(
+    countdown: Countdown, timeInfo: CountdownInfo, units: List<DisplayUnit>,
+    accentColor: Color, contentColor: Color, subtleColor: Color,
+    isToday: Boolean, dateText: String
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        CountdownMainDisplay(timeInfo, units, 42.sp, 15.sp, contentColor, contentColor)
+        InfoRow(countdown, accentColor, contentColor, subtleColor, isToday, dateText)
+    }
+}
+
+// ─── Layout 4: INVERTIERT ─────────────────────────────────────────────────────
+// Wie Standard, aber gespiegelt: Icon + Titel + Datum oben, große Zahl darunter.
+
+@Composable
+private fun InvertiertLayout(
+    countdown: Countdown, timeInfo: CountdownInfo, units: List<DisplayUnit>,
+    accentColor: Color, contentColor: Color, subtleColor: Color,
+    isToday: Boolean, dateText: String
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        InfoRow(countdown, accentColor, contentColor, subtleColor, isToday, dateText)
+        CountdownMainDisplay(timeInfo, units, 42.sp, 15.sp, contentColor, contentColor)
+    }
+}
+
+// Gemeinsame Info-Zeile für STANDARD und INVERTIERT:
+// Icon + Titel (links), Badges, Datum (rechts).
+@Composable
+private fun InfoRow(
+    countdown: Countdown, accentColor: Color, contentColor: Color, subtleColor: Color,
+    isToday: Boolean, dateText: String
+) {
+    Row(
+        verticalAlignment     = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        IconBox(countdown, accentColor, 30.dp, 17.dp)
+        Text(
+            text       = countdown.title,
+            fontSize   = 16.sp,
+            fontWeight = FontWeight.SemiBold,
+            color      = contentColor,
+            maxLines   = 1,
+            overflow   = TextOverflow.Ellipsis,
+            modifier   = Modifier.weight(1f)
+        )
+        Badges(countdown, accentColor, isToday)
+        Text(
+            text     = dateText,
+            fontSize = 12.sp,
+            color    = subtleColor.copy(alpha = 0.7f),
+            maxLines = 1
+        )
+    }
+}
+
+// ─── Layout 2: KOMPAKT ────────────────────────────────────────────────────────
+// Alles in einer Zeile: Icon | Titel + Datum | Zahl rechts.
+
+@Composable
+private fun KompaktLayout(
+    countdown: Countdown, timeInfo: CountdownInfo, units: List<DisplayUnit>,
+    accentColor: Color, contentColor: Color, subtleColor: Color,
+    isToday: Boolean, dateText: String
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment     = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        IconBox(countdown, accentColor, 36.dp, 20.dp)
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    text       = countdown.title,
+                    fontSize   = 15.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color      = contentColor,
+                    maxLines   = 1,
+                    overflow   = TextOverflow.Ellipsis,
+                    modifier   = Modifier.weight(1f, fill = false)
+                )
+                Badges(countdown, accentColor, isToday)
+            }
+            Text(text = dateText, fontSize = 11.sp, color = subtleColor.copy(alpha = 0.7f), maxLines = 1)
+        }
+        CountdownMainDisplay(timeInfo, units, 26.sp, 11.sp, contentColor, contentColor)
+    }
+}
+
+// ─── Layout 3: BANNER ─────────────────────────────────────────────────────────
+// Farbiges Icon-Feld links über volle Höhe, rechts Titel + Zahl + Datum.
+
+@Composable
+private fun BannerLayout(
+    countdown: Countdown, timeInfo: CountdownInfo, units: List<DisplayUnit>,
+    accentColor: Color, contentColor: Color, subtleColor: Color,
+    isToday: Boolean, dateText: String
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxHeight()
+                .width(60.dp)
+                .background(accentColor.copy(alpha = 0.15f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector        = iconByName(countdown.icon),
+                contentDescription = countdown.title,
+                tint               = accentColor,
+                modifier           = Modifier.size(28.dp)
+            )
+        }
+        Column(
+            modifier = Modifier.weight(1f).padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    text       = countdown.title,
+                    fontSize   = 15.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color      = contentColor,
+                    maxLines   = 1,
+                    overflow   = TextOverflow.Ellipsis,
+                    modifier   = Modifier.weight(1f, fill = false)
+                )
+                Badges(countdown, accentColor, isToday)
+            }
+            CountdownMainDisplay(timeInfo, units, 32.sp, 13.sp, contentColor, contentColor)
+            Text(text = dateText, fontSize = 11.sp, color = subtleColor.copy(alpha = 0.7f), maxLines = 1)
+        }
+    }
+}
+
+// ─── Gemeinsame Bausteine ─────────────────────────────────────────────────────
+
+@Composable
+private fun IconBox(countdown: Countdown, accentColor: Color, boxSize: Dp, glyphSize: Dp) {
+    Box(
+        modifier = Modifier
+            .size(boxSize)
+            .clip(RoundedCornerShape(9.dp))
+            .background(accentColor.copy(alpha = 0.12f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector        = iconByName(countdown.icon),
+            contentDescription = countdown.title,
+            tint               = accentColor,
+            modifier           = Modifier.size(glyphSize)
+        )
+    }
+}
+
+@Composable
+private fun Badges(countdown: Countdown, accentColor: Color, isToday: Boolean) {
+    if (countdown.isPinned)    PinBadge(accentColor)
+    if (countdown.isRecurring) RecurringBadge(countdown.recurrenceType, accentColor)
+    if (isToday)               TodayBadge(accentColor)
 }
 
 // ─── Badges ───────────────────────────────────────────────────────────────────
@@ -286,7 +374,7 @@ private fun RecurringBadge(recurrenceType: RecurrenceType, accentColor: Color) {
     }
 }
 
-// ─── Hauptanzeige ─────────────────────────────────────────────────────────────
+// ─── Hauptanzeige (Zahl + Einheit) ────────────────────────────────────────────
 
 @Composable
 fun CountdownMainDisplay(

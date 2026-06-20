@@ -10,9 +10,12 @@ import todo.beigelwick.de.todolist.data.model.DisplayFormat
 import todo.beigelwick.de.todolist.data.model.DisplayUnit
 import java.time.LocalTime
 
-// ─── Display Style ────────────────────────────────────────────────────────────
+// ─── Display Style (Karten-Art) ──────────────────────────────────────────────
+//
+// Steuert nicht mehr die Größe, sondern die ART der Card-Darstellung.
+// STANDARD entspricht dem bisherigen Standard-Layout und ist der Default.
 
-enum class DisplayStyle { COMPACT, NORMAL, GENEROUS }
+enum class DisplayStyle { STANDARD, KOMPAKT, BANNER, INVERTIERT }
 
 // ─── AppPreferences ───────────────────────────────────────────────────────────
 
@@ -45,12 +48,15 @@ object AppPreferences {
         context.dataStore.edit { it[DEFAULT_TIME] = time.toString() }
     }
 
-    // ── Display Style ─────────────────────────────────────────────────────────
+    // ── Display Style (Karten-Art) ────────────────────────────────────────────
+    //
+    // Hinweis: Bestehende Nutzer mit altem gespeicherten Wert ("NORMAL" usw.)
+    // fallen über den try/catch sauber auf STANDARD zurück.
 
     fun getDisplayStyle(context: Context): Flow<DisplayStyle> =
         context.dataStore.data.map { prefs ->
-            try { DisplayStyle.valueOf(prefs[DISPLAY_STYLE] ?: DisplayStyle.NORMAL.name) }
-            catch (e: Exception) { DisplayStyle.NORMAL }
+            try { DisplayStyle.valueOf(prefs[DISPLAY_STYLE] ?: DisplayStyle.STANDARD.name) }
+            catch (e: Exception) { DisplayStyle.STANDARD }
         }
 
     suspend fun setDisplayStyle(context: Context, style: DisplayStyle) {
