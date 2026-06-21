@@ -70,6 +70,8 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
+import kotlin.math.abs
 
 private val REMINDER_GROUPS = listOf(
     R.string.reminder_group_attime to listOf(ReminderOption.AT_TIME),
@@ -163,8 +165,9 @@ fun AddEditScreen(
     val initialized         = remember { mutableStateOf(false) }
 
     // ── "In X Tagen"-State ────────────────────────────────────────────────────
-    var useDaysInput  by remember { mutableStateOf(false) }
-    var daysInputText by remember { mutableStateOf("") }
+    var useDaysInput     by remember { mutableStateOf(false) }
+    var daysInputText    by remember { mutableStateOf("") }
+    var daysInputCountUp by remember { mutableStateOf(false) }
 
     // ── Custom-Format-State ───────────────────────────────────────────────────
     var useCustomFormat   by remember { mutableStateOf(false) }
@@ -175,18 +178,15 @@ fun AddEditScreen(
     var showInlineTimePicker by remember { mutableStateOf(false) }
 
     // ── Notification Permission Launcher ──────────────────────────────────────
-    // Wird NUR aufgerufen wenn der Nutzer den Benachrichtigungs-Toggle aktiviert.
     val notifPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) {
             notificationEnabled = true
-            // Nach Notification-Grant auch Exact-Alarm prüfen
             if (!hasExactAlarmPermission(context)) {
                 showExactAlarmDialog(context)
             }
         } else {
-            // Abgelehnt → Toggle bleibt aus, kein weiterer Dialog
             notificationEnabled = false
         }
     }
@@ -408,7 +408,13 @@ fun AddEditScreen(
                     ) {
                         FilterChip(
                             selected = !useDaysInput,
-                            onClick  = { haptic.tick(); useDaysInput = false; daysInputText = "" },
+                            onClick  = {
+                                haptic.tick()
+                                useDaysInput = false
+                                daysInputText = ""
+                                // Datum im DatePicker auf selectedDate synchronisieren
+                                // (datePickerState aktualisiert sich über LaunchedEffect)
+                            },
                             label    = { Text(stringResource(R.string.section_datetime)) },
                             modifier = Modifier.weight(1f)
                         )
@@ -419,7 +425,10 @@ fun AddEditScreen(
                                 useDaysInput         = true
                                 showInlineDatePicker = false
                                 showInlineTimePicker = false
-                                daysInputText        = ""
+                                // Aktuelles Datum → Tage umrechnen und Richtung ermitteln
+                                val diff = ChronoUnit.DAYS.between(LocalDate.now(), selectedDate)
+                                daysInputCountUp = diff < 0
+                                daysInputText    = abs(diff).toString()
                             },
                             label    = { Text("In X Tagen") },
                             modifier = Modifier.weight(1f)
@@ -434,12 +443,17 @@ fun AddEditScreen(
                                 if (input.all { it.isDigit() }) {
                                     daysInputText = input
                                     input.toLongOrNull()?.let { days ->
-                                        if (days >= 0) selectedDate = LocalDate.now().plusDays(days)
+                                        if (days in 0L..36500L) {
+                                            selectedDate = if (daysInputCountUp)
+                                                LocalDate.now().minusDays(days)
+                                            else
+                                                LocalDate.now().plusDays(days)
+                                        }
                                     }
                                 }
                             },
                             placeholder     = { Text("z.B. 30") },
-                            label           = { Text("Tage ab heute") },
+                            label           = { Text(if (daysInputCountUp) "Tage vor heute" else "Tage ab heute") },
                             suffix          = { Text("Tage") },
                             keyboardOptions = KeyboardOptions(
                                 keyboardType = KeyboardType.Number,
@@ -453,6 +467,43 @@ fun AddEditScreen(
                                 unfocusedContainerColor = MaterialTheme.colorScheme.surface
                             )
                         )
+
+                        // Count-up-Toggle
+                        Row(
+                            modifier              = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment     = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text  = if (daysInputCountUp) "Count-up (Vergangenheit)" else "Countdown (Zukunft)",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text  = if (daysInputCountUp) "Datum liegt vor heute" else "Datum liegt nach heute",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                )
+                            }
+                            Switch(
+                                checked         = daysInputCountUp,
+                                onCheckedChange = { checked ->
+                                    haptic.tick()
+                                    daysInputCountUp = checked
+                                    daysInputText.toLongOrNull()?.let { days ->
+                                        if (days in 0L..36500L) {
+                                            selectedDate = if (checked)
+                                                LocalDate.now().minusDays(days)
+                                            else
+                                                LocalDate.now().plusDays(days)
+                                        }
+                                    }
+                                }
+                            )
+                        }
+
+                        // Berechnetes Datum anzeigen
                         AnimatedVisibility(
                             visible = daysInputText.isNotBlank(),
                             enter   = fadeIn() + expandVertically(),
@@ -624,18 +675,15 @@ fun AddEditScreen(
                                 haptic.tick()
                                 if (enabled) {
                                     when {
-                                        // Permission bereits vorhanden → direkt aktivieren
                                         hasNotificationPermission(context) -> {
                                             notificationEnabled = true
                                             if (!hasExactAlarmPermission(context)) {
                                                 showExactAlarmDialog(context)
                                             }
                                         }
-                                        // Android 13+ → System-Dialog anzeigen
                                         Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> {
                                             notifPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                                         }
-                                        // Unter Android 13 → keine Permission nötig
                                         else -> {
                                             notificationEnabled = true
                                         }

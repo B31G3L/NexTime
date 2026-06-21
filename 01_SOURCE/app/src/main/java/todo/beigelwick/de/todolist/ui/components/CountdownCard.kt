@@ -41,13 +41,26 @@ import todo.beigelwick.de.todolist.ui.theme.DisplayStyle
 import todo.beigelwick.de.todolist.ui.viewmodel.CountdownViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
+import java.util.Locale
+
+// ─── Hilfsfunktion: lokalisiertes Datum ──────────────────────────────────────
+
+private fun formatDate(countdown: Countdown, locale: Locale): String {
+    val datePart = countdown.effectiveTarget.format(
+        DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
+    )
+    return if (countdown.hasTime) {
+        val timePart = countdown.effectiveTarget.format(
+            DateTimeFormatter.ofPattern("HH:mm", locale)
+        )
+        "$datePart · $timePart"
+    } else {
+        datePart
+    }
+}
 
 // ─── CountdownCard ────────────────────────────────────────────────────────────
-//
-// Die Card-Darstellung wird über die ART der Karte gesteuert. DisplayStyle bietet
-// vier Layout-Varianten: STANDARD, KOMPAKT, BANNER, INVERTIERT.
-// Gemeinsame Logik (Zeitberechnung, Tick, Akzentfarbe …) liegt hier zentral;
-// nur das eigentliche Layout verzweigt am Ende.
 
 @Composable
 fun CountdownCard(
@@ -56,6 +69,7 @@ fun CountdownCard(
     previewStyle : DisplayStyle? = null
 ) {
     val context = LocalContext.current
+    val locale  = Locale.getDefault()
 
     val displayStyle by if (previewStyle != null) {
         produceState(initialValue = previewStyle) { value = previewStyle }
@@ -63,7 +77,6 @@ fun CountdownCard(
         AppPreferences.getDisplayStyle(context).collectAsState(initial = DisplayStyle.STANDARD)
     }
 
-    // Custom-Format pro Countdown hat Vorrang, sonst globale Einstellungen
     val globalDateUnits by AppPreferences.getDefaultDateUnits(context)
         .collectAsState(initial = setOf(DisplayUnit.DAYS))
     val showTimeOnCard by AppPreferences.getShowTimeOnCard(context)
@@ -86,7 +99,6 @@ fun CountdownCard(
         countdown.calculateTimeRemaining()
     }
 
-    // Akzentfarbe des Countdowns — trägt Icon-Kästchen + Rand
     val fallbackAccent = MaterialTheme.colorScheme.primary
     val accentColor = remember(countdown.color, fallbackAccent) {
         runCatching { Color(android.graphics.Color.parseColor(countdown.color)) }
@@ -100,9 +112,9 @@ fun CountdownCard(
     val contentColor = MaterialTheme.colorScheme.onSurface
     val subtleColor  = MaterialTheme.colorScheme.onSurfaceVariant
 
-    val datePattern = if (countdown.hasTime) "dd.MM.yyyy · HH:mm" else "dd.MM.yyyy"
-    val dateText = remember(countdown.effectiveTarget, datePattern, tick) {
-        countdown.effectiveTarget.format(DateTimeFormatter.ofPattern(datePattern))
+    // ── Lokalisiertes Datum ───────────────────────────────────────────────────
+    val dateText = remember(countdown.effectiveTarget, countdown.hasTime, locale, tick) {
+        formatDate(countdown, locale)
     }
 
     Surface(
@@ -123,7 +135,6 @@ fun CountdownCard(
 }
 
 // ─── Layout 1: STANDARD ───────────────────────────────────────────────────────
-// Große Zahl oben, darunter Icon + Titel (links) und Datum (rechts).
 
 @Composable
 private fun StandardLayout(
@@ -141,7 +152,6 @@ private fun StandardLayout(
 }
 
 // ─── Layout 4: INVERTIERT ─────────────────────────────────────────────────────
-// Wie Standard, aber gespiegelt: Icon + Titel + Datum oben, große Zahl darunter.
 
 @Composable
 private fun InvertiertLayout(
@@ -158,8 +168,6 @@ private fun InvertiertLayout(
     }
 }
 
-// Gemeinsame Info-Zeile für STANDARD und INVERTIERT:
-// Icon + Titel (links), Badges, Datum (rechts).
 @Composable
 private fun InfoRow(
     countdown: Countdown, accentColor: Color, contentColor: Color, subtleColor: Color,
@@ -190,7 +198,6 @@ private fun InfoRow(
 }
 
 // ─── Layout 2: KOMPAKT ────────────────────────────────────────────────────────
-// Alles in einer Zeile: Icon | Titel + Datum | Zahl rechts.
 
 @Composable
 private fun KompaktLayout(
@@ -224,7 +231,6 @@ private fun KompaktLayout(
 }
 
 // ─── Layout 3: BANNER ─────────────────────────────────────────────────────────
-// Farbiges Icon-Feld links über volle Höhe, rechts Titel + Zahl + Datum.
 
 @Composable
 private fun BannerLayout(

@@ -48,18 +48,6 @@ import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
-// ─── Dummy-Countdown für Preview ─────────────────────────────────────────────
-
-private val PREVIEW_COUNTDOWN = Countdown(
-    id             = -1L,
-    title          = "Sommerurlaub",
-    icon           = "FlightTakeoff",
-    targetDateTime = LocalDateTime.now().plusDays(42),
-    displayFormat  = "",
-    color          = "#FF7043",
-    recurrence     = RecurrenceType.NONE.name
-)
-
 // ─── Settings Screen ──────────────────────────────────────────────────────────
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -68,6 +56,20 @@ fun SettingsScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val scope   = rememberCoroutineScope()
     val haptic  = remember { HapticFeedback(context) }
+
+    // ── Lokalisierter Preview-Titel ───────────────────────────────────────────
+    val previewTitle = stringResource(R.string.preview_countdown_title)
+    val previewCountdown = remember(previewTitle) {
+        Countdown(
+            id             = -1L,
+            title          = previewTitle,
+            icon           = "FlightTakeoff",
+            targetDateTime = LocalDateTime.now().plusDays(42),
+            displayFormat  = "",
+            color          = "#FF7043",
+            recurrence     = RecurrenceType.NONE.name
+        )
+    }
 
     // ── Preferences ──────────────────────────────────────────────────────────
     val themeMode        by ThemePreferences.getThemeMode(context).collectAsState(initial = ThemeMode.SYSTEM)
@@ -252,7 +254,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                                         }
                                     }
                                     Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp))) {
-                                        CountdownCard(countdown = PREVIEW_COUNTDOWN, previewStyle = style)
+                                        CountdownCard(countdown = previewCountdown, previewStyle = style)
                                     }
                                 }
                             }
@@ -261,7 +263,6 @@ fun SettingsScreen(onBack: () -> Unit) {
 
                     // ── Anzeigeformat ─────────────────────────────────────────
                     SettingsSheet.FORMAT -> {
-                        // Datumseinheiten
                         listOf(
                             DisplayUnit.YEARS  to stringResource(R.string.format_unit_years),
                             DisplayUnit.MONTHS to stringResource(R.string.format_unit_months),
@@ -289,7 +290,6 @@ fun SettingsScreen(onBack: () -> Unit) {
                             }
                         }
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                        // Uhrzeit-Toggle
                         Row(
                             modifier              = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -301,11 +301,10 @@ fun SettingsScreen(onBack: () -> Unit) {
                             }
                             Switch(checked = showTimeOnCard, onCheckedChange = { checked -> haptic.tick(); scope.launch { AppPreferences.setShowTimeOnCard(context, checked) } })
                         }
-                        // Vorschau
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                         Text(stringResource(R.string.preview_label), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         key(defaultDateUnits, showTimeOnCard) {
-                            CountdownCard(countdown = PREVIEW_COUNTDOWN)
+                            CountdownCard(countdown = previewCountdown)
                         }
                     }
 
@@ -413,7 +412,6 @@ fun SettingsScreen(onBack: () -> Unit) {
                     SettingsSheet.STANDARDS -> {
                         Text(stringResource(R.string.settings_defaults_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
-                        // Farb-Picker
                         var showColorPicker by remember { mutableStateOf(false) }
                         val parsedColor = try { Color(android.graphics.Color.parseColor(defaultColor)) } catch (e: Exception) { MaterialTheme.colorScheme.primary }
 
@@ -441,7 +439,6 @@ fun SettingsScreen(onBack: () -> Unit) {
 
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
-                        // Zeit-Picker
                         var showTimePicker by remember { mutableStateOf(false) }
                         Row(
                             modifier              = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).clickable { haptic.tick(); showTimePicker = !showTimePicker }.padding(horizontal = 4.dp, vertical = 12.dp),

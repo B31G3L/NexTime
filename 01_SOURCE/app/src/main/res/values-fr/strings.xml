@@ -293,4 +293,6 @@
     <string name="card_style_kompakt">Compact</string>
     <string name="card_style_banner">Bannière</string>
     <string name="card_style_invertiert">Inversé</string>
+    <string name="preview_countdown_title">Vacances d\'été</string>
+
 </resources>

@@ -293,4 +293,6 @@
     <string name="card_style_kompakt">Compatto</string>
     <string name="card_style_banner">Banner</string>
     <string name="card_style_invertiert">Invertito</string>
+    <string name="preview_countdown_title">Vacanza estiva</string>
+
 </resources>

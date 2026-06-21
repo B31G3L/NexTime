@@ -292,4 +292,6 @@
     <string name="card_style_kompakt">Compacto</string>
     <string name="card_style_banner">Banner</string>
     <string name="card_style_invertiert">Invertido</string>
+    <string name="preview_countdown_title">Vacaciones de verano</string>
+
 </resources>

@@ -333,4 +333,6 @@
     <string name="card_style_kompakt">Compact</string>
     <string name="card_style_banner">Banner</string>
     <string name="card_style_invertiert">Inverted</string>
+    <string name="preview_countdown_title">Summer vacation</string>
+
 </resources>

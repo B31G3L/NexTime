@@ -35,6 +35,8 @@ import todo.beigelwick.de.todolist.ui.theme.NexTimeTheme
 import todo.beigelwick.de.todolist.ui.theme.ThemeMode
 import todo.beigelwick.de.todolist.ui.theme.ThemePreferences
 import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
+import java.util.Locale
 import androidx.compose.ui.res.pluralStringResource
 
 
@@ -220,6 +222,13 @@ private fun WidgetCountdownCard(countdown: Countdown, onClick: () -> Unit) {
     val cardColor = try { Color(android.graphics.Color.parseColor(countdown.color)) }
     catch (e: Exception) { MaterialTheme.colorScheme.primary }
 
+    val locale  = Locale.getDefault()
+    val dateStr = remember(countdown.targetDateTime, locale) {
+        countdown.targetDateTime.format(
+            DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
+        )
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         shape    = RoundedCornerShape(16.dp),
@@ -228,7 +237,6 @@ private fun WidgetCountdownCard(countdown: Countdown, onClick: () -> Unit) {
         )
     ) {
         Column {
-            // Akzentbalken oben
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -250,7 +258,7 @@ private fun WidgetCountdownCard(countdown: Countdown, onClick: () -> Unit) {
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text  = countdown.targetDateTime.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")),
+                        text  = dateStr,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -265,7 +273,6 @@ private fun WidgetCountdownCard(countdown: Countdown, onClick: () -> Unit) {
                         color = cardColor
                     )
                 }
-                // Material Icon statt Emoji-Text
                 Surface(
                     modifier = Modifier.size(48.dp),
                     shape    = RoundedCornerShape(12.dp),

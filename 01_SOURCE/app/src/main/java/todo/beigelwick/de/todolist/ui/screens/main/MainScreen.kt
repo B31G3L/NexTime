@@ -54,6 +54,8 @@ import todo.beigelwick.de.todolist.ui.viewmodel.CountdownViewModel
 import todo.beigelwick.de.todolist.ui.viewmodel.SortMode
 import todo.beigelwick.de.todolist.utils.HapticFeedback
 import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -76,8 +78,6 @@ fun MainScreen(
     var showSortMenu    by remember { mutableStateOf(false) }
     var dialogCountdown by remember { mutableStateOf<Countdown?>(null) }
 
-    // ── In-App Review ─────────────────────────────────────────────────────────
-    // Lauscht auf das triggerReview-Event vom ViewModel und startet den Flow.
     LaunchedEffect(Unit) {
         viewModel.triggerReview.collect {
             launchReviewFlow(context)
@@ -187,10 +187,7 @@ private fun launchReviewFlow(context: Context) {
         if (task.isSuccessful) {
             val reviewInfo = task.result
             manager.launchReviewFlow(activity, reviewInfo)
-            // Hinweis: Google entscheidet intern ob der Dialog wirklich erscheint.
-            // Kein Feedback möglich ob der Nutzer bewertet hat oder nicht.
         }
-        // Bei Fehler: still ignorieren — Review ist optional
     }
 }
 
@@ -377,12 +374,16 @@ private fun SearchField(query: String, onQueryChange: (String) -> Unit, onClose:
 // ─── Share ────────────────────────────────────────────────────────────────────
 
 private fun shareCountdown(context: Context, countdown: Countdown) {
+    val locale    = Locale.getDefault()
     val timeInfo  = countdown.calculateTimeRemaining()
+    val dateStr   = countdown.effectiveTarget.format(
+        DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
+    )
     val shareText = buildString {
         append("${countdown.title}\n\n")
         if (timeInfo.isPast) append(context.getString(R.string.share_days_ago, timeInfo.days))
         else                 append(context.getString(R.string.share_days_remaining, timeInfo.days))
-        append("\n\n${countdown.effectiveTarget.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))}")
+        append("\n\n$dateStr")
         append("\n\n${context.getString(R.string.share_created_with)}")
     }
     val intent = Intent(Intent.ACTION_SEND).apply {
