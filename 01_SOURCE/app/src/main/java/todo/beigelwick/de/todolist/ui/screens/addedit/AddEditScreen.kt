@@ -1,5 +1,16 @@
 package todo.beigelwick.de.todolist.ui.screens.addedit
 
+import android.Manifest
+import android.app.AlarmManager
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -18,6 +29,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -30,9 +43,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import todo.beigelwick.de.todolist.R
 import todo.beigelwick.de.todolist.data.model.Countdown
@@ -66,6 +83,49 @@ private val REMINDER_GROUPS = listOf(
     )
 )
 
+// ─── Permission-Hilfsfunktionen ───────────────────────────────────────────────
+
+private fun hasNotificationPermission(context: Context): Boolean {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return true
+    return ContextCompat.checkSelfPermission(
+        context, Manifest.permission.POST_NOTIFICATIONS
+    ) == PackageManager.PERMISSION_GRANTED
+}
+
+private fun hasExactAlarmPermission(context: Context): Boolean {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return true
+    val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+    return alarmManager.canScheduleExactAlarms()
+}
+
+private fun showExactAlarmDialog(context: Context) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
+    AlertDialog.Builder(context)
+        .setTitle(context.getString(R.string.alarm_dialog_title))
+        .setMessage(context.getString(R.string.alarm_dialog_msg))
+        .setPositiveButton(context.getString(R.string.alarm_to_settings)) { _, _ ->
+            try {
+                context.startActivity(
+                    Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                        data  = Uri.parse("package:${context.packageName}")
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    }
+                )
+            } catch (e: Exception) {
+                context.startActivity(
+                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                        data  = Uri.parse("package:${context.packageName}")
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    }
+                )
+            }
+        }
+        .setNegativeButton(context.getString(R.string.alarm_later)) { dialog, _ -> dialog.dismiss() }
+        .show()
+}
+
+// ─── AddEditScreen ────────────────────────────────────────────────────────────
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun AddEditScreen(
@@ -73,9 +133,10 @@ fun AddEditScreen(
     onBack      : () -> Unit,
     viewModel   : CountdownViewModel = viewModel()
 ) {
-    val context     = LocalContext.current
-    val haptic      = remember { HapticFeedback(context) }
-    val scrollState = rememberScrollState()
+    val context      = LocalContext.current
+    val haptic       = remember { HapticFeedback(context) }
+    val focusManager = LocalFocusManager.current
+    val scrollState  = rememberScrollState()
 
     var existingCountdown by remember { mutableStateOf<Countdown?>(null) }
     val isEdit = countdownId != -1L
@@ -101,6 +162,10 @@ fun AddEditScreen(
     val selectedReminders   = remember { mutableStateListOf<ReminderOption>() }
     val initialized         = remember { mutableStateOf(false) }
 
+    // ── "In X Tagen"-State ────────────────────────────────────────────────────
+    var useDaysInput  by remember { mutableStateOf(false) }
+    var daysInputText by remember { mutableStateOf("") }
+
     // ── Custom-Format-State ───────────────────────────────────────────────────
     var useCustomFormat   by remember { mutableStateOf(false) }
     val customFormatUnits = remember { mutableStateListOf<DisplayUnit>() }
@@ -108,6 +173,23 @@ fun AddEditScreen(
     // ── Inline-Picker-States ──────────────────────────────────────────────────
     var showInlineDatePicker by remember { mutableStateOf(false) }
     var showInlineTimePicker by remember { mutableStateOf(false) }
+
+    // ── Notification Permission Launcher ──────────────────────────────────────
+    // Wird NUR aufgerufen wenn der Nutzer den Benachrichtigungs-Toggle aktiviert.
+    val notifPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            notificationEnabled = true
+            // Nach Notification-Grant auch Exact-Alarm prüfen
+            if (!hasExactAlarmPermission(context)) {
+                showExactAlarmDialog(context)
+            }
+        } else {
+            // Abgelehnt → Toggle bleibt aus, kein weiterer Dialog
+            notificationEnabled = false
+        }
+    }
 
     LaunchedEffect(existingCountdown, defaultColor, defaultTime) {
         if (initialized.value) return@LaunchedEffect
@@ -127,7 +209,6 @@ fun AddEditScreen(
                 try { selectedReminders.add(ReminderOption.valueOf(name.trim())) } catch (e: Exception) { }
             }
         }
-        // Bestehendes Custom-Format laden falls vorhanden
         if (cd != null && cd.displayFormat.isNotBlank()) {
             useCustomFormat = true
             customFormatUnits.clear()
@@ -136,7 +217,6 @@ fun AddEditScreen(
         initialized.value = true
     }
 
-    // Beim ersten Aktivieren des Toggles: globale Einstellung als Startwert
     LaunchedEffect(useCustomFormat) {
         if (useCustomFormat && customFormatUnits.isEmpty()) {
             val sorted = DISPLAY_UNIT_ORDER.filter { it in globalDateUnits }
@@ -183,7 +263,6 @@ fun AddEditScreen(
         if (picked != selectedTime) selectedTime = picked
     }
 
-    // displayFormat für Vorschau: custom wenn aktiv, sonst leer (→ globale Einstellung greift)
     val previewDisplayFormat = if (useCustomFormat && customFormatUnits.isNotEmpty())
         DisplayFormat.encodeOrdered(customFormatUnits.toList())
     else ""
@@ -321,22 +400,104 @@ fun AddEditScreen(
 
                 // ── 2. Datum & Uhrzeit ────────────────────────────────────────
                 FormSection(label = stringResource(R.string.section_datetime)) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                        OutlinedButton(
-                            onClick  = { haptic.tick(); showInlineDatePicker = !showInlineDatePicker; if (showInlineDatePicker) showInlineTimePicker = false },
+
+                    // Toggle: Datepicker ↔ Tage-Eingabe
+                    Row(
+                        modifier              = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        FilterChip(
+                            selected = !useDaysInput,
+                            onClick  = { haptic.tick(); useDaysInput = false; daysInputText = "" },
+                            label    = { Text(stringResource(R.string.section_datetime)) },
                             modifier = Modifier.weight(1f)
+                        )
+                        FilterChip(
+                            selected = useDaysInput,
+                            onClick  = {
+                                haptic.tick()
+                                useDaysInput         = true
+                                showInlineDatePicker = false
+                                showInlineTimePicker = false
+                                daysInputText        = ""
+                            },
+                            label    = { Text("In X Tagen") },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    if (useDaysInput) {
+                        // ── Tage-Eingabe ──────────────────────────────────────
+                        OutlinedTextField(
+                            value         = daysInputText,
+                            onValueChange = { input ->
+                                if (input.all { it.isDigit() }) {
+                                    daysInputText = input
+                                    input.toLongOrNull()?.let { days ->
+                                        if (days >= 0) selectedDate = LocalDate.now().plusDays(days)
+                                    }
+                                }
+                            },
+                            placeholder     = { Text("z.B. 30") },
+                            label           = { Text("Tage ab heute") },
+                            suffix          = { Text("Tage") },
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Number,
+                                imeAction    = ImeAction.Done
+                            ),
+                            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                            singleLine      = true,
+                            modifier        = Modifier.fillMaxWidth(),
+                            colors          = OutlinedTextFieldDefaults.colors(
+                                focusedContainerColor   = MaterialTheme.colorScheme.surface,
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                            )
+                        )
+                        AnimatedVisibility(
+                            visible = daysInputText.isNotBlank(),
+                            enter   = fadeIn() + expandVertically(),
+                            exit    = fadeOut() + shrinkVertically()
                         ) {
-                            Icon(if (showInlineDatePicker) Icons.Default.KeyboardArrowUp else Icons.Default.CalendarToday, null, modifier = Modifier.size(16.dp))
-                            Spacer(Modifier.width(6.dp))
-                            Text(selectedDate.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")))
+                            Row(
+                                verticalAlignment     = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                modifier              = Modifier.padding(top = 2.dp)
+                            ) {
+                                Icon(
+                                    imageVector        = Icons.Default.CalendarToday,
+                                    contentDescription = null,
+                                    tint               = MaterialTheme.colorScheme.primary,
+                                    modifier           = Modifier.size(14.dp)
+                                )
+                                Text(
+                                    text       = selectedDate.format(DateTimeFormatter.ofPattern("dd. MMMM yyyy")),
+                                    style      = MaterialTheme.typography.bodySmall,
+                                    color      = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
                         }
-                        TextButton(onClick = { selectedDate = LocalDate.now(); showInlineDatePicker = false }) {
-                            Text(stringResource(R.string.today_button))
+                    } else {
+                        // ── Klassischer Datepicker ────────────────────────────
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                            OutlinedButton(
+                                onClick  = { haptic.tick(); showInlineDatePicker = !showInlineDatePicker; if (showInlineDatePicker) showInlineTimePicker = false },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(if (showInlineDatePicker) Icons.Default.KeyboardArrowUp else Icons.Default.CalendarToday, null, modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text(selectedDate.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")))
+                            }
+                            TextButton(onClick = { selectedDate = LocalDate.now(); showInlineDatePicker = false }) {
+                                Text(stringResource(R.string.today_button))
+                            }
+                        }
+                        AnimatedVisibility(visible = showInlineDatePicker, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) {
+                            DatePicker(state = datePickerState, modifier = Modifier.fillMaxWidth())
                         }
                     }
-                    AnimatedVisibility(visible = showInlineDatePicker, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) {
-                        DatePicker(state = datePickerState, modifier = Modifier.fillMaxWidth())
-                    }
+
+                    // ── Uhrzeit-Toggle (gilt für beide Modi) ──────────────────
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Text(stringResource(R.string.time_toggle), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Switch(checked = showTime, onCheckedChange = { haptic.tick(); showTime = it; if (!it) showInlineTimePicker = false })
@@ -364,8 +525,6 @@ fun AddEditScreen(
 
                 // ── 3. Anzeigeformat ──────────────────────────────────────────
                 FormSection(label = stringResource(R.string.settings_format_label)) {
-
-                    // Toggle: Eigenes Format verwenden
                     Row(
                         modifier              = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -378,39 +537,23 @@ fun AddEditScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
-                                text  = if (useCustomFormat)
-                                    stringResource(R.string.format_overrides_global)
-                                else
-                                    stringResource(R.string.format_uses_global),
+                                text  = if (useCustomFormat) stringResource(R.string.format_overrides_global)
+                                else stringResource(R.string.format_uses_global),
                                 style = MaterialTheme.typography.bodySmall,
-                                color = if (useCustomFormat)
-                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
-                                else
-                                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                color = if (useCustomFormat) MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                                else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                             )
                         }
                         Switch(
                             checked         = useCustomFormat,
-                            onCheckedChange = {
-                                haptic.tick()
-                                useCustomFormat = it
-                                if (!it) customFormatUnits.clear()
-                            }
+                            onCheckedChange = { haptic.tick(); useCustomFormat = it; if (!it) customFormatUnits.clear() }
                         )
                     }
-
-                    // Chip-Auswahl — klappt auf wenn Toggle aktiv
-                    AnimatedVisibility(
-                        visible = useCustomFormat,
-                        enter   = fadeIn() + expandVertically(),
-                        exit    = fadeOut() + shrinkVertically()
-                    ) {
+                    AnimatedVisibility(visible = useCustomFormat, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) {
                         FlowRow(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalArrangement   = Arrangement.spacedBy(8.dp),
-                            modifier              = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 4.dp)
+                            modifier              = Modifier.fillMaxWidth().padding(top = 4.dp)
                         ) {
                             DISPLAY_UNIT_ORDER.forEach { unit ->
                                 val isSelected = customFormatUnits.contains(unit)
@@ -419,22 +562,15 @@ fun AddEditScreen(
                                     onClick  = {
                                         haptic.tick()
                                         if (isSelected) {
-                                            // Mind. 1 Einheit muss aktiv bleiben
                                             if (customFormatUnits.size > 1) customFormatUnits.remove(unit)
                                         } else {
                                             customFormatUnits.add(unit)
-                                            // Kanonische Reihenfolge wiederherstellen
                                             val sorted = DISPLAY_UNIT_ORDER.filter { customFormatUnits.contains(it) }
                                             customFormatUnits.clear()
                                             customFormatUnits.addAll(sorted)
                                         }
                                     },
-                                    label = {
-                                        Text(
-                                            unitLabel(unit),
-                                            style = MaterialTheme.typography.labelSmall
-                                        )
-                                    }
+                                    label = { Text(unitLabel(unit), style = MaterialTheme.typography.labelSmall) }
                                 )
                             }
                         }
@@ -472,9 +608,43 @@ fun AddEditScreen(
 
                 // ── 5. Benachrichtigungen ─────────────────────────────────────
                 FormSection(label = stringResource(R.string.section_notifications)) {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Text(stringResource(R.string.notification_enable), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Switch(checked = notificationEnabled, onCheckedChange = { haptic.tick(); notificationEnabled = it })
+                    Row(
+                        modifier              = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment     = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            stringResource(R.string.notification_enable),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Switch(
+                            checked         = notificationEnabled,
+                            onCheckedChange = { enabled ->
+                                haptic.tick()
+                                if (enabled) {
+                                    when {
+                                        // Permission bereits vorhanden → direkt aktivieren
+                                        hasNotificationPermission(context) -> {
+                                            notificationEnabled = true
+                                            if (!hasExactAlarmPermission(context)) {
+                                                showExactAlarmDialog(context)
+                                            }
+                                        }
+                                        // Android 13+ → System-Dialog anzeigen
+                                        Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> {
+                                            notifPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                        }
+                                        // Unter Android 13 → keine Permission nötig
+                                        else -> {
+                                            notificationEnabled = true
+                                        }
+                                    }
+                                } else {
+                                    notificationEnabled = false
+                                }
+                            }
+                        )
                     }
                     AnimatedVisibility(visible = notificationEnabled, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) {
                         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -625,7 +795,7 @@ fun AddEditScreen(
     }
 }
 
-// ─── Einheitenlabel ───────────────────────────────────────────────────────────
+// ─── Hilfsfunktionen ──────────────────────────────────────────────────────────
 
 @Composable
 private fun unitLabel(unit: DisplayUnit): String = when (unit) {
@@ -637,8 +807,6 @@ private fun unitLabel(unit: DisplayUnit): String = when (unit) {
     DisplayUnit.MINUTES -> stringResource(R.string.format_unit_minutes)
     DisplayUnit.SECONDS -> stringResource(R.string.format_unit_seconds)
 }
-
-// ─── Hilfsfunktionen ──────────────────────────────────────────────────────────
 
 @Composable
 private fun reminderLabel(option: ReminderOption): String = when (option) {

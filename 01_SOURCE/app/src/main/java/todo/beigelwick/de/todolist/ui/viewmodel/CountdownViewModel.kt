@@ -3,17 +3,25 @@ package todo.beigelwick.de.todolist.ui.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import todo.beigelwick.de.todolist.data.database.CountdownDatabase
 import todo.beigelwick.de.todolist.data.model.Countdown
 import todo.beigelwick.de.todolist.data.model.FilterMode
 import todo.beigelwick.de.todolist.data.repository.CountdownRepository
 import todo.beigelwick.de.todolist.notifications.NotificationScheduler
+import todo.beigelwick.de.todolist.ui.theme.dataStore
 import todo.beigelwick.de.todolist.widget.WidgetUpdateWorker
 
 // ─── Sortiermodi ──────────────────────────────────────────────────────────────
@@ -26,12 +34,20 @@ enum class SortMode {
     CREATED
 }
 
+// ─── Review-Schwellenwerte ────────────────────────────────────────────────────
+// Bei diesen Gesamtzahlen erstellter Countdowns wird der Review-Dialog angefragt.
+
+private val REVIEW_THRESHOLDS = setOf(3, 10)
+
 // ─── ViewModel ────────────────────────────────────────────────────────────────
 
 class CountdownViewModel(application: Application) : AndroidViewModel(application) {
 
     private val context    = application.applicationContext
     private val repository : CountdownRepository
+
+    // DataStore-Key für den Zähler gesamt erstellter Countdowns
+    private val COUNTDOWN_CREATE_COUNT = intPreferencesKey("countdown_create_count")
 
     private val _allCountdowns = MutableStateFlow<List<Countdown>>(emptyList())
 
@@ -55,6 +71,11 @@ class CountdownViewModel(application: Application) : AndroidViewModel(applicatio
 
     private val _tickMinutes = MutableStateFlow(0L)
     val tickMinutes: StateFlow<Long> = _tickMinutes.asStateFlow()
+
+    // ── Review-Event (SharedFlow, einmalig konsumiert) ────────────────────────
+    // Die UI lauscht darauf und startet bei Emission den ReviewFlow.
+    private val _triggerReview = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val triggerReview: SharedFlow<Unit> = _triggerReview.asSharedFlow()
 
     init {
         val database = CountdownDatabase.getDatabase(application)
@@ -106,18 +127,15 @@ class CountdownViewModel(application: Application) : AndroidViewModel(applicatio
         sort   : SortMode,
         query  : String
     ): List<Countdown> {
-        // 1. Suche
         val searched = if (query.isBlank()) list
         else list.filter { it.title.contains(query.trim(), ignoreCase = true) }
 
-        // 2. Filter
         val filtered = when (filter) {
             FilterMode.COUNTDOWN -> searched.filter { !it.isCountUp }
             FilterMode.COUNTUP   -> searched.filter {  it.isCountUp }
             FilterMode.ALL       -> searched
         }
 
-        // 3. Sortierung
         val sorted = when (sort) {
             SortMode.DATE_ASC   -> filtered.sortedBy          { it.effectiveTarget }
             SortMode.DATE_DESC  -> filtered.sortedByDescending { it.effectiveTarget }
@@ -126,11 +144,9 @@ class CountdownViewModel(application: Application) : AndroidViewModel(applicatio
             SortMode.CREATED    -> filtered.sortedByDescending { it.createdAt }
         }
 
-        // 4. Gepinnte immer ganz oben — innerhalb der Pinned-Gruppe gilt die gewählte Sortierung
         val pinned   = sorted.filter {  it.isPinned }
         val unpinned = sorted.filter { !it.isPinned }
 
-        // 5. Bei "Alle" ohne Suche: Countdowns vor Count-ups (jeweils Pinned zuerst)
         return if (filter == FilterMode.ALL && query.isBlank()) {
             val pinnedFuture   = pinned.filter   { !it.isCountUp }
             val pinnedPast     = pinned.filter   {  it.isCountUp }
@@ -150,6 +166,27 @@ class CountdownViewModel(application: Application) : AndroidViewModel(applicatio
             val saved = repository.getCountdownById(id)
             saved?.let { NotificationScheduler.scheduleNotifications(context, it) }
             WidgetUpdateWorker.updateNow(context)
+
+            // ── Review-Zähler erhöhen und ggf. Dialog anfragen ────────────────
+            checkAndTriggerReview()
+        }
+    }
+
+    /**
+     * Erhöht den Erstellungs-Zähler im DataStore.
+     * Bei Erreichen eines Schwellenwerts wird ein Review-Event gesendet.
+     */
+    private suspend fun checkAndTriggerReview() {
+        val currentCount = context.dataStore.data
+            .map { it[COUNTDOWN_CREATE_COUNT] ?: 0 }
+            .first()
+
+        val newCount = currentCount + 1
+
+        context.dataStore.edit { it[COUNTDOWN_CREATE_COUNT] = newCount }
+
+        if (newCount in REVIEW_THRESHOLDS) {
+            _triggerReview.emit(Unit)
         }
     }
 
@@ -170,7 +207,6 @@ class CountdownViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    /** Toggelt isPinned und speichert direkt */
     fun togglePin(countdown: Countdown) {
         viewModelScope.launch {
             repository.updateCountdown(countdown.copy(isPinned = !countdown.isPinned))

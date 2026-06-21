@@ -1,5 +1,6 @@
 package todo.beigelwick.de.todolist.ui.screens.main
 
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import androidx.compose.animation.AnimatedVisibility
@@ -40,6 +41,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.google.android.play.core.review.ReviewManagerFactory
 import todo.beigelwick.de.todolist.R
 import todo.beigelwick.de.todolist.data.model.Countdown
 import todo.beigelwick.de.todolist.data.model.FilterMode
@@ -73,6 +75,14 @@ fun MainScreen(
     var showSearch      by remember { mutableStateOf(false) }
     var showSortMenu    by remember { mutableStateOf(false) }
     var dialogCountdown by remember { mutableStateOf<Countdown?>(null) }
+
+    // ── In-App Review ─────────────────────────────────────────────────────────
+    // Lauscht auf das triggerReview-Event vom ViewModel und startet den Flow.
+    LaunchedEffect(Unit) {
+        viewModel.triggerReview.collect {
+            launchReviewFlow(context)
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -164,6 +174,23 @@ fun MainScreen(
             onDelete  = { c -> viewModel.deleteCountdown(c); dialogCountdown = null },
             onShare   = { c -> shareCountdown(context, c); dialogCountdown = null }
         )
+    }
+}
+
+// ─── In-App Review starten ────────────────────────────────────────────────────
+
+private fun launchReviewFlow(context: Context) {
+    val activity = context as? Activity ?: return
+    val manager  = ReviewManagerFactory.create(context)
+    val request  = manager.requestReviewFlow()
+    request.addOnCompleteListener { task ->
+        if (task.isSuccessful) {
+            val reviewInfo = task.result
+            manager.launchReviewFlow(activity, reviewInfo)
+            // Hinweis: Google entscheidet intern ob der Dialog wirklich erscheint.
+            // Kein Feedback möglich ob der Nutzer bewertet hat oder nicht.
+        }
+        // Bei Fehler: still ignorieren — Review ist optional
     }
 }
 

@@ -9,11 +9,10 @@ android {
     compileSdk  = 36
 
     defaultConfig {
-        applicationId   = "todo.beigelwick.de.todolist"
         minSdk          = 31
         targetSdk       = 36
-        versionCode     = 10
-        versionName     = "1.1.2"
+        versionCode     = 11
+        versionName     = "1.1.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -102,6 +101,9 @@ dependencies {
     // Glance (Widget)
     implementation(libs.androidx.glance.appwidget)
     implementation(libs.androidx.glance.material3)
+
+    implementation("com.google.android.play:review-ktx:2.0.1")
+
 
     // Testing
     testImplementation(libs.junit)

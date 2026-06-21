@@ -32,7 +32,7 @@ enum class TemplateCategory {
 val ALL_TEMPLATES: List<CountdownTemplate> = listOf(
 
     // ── Feiertage ─────────────────────────────────────────────────────────────
-    CountdownTemplate("Weihnachten", "Celebration", "#EF5350", setOf(DisplayUnit.DAYS), TemplateCategory.FEIERTAGE) {
+    CountdownTemplate("Weihnachten", "AcUnit", "#EF5350", setOf(DisplayUnit.DAYS), TemplateCategory.FEIERTAGE) {
         val now = LocalDate.now(); val t = LocalDate.of(now.year, Month.DECEMBER, 24)
         if (now > t) LocalDate.of(now.year + 1, Month.DECEMBER, 24) else t
     },
@@ -48,11 +48,11 @@ val ALL_TEMPLATES: List<CountdownTemplate> = listOf(
         val now = LocalDate.now(); val t = LocalDate.of(now.year, Month.FEBRUARY, 14)
         if (now > t) LocalDate.of(now.year + 1, Month.FEBRUARY, 14) else t
     },
-    CountdownTemplate("Halloween", "EmojiEvents", "#FF7043", setOf(DisplayUnit.DAYS), TemplateCategory.FEIERTAGE) {
+    CountdownTemplate("Halloween", "DarkMode", "#FF7043", setOf(DisplayUnit.DAYS), TemplateCategory.FEIERTAGE) {
         val now = LocalDate.now(); val t = LocalDate.of(now.year, Month.OCTOBER, 31)
         if (now > t) LocalDate.of(now.year + 1, Month.OCTOBER, 31) else t
     },
-    CountdownTemplate("Ostern", "LocalFlorist", "#66BB6A", setOf(DisplayUnit.DAYS), TemplateCategory.FEIERTAGE) {
+    CountdownTemplate("Ostern", "Spa", "#66BB6A", setOf(DisplayUnit.DAYS), TemplateCategory.FEIERTAGE) {
         nextEaster()
     },
 
