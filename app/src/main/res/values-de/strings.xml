@@ -1,0 +1,340 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- ── App ──────────────────────────────────────────────────────────────── -->
+    <string name="app_name">NexTime</string>
+
+    <!-- ── Allgemein ────────────────────────────────────────────────────────── -->
+    <string name="back">Zurück</string>
+    <string name="close">Schließen</string>
+    <string name="save">Speichern</string>
+    <string name="cancel">Abbrechen</string>
+    <string name="delete">Löschen</string>
+    <string name="edit">Bearbeiten</string>
+    <string name="share">Teilen</string>
+    <string name="ok">OK</string>
+    <string name="loading">Wird geladen…</string>
+    <string name="saving">Wird gespeichert…</string>
+    <string name="deleting">Wird gelöscht…</string>
+
+    <!-- ── TopAppBar ────────────────────────────────────────────────────────── -->
+    <string name="topbar_nextime">NexTime</string>
+    <string name="topbar_settings">Einstellungen</string>
+    <string name="topbar_info">Info &amp; Support</string>
+    <string name="topbar_create">Countdown erstellen</string>
+    <string name="topbar_edit">Countdown bearbeiten</string>
+
+    <!-- ── Navigation ───────────────────────────────────────────────────────── -->
+    <string name="nav_settings">Einstellungen</string>
+    <string name="nav_info">Info &amp; Support</string>
+
+    <!-- ── Hauptliste ───────────────────────────────────────────────────────── -->
+    <string name="search_placeholder">Countdown suchen…</string>
+    <string name="filter_all">Alle</string>
+    <string name="filter_countdown">Countdown</string>
+    <string name="filter_countup">Count-up</string>
+    <string name="sort_date_asc">Datum (nächster zuerst)</string>
+    <string name="sort_date_desc">Datum (spätester zuerst)</string>
+    <string name="sort_title_asc">Titel A → Z</string>
+    <string name="sort_title_desc">Titel Z → A</string>
+    <string name="sort_created">Zuletzt erstellt</string>
+    <string name="section_countdown">Countdown</string>
+    <string name="section_countup">Count-up</string>
+    <string name="empty_title">Noch keine Einträge</string>
+    <string name="empty_hint">Tippe unten rechts auf + um zu starten</string>
+
+    <!-- ── FAB ──────────────────────────────────────────────────────────────── -->
+    <string name="fab_add">Countdown hinzufügen</string>
+    <string name="fab_custom">Eigener Eintrag</string>
+    <string name="fab_template">Vorlage verwenden</string>
+
+    <!-- ── AddEdit Screen ───────────────────────────────────────────────────── -->
+    <string name="preview_label">Vorschau</string>
+    <string name="save_button">SPEICHERN</string>
+    <string name="section_title_label">Titel</string>
+    <string name="section_icon">Icon</string>
+    <string name="section_datetime">Datum &amp; Uhrzeit</string>
+    <string name="section_recurrence">Wiederholung</string>
+    <string name="section_format">Anzeigeformat</string>
+    <string name="section_color">Farbe</string>
+    <string name="section_notifications">Benachrichtigungen</string>
+    <string name="title_hint">z.B. Urlaub, Geburtstag…</string>
+    <string name="icon_placeholder">Emoji eingeben</string>
+    <string name="icon_quick_label">Schnellauswahl</string>
+    <string name="today_button">Heute</string>
+    <string name="time_toggle">Uhrzeit einbeziehen</string>
+    <string name="timepicker_title">Uhrzeit wählen</string>
+    <string name="custom_color_label">Eigene Farbe</string>
+    <string name="recurrence_hint">Countdown automatisch wiederholen</string>
+    <string name="recurrence_info">Das Zieldatum wird automatisch auf das nächste Vorkommen gesetzt.</string>
+    <string name="notification_enable">Aktivieren</string>
+    <string name="reminder_group_attime">Zum Zeitpunkt</string>
+    <string name="reminder_group_hours">Stunden vorher</string>
+    <string name="reminder_group_days">Tage / Wochen vorher</string>
+
+    <!-- ── Anzeigeformate ───────────────────────────────────────────────────── -->
+    <string name="format_days_only">Nur Tage</string>
+    <string name="format_days_only_example">42 Tage</string>
+    <string name="format_weeks_days">Wochen + Tage</string>
+    <string name="format_weeks_days_example">6 Wochen, 0 Tage</string>
+    <string name="format_months_days">Monate + Tage</string>
+    <string name="format_months_days_example">1 Monat, 12 Tage</string>
+    <string name="format_years_months_days">Jahre + Monate + Tage</string>
+    <string name="format_years_months_days_example">2 Jahre, 1 Monat, 3 Tage</string>
+
+    <!-- ── Erinnerungsoptionen ───────────────────────────────────────────────── -->
+    <string name="reminder_none">Keine</string>
+    <string name="reminder_at_time">Zum Zeitpunkt</string>
+    <string name="reminder_30_minutes">30 Minuten vorher</string>
+    <string name="reminder_1_hour">1 Stunde vorher</string>
+    <string name="reminder_3_hours">3 Stunden vorher</string>
+    <string name="reminder_6_hours">6 Stunden vorher</string>
+    <string name="reminder_12_hours">12 Stunden vorher</string>
+    <string name="reminder_1_day">1 Tag vorher</string>
+    <string name="reminder_2_days">2 Tage vorher</string>
+    <string name="reminder_3_days">3 Tage vorher</string>
+    <string name="reminder_1_week">1 Woche vorher</string>
+    <string name="reminder_2_weeks">2 Wochen vorher</string>
+    <string name="reminder_1_month">1 Monat vorher</string>
+
+    <!-- ── Wiederholungstypen ────────────────────────────────────────────────── -->
+    <string name="recurrence_none">Keine Wiederholung</string>
+    <string name="recurrence_daily">Täglich</string>
+    <string name="recurrence_weekly">Wöchentlich</string>
+    <string name="recurrence_monthly">Monatlich</string>
+    <string name="recurrence_yearly">Jährlich</string>
+
+    <!-- ── Countdown Card ───────────────────────────────────────────────────── -->
+    <string name="card_today_message">Heute ist es so weit!</string>
+    <string name="card_next_occurrence">Nächste: %s</string>
+    <string name="card_already_past">bereits vergangen</string>
+    <string name="badge_today">HEUTE</string>
+    <string name="badge_daily">tägl.</string>
+    <string name="badge_weekly">wöch.</string>
+    <string name="badge_monthly">monatl.</string>
+    <string name="badge_yearly">jährl.</string>
+
+    <!-- ── Zeiteinheiten ────────────────────────────────────────────────────── -->
+    <string name="day">Tag</string>
+    <string name="days">Tage</string>
+    <string name="week">Woche</string>
+    <string name="weeks">Wochen</string>
+    <string name="month">Monat</string>
+    <string name="months">Monate</string>
+    <string name="year">Jahr</string>
+    <string name="years">Jahre</string>
+    <string name="hour">Stunde</string>
+    <string name="hours">Stunden</string>
+    <string name="minute">Minute</string>
+    <string name="minutes">Minuten</string>
+    <string name="second">Sekunde</string>
+    <string name="seconds">Sekunden</string>
+    <string name="night">Nacht</string>
+    <string name="nights">Nächte</string>
+    <string name="today">Heute</string>
+    <string name="ago">vor</string>
+
+    <!-- ── Countdown Dialog ─────────────────────────────────────────────────── -->
+    <string name="dialog_expired_banner">Dieser Countdown ist abgelaufen!</string>
+    <string name="action_share">Teilen</string>
+    <string name="action_edit">Bearbeiten</string>
+    <string name="action_delete">Löschen</string>
+    <string name="confirm_delete_title">Countdown löschen?</string>
+    <string name="confirm_delete_msg">Möchtest du \"%s\" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.</string>
+
+    <!-- ── Template Picker ──────────────────────────────────────────────────── -->
+    <string name="template_picker_title">Vorlage wählen</string>
+    <string name="template_days_label">Tage</string>
+    <string name="template_past_label">vergangen</string>
+    <string name="template_cat_all">Alle</string>
+    <string name="template_cat_holidays">Feiertage</string>
+    <string name="template_cat_seasons">Jahreszeiten</string>
+    <string name="template_cat_sports">Sport &amp; Events</string>
+    <string name="template_cat_personal">Persönlich</string>
+    <string name="template_cat_school">Schule &amp; Arbeit</string>
+
+    <!-- ── Einstellungen ────────────────────────────────────────────────────── -->
+    <string name="settings_color_scheme">Farbschema</string>
+    <string name="settings_color_hint">Tippe auf ein Theme, um es sofort zu übernehmen.</string>
+    <string name="settings_light_dark">Helles / Dunkles Design</string>
+    <string name="settings_language">Sprache</string>
+    <string name="settings_defaults">Standard für neue Einträge</string>
+    <string name="settings_defaults_hint">Diese Werte werden beim Erstellen neuer Einträge vorausgefüllt.</string>
+    <string name="settings_format_label">Anzeigeformat</string>
+    <string name="settings_format_days">Nur Tage</string>
+    <string name="settings_format_weeks">Wochen + Tage</string>
+    <string name="settings_format_months">Monate + Tage</string>
+    <string name="settings_format_years">Jahre + Monate + Tage</string>
+    <string name="settings_color_label">Farbe</string>
+    <string name="settings_time_label">Uhrzeit (wenn aktiv)</string>
+    <string name="design_system">Systemeinstellung</string>
+    <string name="design_light">Hell</string>
+    <string name="design_dark">Dunkel</string>
+    <string name="dialog_default_format">Standard-Anzeigeformat</string>
+    <string name="dialog_default_color">Standard-Farbe</string>
+    <string name="dialog_default_time">Standard-Uhrzeit</string>
+    <string name="theme_changed">Theme geändert zu %s</string>
+
+    <!-- ── Sprache ───────────────────────────────────────────────────────────── -->
+    <string name="language_system">Systemsprache</string>
+    <string name="language_de">Deutsch</string>
+    <string name="language_en">English</string>
+    <string name="language_fr">Français</string>
+    <string name="language_es">Español</string>
+    <string name="language_it">Italiano</string>
+
+    <!-- ── Theme-Namen ───────────────────────────────────────────────────────── -->
+    <string name="theme_planit_name">PlanIt</string>
+    <string name="theme_planit_desc">Klassisches Teal</string>
+    <string name="theme_nextime_name">NexTime</string>
+    <string name="theme_nextime_desc">Warmes Orange</string>
+    <string name="theme_leetspeak_name">Leetspeak</string>
+    <string name="theme_leetspeak_desc">Elegantes Violett</string>
+    <string name="theme_dailylist_name">DailyList</string>
+    <string name="theme_dailylist_desc">Frisches Grün</string>
+    <string name="theme_unknown_name">Unknown</string>
+    <string name="theme_unknown_desc">Kräftiges Rot</string>
+
+    <!-- ── Info / About ──────────────────────────────────────────────────────── -->
+    <string name="about_tagline">Behalte wichtige Momente im Blick —\nCountdowns &amp; Count-ups für alles was zählt.</string>
+    <string name="about_solo_dev">Solo-Entwickler • Mit ❤️ und ☕ gebaut</string>
+    <string name="about_free">NexTime ist und bleibt für immer kostenlos</string>
+    <string name="about_support_title">Support</string>
+    <string name="about_footer">Entwickelt mit ❤️ von Beigel</string>
+    <string name="about_rate_subtitle">Deine Bewertung hilft anderen Nutzern die App zu finden</string>
+    <string name="about_coffee_subtitle">Als Solo-Entwickler freue ich mich über jede Unterstützung ☕</string>
+    <string name="about_bug_subtitle">Etwas stimmt nicht? Schreib mir direkt — ich kümmere mich darum</string>
+    <string name="about_feature_subtitle">Du hast eine Idee für ein neues Feature? Ich freue mich über jede Nachricht!</string>
+    <string name="support_rate">App bewerten</string>
+    <string name="support_coffee">Buy me a Coffee</string>
+    <string name="support_bug">Fehler melden</string>
+    <string name="support_feature">Feature vorschlagen</string>
+    <string name="no_email_app">Keine E-Mail App gefunden</string>
+
+    <!-- ── Widget ────────────────────────────────────────────────────────────── -->
+    <string name="widget_dynamic_label">NexTime Countdown</string>
+    <string name="widget_dynamic_description">Zeigt deinen Countdown an — passt sich automatisch der Größe an</string>
+    <string name="widget_config_title">Widget einrichten</string>
+    <string name="widget_select_hint">Wähle einen Countdown für das Widget:</string>
+    <string name="widget_no_countdowns">Noch keine Countdowns</string>
+    <string name="widget_no_countdowns_hint">Erstelle zuerst einen Countdown in der App</string>
+
+    <!-- ── Berechtigungen ────────────────────────────────────────────────────── -->
+    <string name="perm_notif_ok">✅ Benachrichtigungen aktiviert</string>
+    <string name="perm_notif_denied">⚠️ Benachrichtigungen deaktiviert</string>
+    <string name="alarm_dialog_title">⏰ Exakte Alarme</string>
+    <string name="alarm_dialog_msg">NexTime benötigt die Berechtigung für exakte Alarme, um dich pünktlich zu erinnern.\n\nBitte erlaube \"Alarme und Erinnerungen\" in den Einstellungen.</string>
+    <string name="alarm_to_settings">Zu Einstellungen</string>
+    <string name="alarm_later">Später</string>
+    <string name="alarm_fallback">Bitte erlaube Alarme in den App-Einstellungen</string>
+    <string name="notif_dialog_title">📬 Benachrichtigungen</string>
+    <string name="notif_dialog_msg">NexTime möchte dir Erinnerungen für deine Countdowns senden.\n\nDu wirst rechtzeitig an wichtige Termine erinnert!</string>
+    <string name="notif_allow">Erlauben</string>
+
+    <!-- ── Teilen ────────────────────────────────────────────────────────────── -->
+    <string name="share_days_remaining">Noch %s Tage</string>
+    <string name="share_days_ago">Vor %s Tagen</string>
+    <string name="share_created_with">Erstellt mit NexTime</string>
+
+    <!-- ── Fehler / Erfolg ───────────────────────────────────────────────────── -->
+    <string name="error_invalid_title">Bitte gib einen gültigen Titel ein</string>
+    <string name="success_created">Countdown erstellt ✅</string>
+    <string name="success_updated">Countdown aktualisiert ✅</string>
+    <string name="success_deleted">Countdown gelöscht ✅</string>
+
+    <string name="theme_burgundy_name">Deep Burgundy</string>
+    <string name="theme_burgundy_desc">Weinrot &amp; Gold</string>
+    <string name="theme_sage_name">Soft Sage</string>
+    <string name="theme_sage_desc">Salbei &amp; Dunkeloliv</string>
+    <string name="theme_pumpkin_name">Pumpkin</string>
+    <string name="theme_pumpkin_desc">Orange &amp; Dunkelgrau</string>
+    <string name="theme_ocean_name">Ocean Blue</string>
+    <string name="theme_ocean_desc">Himmelblau &amp; Ozean</string>
+    <string name="theme_violet_name">Ultra Violet</string>
+    <string name="theme_violet_desc">Zitrone &amp; Violett</string>
+    <string name="theme_peach_name">Peach Ice</string>
+    <string name="theme_peach_desc">Pfirsich &amp; Aqua</string>
+    <string name="label_total">gesamt</string>
+    <string name="format_unit_years">Jahre</string>
+    <string name="format_unit_months">Monate</string>
+    <string name="format_unit_weeks">Wochen</string>
+    <string name="format_unit_days">Tage</string>
+    <string name="format_unit_hours">Stunden</string>
+    <string name="format_unit_minutes">Minuten</string>
+    <string name="format_unit_seconds">Sekunden</string>
+    <string name="format_checkbox_hint">Wähle die Einheiten zur Anzeige (mind. eine)</string>
+    <string name="format_time_required">Aktiviere zuerst „Uhrzeit einbeziehen"</string>
+    <string name="format_active_label">Aktiv — ziehen zum Umsortieren</string>
+    <string name="format_inactive_label">Einheit hinzufügen</string>
+
+    <string name="recurrence_countup_hint">Wiederholung ist nur bei zukünftigen Ereignissen verfügbar.</string>
+    <string name="settings_display_style">Darstellung</string>
+    <string name="settings_display_style_hint">Wähle wie Countdowns angezeigt werden.</string>
+    <string name="display_style_compact">Kompakt</string>
+    <string name="display_style_normal">Normal</string>
+    <string name="display_style_generous">Großzügig</string>
+    <string name="preview_placeholder">Vorschau</string>
+    <string name="action_pin">Anheften</string>
+    <string name="action_unpin">Lösen</string>
+
+    <!-- ── ERGÄNZT: fehlten bisher (fielen auf EN zurück) ────────────────────── -->
+    <string name="theme_hourglass_name">Hourglass</string>
+    <string name="theme_hourglass_desc">Orange · Salbei · Violett</string>
+    <string name="settings_accent_hint">Wähle deine Akzentfarbe. Der neutrale Hintergrund bleibt in Hell und Dunkel gleich.</string>
+    <string name="accent_orange">Orange</string>
+    <string name="accent_sage">Salbei</string>
+    <string name="accent_violet">Violett</string>
+    <string name="accent_crimson">Karmesin</string>
+    <string name="accent_teal">Petrol</string>
+    <string name="accent_gold">Gold</string>
+    <string name="accent_slate">Schiefer</string>
+
+    <string name="icon_cat_time">Zeit</string>
+    <string name="icon_cat_travel">Reisen</string>
+    <string name="icon_cat_celebrate">Feiern</string>
+    <string name="icon_cat_work">Arbeit</string>
+    <string name="icon_cat_sport">Sport</string>
+    <string name="icon_cat_nature">Natur</string>
+    <string name="icon_cat_home">Zuhause</string>
+    <string name="icon_cat_other">Sonstiges</string>
+
+    <string name="format_custom_toggle">Eigenes Anzeigeformat verwenden</string>
+    <string name="format_uses_global">Globale Einstellung wird verwendet</string>
+    <string name="format_overrides_global">Überschreibt globale Einstellung</string>
+
+    <!-- ── NEU: lokalisierte, vorher hartcodierte Texte ──────────────────────── -->
+    <string name="time_oclock">%1$s Uhr</string>
+    <string name="settings_time_display_label">Uhrzeit (HH:mm:ss)</string>
+    <string name="settings_time_display_hint">Wird unter den Datumseinheiten angezeigt</string>
+    <string name="welcome_title">Willkommen bei NexTime</string>
+    <string name="welcome_cta">Los geht\'s</string>
+    <string name="welcome_footer">v%1$s  •  Entwickelt von Beigel</string>
+    <string name="welcome_feat_countdown_title">Countdown &amp; Count-up</string>
+    <string name="welcome_feat_countdown_sub">Zukünftige und vergangene Ereignisse im Blick behalten</string>
+    <string name="welcome_feat_themes_title">Themes &amp; Farben</string>
+    <string name="welcome_feat_themes_sub">Verschiedene Farbschemata, helles und dunkles Design</string>
+    <string name="welcome_feat_reminders_title">Erinnerungen</string>
+    <string name="welcome_feat_reminders_sub">Pünktliche Benachrichtigungen für deine Ereignisse</string>
+    <string name="welcome_feat_widget_title">Homescreen-Widget</string>
+    <string name="welcome_feat_widget_sub">Dein Countdown direkt auf dem Homescreen</string>
+    <string name="welcome_feat_format_title">Flexibles Format</string>
+    <string name="welcome_feat_format_sub">Wähle selbst ob Tage, Wochen, Monate oder Jahre angezeigt werden</string>
+    <string name="welcome_feat_pin_title">Anheften &amp; Sortieren</string>
+    <string name="welcome_feat_pin_sub">Wichtige Countdowns immer ganz oben</string>
+
+    <plurals name="widget_days_remaining">
+        <item quantity="one">Noch %d Tag</item>
+        <item quantity="other">Noch %d Tage</item>
+    </plurals>
+    <plurals name="widget_days_passed">
+        <item quantity="one">%d Tag vergangen</item>
+        <item quantity="other">%d Tage vergangen</item>
+    </plurals>
+
+    <string name="card_style_standard">Standard</string>
+    <string name="card_style_kompakt">Kompakt</string>
+    <string name="card_style_banner">Banner</string>
+    <string name="card_style_invertiert">Invertiert</string>
+    <string name="preview_countdown_title">Sommerurlaub</string>
+
+</resources>
