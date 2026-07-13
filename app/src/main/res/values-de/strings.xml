@@ -337,4 +337,12 @@
     <string name="card_style_invertiert">Invertiert</string>
     <string name="preview_countdown_title">Sommerurlaub</string>
 
+    <string name="support_discord">Discord beitreten</string>
+    <string name="about_discord_subtitle">Tausch dich mit anderen Nutzern aus und hol dir Hilfe</string>
+
+    <string name="community_title">Tritt der Community bei</string>
+    <string name="community_subtitle">Tausch dich mit anderen Nutzer:innen aus, teile Ideen und hol dir Hilfe auf unserem Discord-Server.</string>
+    <string name="community_cta">Discord beitreten</string>
+    <string name="community_skip">Vielleicht später</string>
+
 </resources>

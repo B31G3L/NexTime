@@ -77,7 +77,6 @@ class CountdownWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val glanceManager    = GlanceAppWidgetManager(context)
-        val appWidgetManager = AppWidgetManager.getInstance(context)
 
         val appWidgetId = try {
             glanceManager.getAppWidgetId(id)
@@ -149,7 +148,7 @@ class CountdownWidget : GlanceAppWidget() {
     // ─── 1×1 — nur Zahl + Einheit ──────────────────────────────────────────────
 
     @Composable
-    private fun SmallLayout(context: Context, countdown: Countdown, timeInfo: CountdownInfo, accentColor: Color, colors: WidgetColors, clickAction: Action, displayFormat: String) {
+    private fun SmallLayout(context: Context, @Suppress("UNUSED_PARAMETER") countdown: Countdown, timeInfo: CountdownInfo, accentColor: Color, colors: WidgetColors, clickAction: Action, displayFormat: String) {
         val mainVal  = formatMainValue(timeInfo, displayFormat)
         val mainUnit = formatMainUnitShort(context, timeInfo, displayFormat)
 

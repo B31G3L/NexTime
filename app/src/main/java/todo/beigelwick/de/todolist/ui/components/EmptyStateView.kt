@@ -45,6 +45,11 @@ fun EmptyStateView(
                     fontWeight = FontWeight.Medium
                 )
             }
+            if (onAddCountdown != null) {
+                Button(onClick = onAddCountdown) {
+                    Text(stringResource(R.string.fab_add))
+                }
+            }
         }
     }
 }

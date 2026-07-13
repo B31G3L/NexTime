@@ -1,6 +1,9 @@
 package todo.beigelwick.de.todolist.ui.components
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.MenuBook
+import androidx.compose.material.icons.automirrored.outlined.Assignment
+import androidx.compose.material.icons.automirrored.outlined.DirectionsRun
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.ui.graphics.vector.ImageVector
 
@@ -69,8 +72,8 @@ val ALL_NEXTIME_ICONS: List<NexTimeIcon> = listOf(
     // ── Arbeit & Schule ───────────────────────────────────────────────────────
     NexTimeIcon("Work",          Icons.Outlined.Work,          IconCategory.WORK),
     NexTimeIcon("School",        Icons.Outlined.School,        IconCategory.WORK),
-    NexTimeIcon("MenuBook",      Icons.Outlined.MenuBook,      IconCategory.WORK),
-    NexTimeIcon("Assignment",    Icons.Outlined.Assignment,    IconCategory.WORK),
+    NexTimeIcon("MenuBook",      Icons.AutoMirrored.Outlined.MenuBook,      IconCategory.WORK),
+    NexTimeIcon("Assignment",    Icons.AutoMirrored.Outlined.Assignment,    IconCategory.WORK),
     NexTimeIcon("Task",          Icons.Outlined.Task,          IconCategory.WORK),
     NexTimeIcon("Checklist",     Icons.Outlined.Checklist,     IconCategory.WORK),
     NexTimeIcon("Laptop",        Icons.Outlined.Laptop,        IconCategory.WORK),
@@ -81,7 +84,7 @@ val ALL_NEXTIME_ICONS: List<NexTimeIcon> = listOf(
     // ── Sport & Fitness ───────────────────────────────────────────────────────
     NexTimeIcon("FitnessCenter", Icons.Outlined.FitnessCenter, IconCategory.SPORT),
     NexTimeIcon("SportsScore",   Icons.Outlined.SportsScore,   IconCategory.SPORT),
-    NexTimeIcon("DirectionsRun", Icons.Outlined.DirectionsRun, IconCategory.SPORT),
+    NexTimeIcon("DirectionsRun", Icons.AutoMirrored.Outlined.DirectionsRun, IconCategory.SPORT),
     NexTimeIcon("Pool",          Icons.Outlined.Pool,          IconCategory.SPORT),
     NexTimeIcon("SelfImprovement",Icons.Outlined.SelfImprovement,IconCategory.SPORT),
     NexTimeIcon("Hiking",        Icons.Outlined.Hiking,        IconCategory.SPORT),

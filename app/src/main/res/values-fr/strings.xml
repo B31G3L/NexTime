@@ -295,4 +295,11 @@
     <string name="card_style_invertiert">Inversé</string>
     <string name="preview_countdown_title">Vacances d\'été</string>
 
+    <string name="support_discord">Rejoindre Discord</string>
+    <string name="about_discord_subtitle">Échangez avec d\'autres utilisateurs et obtenez de l\'aide</string>
+    <string name="community_title">Rejoignez la communauté</string>
+    <string name="community_subtitle">Échangez avec d\'autres utilisateurs, partagez des idées et obtenez de l\'aide sur notre serveur Discord.</string>
+    <string name="community_cta">Rejoindre Discord</string>
+    <string name="community_skip">Plus tard</string>
+
 </resources>

@@ -33,6 +33,8 @@ import kotlinx.coroutines.launch
 import todo.beigelwick.de.todolist.BuildConfig
 import todo.beigelwick.de.todolist.R
 import todo.beigelwick.de.todolist.ui.theme.dataStore
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 
 // ─── Preference Key ───────────────────────────────────────────────────────────
 
@@ -181,7 +183,7 @@ fun WelcomeScreen(onDone: () -> Unit) {
                     fontWeight = FontWeight.Bold
                 )
                 Icon(
-                    imageVector        = Icons.Outlined.ArrowForward,
+                    imageVector        = Icons.AutoMirrored.Outlined.ArrowForward,
                     contentDescription = null,
                     modifier           = Modifier.size(20.dp)
                 )

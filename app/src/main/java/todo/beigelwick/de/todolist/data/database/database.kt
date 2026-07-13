@@ -42,30 +42,30 @@ interface CountdownDao {
 
 /** v1 → v2 */
 val MIGRATION_1_2 = object : Migration(1, 2) {
-    override fun migrate(database: SupportSQLiteDatabase) = rebuildCountdownsTable(database)
+    override fun migrate(db: SupportSQLiteDatabase) = rebuildCountdownsTable(db)
 }
 
 /** v2 → v3 */
 val MIGRATION_2_3 = object : Migration(2, 3) {
-    override fun migrate(database: SupportSQLiteDatabase) = rebuildCountdownsTable(database)
+    override fun migrate(db: SupportSQLiteDatabase) = rebuildCountdownsTable(db)
 }
 
 /** v3 → v5 */
 val MIGRATION_3_5 = object : Migration(3, 5) {
-    override fun migrate(database: SupportSQLiteDatabase) = rebuildCountdownsTable(database)
+    override fun migrate(db: SupportSQLiteDatabase) = rebuildCountdownsTable(db)
 }
 
 /** v4 → v5 */
 val MIGRATION_4_5 = object : Migration(4, 5) {
-    override fun migrate(database: SupportSQLiteDatabase) = rebuildCountdownsTable(database)
+    override fun migrate(db: SupportSQLiteDatabase) = rebuildCountdownsTable(db)
 }
 
 /** Zusätzliche Pfade, damit jede Ausgangsversion das v5-Schema erreicht */
 val MIGRATION_1_5 = object : Migration(1, 5) {
-    override fun migrate(database: SupportSQLiteDatabase) = rebuildCountdownsTable(database)
+    override fun migrate(db: SupportSQLiteDatabase) = rebuildCountdownsTable(db)
 }
 val MIGRATION_2_5 = object : Migration(2, 5) {
-    override fun migrate(database: SupportSQLiteDatabase) = rebuildCountdownsTable(database)
+    override fun migrate(db: SupportSQLiteDatabase) = rebuildCountdownsTable(db)
 }
 
 /**

@@ -41,6 +41,8 @@ junit                   = "4.13.2"
 junitExt                = "1.1.5"
 espresso                = "3.5.1"
 
+playReview = "2.0.2"
+
 
 [libraries]
 # Core
@@ -93,6 +95,7 @@ androidx-compose-ui-test        = { group = "androidx.compose.ui",  name = "ui-t
 # Debug
 androidx-compose-ui-tooling     = { group = "androidx.compose.ui",  name = "ui-tooling" }
 androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
+play-review-ktx = { group = "com.google.android.play", name = "review-ktx", version.ref = "playReview" }
 
 
 [plugins]

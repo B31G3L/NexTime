@@ -23,10 +23,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import todo.beigelwick.de.todolist.R
 import todo.beigelwick.de.todolist.data.model.Countdown
 import todo.beigelwick.de.todolist.data.model.calculateTimeRemaining
-import todo.beigelwick.de.todolist.ui.theme.AppPreferences
 import todo.beigelwick.de.todolist.ui.viewmodel.CountdownViewModel
 import todo.beigelwick.de.todolist.utils.HapticFeedback
-import todo.beigelwick.de.todolist.data.model.TIME_UNITS
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -44,24 +42,6 @@ fun CountdownCardDialog(
     val sheetState = rememberModalBottomSheetState()
 
     var showDeleteConfirm by remember { mutableStateOf(false) }
-
-    val showTimeOnCard by AppPreferences.getShowTimeOnCard(context)
-        .collectAsState(initial = false)
-    val hasCustomTime = remember(countdown.displayFormat) {
-        countdown.displayFormat.isNotBlank() &&
-                countdown.activeDisplayUnits.any { it in TIME_UNITS }
-    }
-    val needsSecondTick = showTimeOnCard || hasCustomTime
-
-    // BUG FIX: tick als Key damit timeInfo live aktualisiert
-    val tick by if (needsSecondTick)
-        viewModel.tickSeconds.collectAsState()
-    else
-        viewModel.tickMinutes.collectAsState()
-
-    val timeInfo = remember(countdown.id, tick) {
-        countdown.calculateTimeRemaining()
-    }
 
     val showConfetti = remember(countdown.id) {
         countdown.calculateTimeRemaining().let { info ->

@@ -104,6 +104,8 @@ dependencies {
 
     implementation("com.google.android.play:review-ktx:2.0.1")
 
+    // In-App Review
+    implementation(libs.play.review.ktx)
 
     // Testing
     testImplementation(libs.junit)

@@ -294,5 +294,11 @@
     <string name="card_style_banner">Banner</string>
     <string name="card_style_invertiert">Invertito</string>
     <string name="preview_countdown_title">Vacanza estiva</string>
+    <string name="support_discord">Unisciti a Discord</string>
+    <string name="about_discord_subtitle">Chatta con altri utenti e ottieni assistenza</string>
 
+    <string name="community_title">Unisciti alla community</string>
+    <string name="community_subtitle">Chatta con altri utenti, condividi idee e ottieni assistenza sul nostro server Discord.</string>
+    <string name="community_cta">Unisciti a Discord</string>
+    <string name="community_skip">Più tardi</string>
 </resources>

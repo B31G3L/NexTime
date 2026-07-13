@@ -13,6 +13,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.BugReport
 import androidx.compose.material.icons.outlined.Coffee
+import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.Lightbulb
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.*
@@ -142,6 +143,13 @@ fun InfoScreen(onBack: () -> Unit) {
 
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 SupportButton(
+                    icon     = Icons.Outlined.Groups,
+                    iconColor = Color(0xFF5865F2),
+                    title    = stringResource(R.string.support_discord),
+                    subtitle = stringResource(R.string.about_discord_subtitle),
+                    onClick  = { openDiscord(context) }
+                )
+                SupportButton(
                     icon     = Icons.Outlined.Star,
                     iconColor = Color(0xFFFFC107),
                     title    = stringResource(R.string.support_rate),
@@ -233,7 +241,11 @@ private fun openPlayStore(context: Context) {
 }
 
 private fun openKofi(context: Context) {
-    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://ko-fi.com/beigel")))
+    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("ko-fi.com/beigelapps")))
+}
+
+private fun openDiscord(context: Context) {
+    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://discord.gg/ww9DEnFUJp")))
 }
 
 private fun reportBug(context: Context) {

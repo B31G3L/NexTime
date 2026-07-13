@@ -21,7 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Sort
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.outlined.AccessTime
 import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material.icons.outlined.Info
@@ -106,7 +106,7 @@ fun MainScreen(
                             }
                             Box {
                                 IconButton(onClick = { haptic.tick(); showSortMenu = true }) {
-                                    Icon(Icons.Default.Sort, contentDescription = stringResource(R.string.sort_date_asc))
+                                    Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = stringResource(R.string.sort_date_asc))
                                 }
                                 SortDropdownMenu(
                                     expanded       = showSortMenu,

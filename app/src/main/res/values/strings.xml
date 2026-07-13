@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
+    <string name="discord_invite_url" translatable="false">https://discord.gg/ww9DEnFUJp</string>
     <!-- ── App ──────────────────────────────────────────────────────────────── -->
     <string name="app_name">NexTime</string>
 
@@ -334,5 +334,10 @@
     <string name="card_style_banner">Banner</string>
     <string name="card_style_invertiert">Inverted</string>
     <string name="preview_countdown_title">Summer vacation</string>
-
+    <string name="support_discord">Join Discord</string>
+    <string name="about_discord_subtitle">Chat with other users and get help</string>
+    <string name="community_title">Join the community</string>
+    <string name="community_subtitle">Chat with other users, share ideas, and get help on our Discord server.</string>
+    <string name="community_cta">Join Discord</string>
+    <string name="community_skip">Maybe later</string>
 </resources>
