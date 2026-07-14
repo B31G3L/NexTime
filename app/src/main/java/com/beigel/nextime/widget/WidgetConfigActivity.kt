@@ -1,0 +1,304 @@
+package com.beigel.nextime.widget
+
+import android.appwidget.AppWidgetManager
+import android.content.Context
+import android.content.Intent
+import android.os.Bundle
+import androidx.activity.compose.setContent
+import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.flow.first
+import todo.beigelwick.de.todolist.R
+import todo.beigelwick.de.todolist.data.database.CountdownDatabase
+import todo.beigelwick.de.todolist.data.model.Countdown
+import todo.beigelwick.de.todolist.data.model.calculateTimeRemaining
+import todo.beigelwick.de.todolist.ui.components.iconByName
+import todo.beigelwick.de.todolist.ui.theme.AccentColor
+import todo.beigelwick.de.todolist.ui.theme.AccentColorPreferences
+import todo.beigelwick.de.todolist.ui.theme.NexTimeTheme
+import todo.beigelwick.de.todolist.ui.theme.ThemeMode
+import todo.beigelwick.de.todolist.ui.theme.ThemePreferences
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
+import java.util.Locale
+import androidx.compose.ui.res.pluralStringResource
+import com.beigel.nextime.data.model.calculateTimeRemaining
+
+
+class WidgetConfigActivity : androidx.appcompat.app.AppCompatActivity() {
+
+    private var appWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setResult(RESULT_CANCELED)
+
+        appWidgetId = intent?.extras?.getInt(
+            AppWidgetManager.EXTRA_APPWIDGET_ID,
+            AppWidgetManager.INVALID_APPWIDGET_ID
+        ) ?: AppWidgetManager.INVALID_APPWIDGET_ID
+
+        if (appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID) { finish(); return }
+
+        setContent {
+            val themeMode   by _root_ide_package_.com.beigel.nextime.ui.theme.ThemePreferences.getThemeMode(this).collectAsState(initial = _root_ide_package_.com.beigel.nextime.ui.theme.ThemeMode.SYSTEM)
+            val accentColor by _root_ide_package_.com.beigel.nextime.ui.theme.AccentColorPreferences.getAccentColor(this).collectAsState(initial = _root_ide_package_.com.beigel.nextime.ui.theme.AccentColor.ORANGE)
+
+            val isDark = when (themeMode) {
+                _root_ide_package_.com.beigel.nextime.ui.theme.ThemeMode.DARK   -> true
+                _root_ide_package_.com.beigel.nextime.ui.theme.ThemeMode.LIGHT  -> false
+                _root_ide_package_.com.beigel.nextime.ui.theme.ThemeMode.SYSTEM -> isNightModeActive()
+            }
+
+            _root_ide_package_.com.beigel.nextime.ui.theme.NexTimeTheme(
+                darkTheme = isDark,
+                accentColor = accentColor
+            ) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    WidgetConfigScreen(
+                        onCountdownSelected = { countdown ->
+                            saveSelectedCountdown(countdown)
+                            updateWidgetAndFinish()
+                        },
+                        onCancel = { finish() }
+                    )
+                }
+            }
+        }
+    }
+
+    private fun isNightModeActive(): Boolean {
+        val uiMode = resources.configuration.uiMode and
+                android.content.res.Configuration.UI_MODE_NIGHT_MASK
+        return uiMode == android.content.res.Configuration.UI_MODE_NIGHT_YES
+    }
+
+    private fun saveSelectedCountdown(countdown: com.beigel.nextime.data.model.Countdown) {
+        getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+            .edit()
+            .putLong(PREF_PREFIX_KEY + appWidgetId, countdown.id)
+            .apply()
+    }
+
+    private fun updateWidgetAndFinish() {
+        WidgetUpdateWorker.updateNow(this)
+        val resultValue = Intent().apply {
+            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+        }
+        setResult(RESULT_OK, resultValue)
+        finish()
+    }
+
+    companion object {
+        private const val PREFS_NAME      = "com.beigel.nextime.widget.WidgetConfig"
+        private const val PREF_PREFIX_KEY = "countdown_id_"
+
+        fun loadCountdownId(context: Context, appWidgetId: Int): Long? {
+            val id = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                .getLong(PREF_PREFIX_KEY + appWidgetId, -1L)
+            return if (id != -1L) id else null
+        }
+
+        fun deleteCountdownId(context: Context, appWidgetId: Int) {
+            context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                .edit()
+                .remove(PREF_PREFIX_KEY + appWidgetId)
+                .apply()
+        }
+    }
+}
+
+// ─── Widget Config Screen ─────────────────────────────────────────────────────
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun WidgetConfigScreen(
+    onCountdownSelected : (com.beigel.nextime.data.model.Countdown) -> Unit,
+    onCancel            : () -> Unit
+) {
+    val context    = LocalContext.current
+    var countdowns by remember { mutableStateOf<List<com.beigel.nextime.data.model.Countdown>>(emptyList()) }
+    var isLoading  by remember { mutableStateOf(true) }
+
+    LaunchedEffect(Unit) {
+        val database = _root_ide_package_.com.beigel.nextime.data.database.CountdownDatabase.Companion.getDatabase(context)
+        countdowns   = database.countdownDao().getAllCountdowns().first()
+        isLoading    = false
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.widget_config_title)) },
+                navigationIcon = {
+                    IconButton(onClick = onCancel) {
+                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.close))
+                    }
+                }
+            )
+        }
+    ) { paddingValues ->
+        when {
+            isLoading -> {
+                Box(
+                    modifier         = Modifier.fillMaxSize().padding(paddingValues),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+            countdowns.isEmpty() -> {
+                Box(
+                    modifier         = Modifier.fillMaxSize().padding(paddingValues),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Icon(
+                            imageVector        = _root_ide_package_.com.beigel.nextime.ui.components.iconByName(
+                                "Timer"
+                            ),
+                            contentDescription = null,
+                            modifier           = Modifier.size(64.dp),
+                            tint               = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            stringResource(R.string.widget_no_countdowns),
+                            style      = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            stringResource(R.string.widget_no_countdowns_hint),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+            else -> {
+                LazyColumn(
+                    modifier            = Modifier.fillMaxSize().padding(paddingValues),
+                    contentPadding      = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    item {
+                        Text(
+                            stringResource(R.string.widget_select_hint),
+                            style    = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                    }
+                    items(countdowns) { countdown ->
+                        WidgetCountdownCard(
+                            countdown = countdown,
+                            onClick   = { onCountdownSelected(countdown) }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ─── Widget Countdown Card ────────────────────────────────────────────────────
+
+@Composable
+private fun WidgetCountdownCard(countdown: com.beigel.nextime.data.model.Countdown, onClick: () -> Unit) {
+    val cardColor = try { Color(android.graphics.Color.parseColor(countdown.color)) }
+    catch (e: Exception) { MaterialTheme.colorScheme.primary }
+
+    val locale  = Locale.getDefault()
+    val dateStr = remember(countdown.targetDateTime, locale) {
+        countdown.targetDateTime.format(
+            DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
+        )
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        shape    = RoundedCornerShape(16.dp),
+        colors   = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Column {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(3.dp)
+                    .background(cardColor)
+            )
+            Row(
+                modifier              = Modifier.fillMaxWidth().padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment     = Alignment.CenterVertically
+            ) {
+                Column(
+                    modifier            = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text       = countdown.title,
+                        style      = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text  = dateStr,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    val timeInfo = countdown.calculateTimeRemaining()
+                    val days     = timeInfo.days.toInt()
+                    Text(
+                        text  = if (timeInfo.isPast)
+                            pluralStringResource(R.plurals.widget_days_passed, days, days)
+                        else
+                            pluralStringResource(R.plurals.widget_days_remaining, days, days),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = cardColor
+                    )
+                }
+                Surface(
+                    modifier = Modifier.size(48.dp),
+                    shape    = RoundedCornerShape(12.dp),
+                    color    = cardColor.copy(alpha = 0.12f)
+                ) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier         = Modifier.fillMaxSize()
+                    ) {
+                        Icon(
+                            imageVector        = _root_ide_package_.com.beigel.nextime.ui.components.iconByName(
+                                countdown.icon
+                            ),
+                            contentDescription = countdown.title,
+                            tint               = cardColor,
+                            modifier           = Modifier.size(26.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}

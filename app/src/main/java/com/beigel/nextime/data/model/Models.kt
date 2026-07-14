@@ -1,0 +1,326 @@
+package com.beigel.nextime.data.model
+
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
+
+// ─── Anzeigeeinheiten ─────────────────────────────────────────────────────────
+
+enum class DisplayUnit {
+    YEARS, MONTHS, WEEKS, DAYS, HOURS, MINUTES, SECONDS
+}
+
+/** Einheiten, die Zeit darstellen */
+val TIME_UNITS = setOf(DisplayUnit.HOURS, DisplayUnit.MINUTES, DisplayUnit.SECONDS)
+
+/** Kanonische Sortierreihenfolge groß → klein */
+val DISPLAY_UNIT_ORDER = listOf(
+    DisplayUnit.YEARS, DisplayUnit.MONTHS, DisplayUnit.WEEKS, DisplayUnit.DAYS,
+    DisplayUnit.HOURS, DisplayUnit.MINUTES, DisplayUnit.SECONDS
+)
+
+object DisplayFormat {
+
+    fun encode(units: Set<DisplayUnit>): String =
+        if (units.isEmpty()) DisplayUnit.DAYS.name
+        else units.joinToString(",") { it.name }
+
+    fun encodeOrdered(units: List<DisplayUnit>): String =
+        if (units.isEmpty()) DisplayUnit.DAYS.name
+        else units.joinToString(",") { it.name }
+
+    fun decode(raw: String): Set<DisplayUnit> {
+        if (raw.isBlank()) return setOf(DisplayUnit.DAYS)
+        return when (raw.trim()) {
+            "DAYS_ONLY"         -> setOf(DisplayUnit.DAYS)
+            "WEEKS_DAYS"        -> setOf(DisplayUnit.WEEKS, DisplayUnit.DAYS)
+            "MONTHS_DAYS"       -> setOf(DisplayUnit.MONTHS, DisplayUnit.DAYS)
+            "YEARS_MONTHS_DAYS" -> setOf(DisplayUnit.YEARS, DisplayUnit.MONTHS, DisplayUnit.DAYS)
+            else -> raw.split(",").mapNotNull { name ->
+                try { DisplayUnit.valueOf(name.trim()) } catch (e: Exception) { null }
+            }.toSet().ifEmpty { setOf(DisplayUnit.DAYS) }
+        }
+    }
+
+    fun decodeOrdered(raw: String): List<DisplayUnit> {
+        if (raw.isBlank()) return listOf(DisplayUnit.DAYS)
+        return when (raw.trim()) {
+            "DAYS_ONLY"         -> listOf(DisplayUnit.DAYS)
+            "WEEKS_DAYS"        -> listOf(DisplayUnit.WEEKS, DisplayUnit.DAYS)
+            "MONTHS_DAYS"       -> listOf(DisplayUnit.MONTHS, DisplayUnit.DAYS)
+            "YEARS_MONTHS_DAYS" -> listOf(DisplayUnit.YEARS, DisplayUnit.MONTHS, DisplayUnit.DAYS)
+            else -> raw.split(",").mapNotNull { name ->
+                try { DisplayUnit.valueOf(name.trim()) } catch (e: Exception) { null }
+            }.ifEmpty { listOf(DisplayUnit.DAYS) }
+        }
+    }
+
+    fun sorted(units: Set<DisplayUnit>): List<DisplayUnit> =
+        DISPLAY_UNIT_ORDER.filter { it in units }
+}
+
+// ─── Erinnerungsoptionen ──────────────────────────────────────────────────────
+
+enum class ReminderOption(val minutes: Long) {
+    NONE(0), AT_TIME(0), MINUTES_30(30), HOUR_1(60), HOURS_3(180),
+    HOURS_6(360), HOURS_12(720), DAY_1(1440), DAYS_2(2880), DAYS_3(4320),
+    WEEK_1(10080), WEEKS_2(20160), MONTH_1(43200)
+}
+
+// ─── Wiederholungstyp ─────────────────────────────────────────────────────────
+
+enum class RecurrenceType { NONE, DAILY, WEEKLY, MONTHLY, YEARLY }
+
+// ─── Filtermodus ──────────────────────────────────────────────────────────────
+
+enum class FilterMode { ALL, COUNTDOWN, COUNTUP }
+
+// ─── Countdown Entity ─────────────────────────────────────────────────────────
+
+@Entity(tableName = "countdowns")
+data class Countdown(
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0,
+    val title: String,
+    val targetDateTime: LocalDateTime,
+    val displayFormat: String = "",
+    val createdAt: LocalDateTime = LocalDateTime.now(),
+    val color: String = "#FF7043",
+    val icon: String = "Timer",
+    val notificationEnabled: Boolean = false,
+    val reminderOptions: String = "",
+    val lastNotificationSent: String? = null,
+    val showNights: Boolean = false,
+    val recurrence: String = RecurrenceType.NONE.name,
+    val isPinned: Boolean = false
+) {
+    val isCountUp: Boolean
+        get() = targetDateTime.isBefore(LocalDateTime.now())
+
+    val recurrenceType: RecurrenceType
+        get() = try { RecurrenceType.valueOf(recurrence) } catch (e: Exception) { RecurrenceType.NONE }
+
+    val isRecurring: Boolean
+        get() = recurrenceType != RecurrenceType.NONE
+
+    val activeDisplayUnits: Set<DisplayUnit>
+        get() = DisplayFormat.decode(displayFormat)
+
+    val activeDisplayUnitsOrdered: List<DisplayUnit>
+        get() = DisplayFormat.decodeOrdered(displayFormat)
+
+    val hasTime: Boolean
+        get() = targetDateTime.toLocalTime() != java.time.LocalTime.MIDNIGHT
+
+    fun nextOccurrence(): LocalDateTime {
+        if (!isRecurring) return targetDateTime
+        val now = LocalDateTime.now()
+        var next = targetDateTime
+        while (next.isBefore(now)) {
+            next = when (recurrenceType) {
+                RecurrenceType.DAILY   -> next.plusDays(1)
+                RecurrenceType.WEEKLY  -> next.plusWeeks(1)
+                RecurrenceType.MONTHLY -> next.plusMonths(1)
+                RecurrenceType.YEARLY  -> next.plusYears(1)
+                RecurrenceType.NONE    -> return next
+            }
+        }
+        return next
+    }
+
+    val effectiveTarget: LocalDateTime
+        get() = if (isRecurring) nextOccurrence() else targetDateTime
+}
+
+// ─── CountdownInfo ────────────────────────────────────────────────────────────
+
+data class CountdownInfo(
+    val totalSeconds : Long,
+    val totalMinutes : Long,
+    val totalHours   : Long,
+    val days         : Long,
+    val weeks        : Long,
+    val months       : Long,
+    val years        : Long,
+    val remSecondsAfterMinutes : Long,
+    val remMinutesAfterHours   : Long,
+    val remHoursAfterDays      : Long,
+    val remDaysAfterWeeks      : Long,  // Resttage nach Abzug ganzer Wochen (unabhängig von Monaten)
+    val remDaysAfterMonths     : Long,  // Resttage nach Abzug ganzer Monate
+    val remWeeksAfterMonths    : Long,  // Restwochen nach Abzug ganzer Monate
+    val remMonthsAfterYears    : Long,  // Restmonate nach Abzug ganzer Jahre
+    val remDaysAfterYears      : Long,  // Resttage nach Abzug ganzer Jahre + ganzer Monate
+    val remWeeksAfterYears     : Long,  // Restwochen nach Abzug ganzer Jahre + ganzer Monate
+    val hours   : Long,
+    val minutes : Long,
+    val seconds : Long,
+    val isPast  : Boolean
+) {
+    val remainingDaysAfterMonths  get() = remDaysAfterMonths
+    val remainingDaysAfterYears   get() = remDaysAfterYears
+    val remainingMonthsAfterYears get() = remMonthsAfterYears
+    val remainingDaysAfterWeeks   get() = remDaysAfterWeeks
+    val remainingWeeksAfterMonths get() = remWeeksAfterMonths
+}
+
+// ─── Zeitberechnung ───────────────────────────────────────────────────────────
+
+fun Countdown.calculateTimeRemaining(): CountdownInfo {
+    val now    = LocalDateTime.now()
+    val target = effectiveTarget
+
+    val isPast = target.isBefore(now)
+    val start  = if (isPast) target else now
+    val end    = if (isPast) now    else target
+
+    val totalSec  = ChronoUnit.SECONDS.between(start, end)
+    val totalMin  = totalSec / 60
+    val totalHrs  = totalSec / 3600
+
+    val startDate = start.toLocalDate()
+    val endDate   = end.toLocalDate()
+
+    val totalDays   = ChronoUnit.DAYS.between(startDate, endDate)
+    val totalMonths = ChronoUnit.MONTHS.between(startDate, endDate)
+    val totalYears  = ChronoUnit.YEARS.between(startDate, endDate)
+    val totalWeeks  = ChronoUnit.WEEKS.between(startDate, endDate)
+
+    // ── Kaskade: Jahre → Monate → Tage ───────────────────────────────────────
+    val remMonthsAfterYears = ChronoUnit.MONTHS.between(
+        startDate.plusYears(totalYears), endDate
+    )
+    val remDaysAfterMonths = ChronoUnit.DAYS.between(
+        startDate.plusMonths(totalMonths), endDate
+    )
+    val remWeeksAfterMonths = ChronoUnit.WEEKS.between(
+        startDate.plusMonths(totalMonths), endDate
+    )
+
+    // Resttage nach Jahren + Monaten (korrekte Kaskade)
+    val remDaysAfterYears = ChronoUnit.DAYS.between(
+        startDate.plusYears(totalYears).plusMonths(remMonthsAfterYears), endDate
+    )
+    val remWeeksAfterYears = ChronoUnit.WEEKS.between(
+        startDate.plusYears(totalYears).plusMonths(remMonthsAfterYears), endDate
+    )
+
+    // ── KORREKTUR: remDaysAfterWeeks immer direkt aus totalWeeks ──────────────
+    // Unabhängig von Monaten: Wieviele Tage bleiben nach Abzug ganzer Wochen übrig?
+    // Beispiel: 65 Tage → 9 Wochen, 2 Tage  (65 - 9*7 = 2) ✓
+    val remDaysAfterWeeks = totalDays - (totalWeeks * 7)
+
+    val remSecondsAfterMinutes = totalSec % 60
+    val remMinutesAfterHours   = (totalSec % 3600) / 60
+    val remHoursAfterDays      = (totalSec % 86400) / 3600
+
+    val timePart = totalSec % 86400
+    val hrs  = timePart / 3600
+    val mins = (timePart % 3600) / 60
+    val secs = timePart % 60
+
+    return CountdownInfo(
+        totalSeconds           = totalSec,
+        totalMinutes           = totalMin,
+        totalHours             = totalHrs,
+        days                   = totalDays,
+        weeks                  = totalWeeks,
+        months                 = totalMonths,
+        years                  = totalYears,
+        remSecondsAfterMinutes = remSecondsAfterMinutes,
+        remMinutesAfterHours   = remMinutesAfterHours,
+        remHoursAfterDays      = remHoursAfterDays,
+        remDaysAfterWeeks      = remDaysAfterWeeks,
+        remDaysAfterMonths     = remDaysAfterMonths,
+        remWeeksAfterMonths    = remWeeksAfterMonths,
+        remMonthsAfterYears    = remMonthsAfterYears,
+        remDaysAfterYears      = remDaysAfterYears,
+        remWeeksAfterYears     = remWeeksAfterYears,
+        hours                  = hrs,
+        minutes                = mins,
+        seconds                = secs,
+        isPast                 = isPast
+    )
+}
+
+// ─── Formatierung ─────────────────────────────────────────────────────────────
+
+fun Countdown.getReminderOptionsList(): List<ReminderOption> {
+    if (reminderOptions.isEmpty()) return emptyList()
+    return reminderOptions.split(",").mapNotNull { name ->
+        try { ReminderOption.valueOf(name.trim()) } catch (e: Exception) { null }
+    }
+}
+
+// ─── Anzeigesegmente ──────────────────────────────────────────────────────────
+
+data class DisplaySegment(val value: Long, val unit: DisplayUnit)
+
+fun CountdownInfo.buildDisplaySegments(units: List<DisplayUnit>): List<DisplaySegment> {
+    if (units.isEmpty()) return listOf(DisplaySegment(days, DisplayUnit.DAYS))
+    return units.mapIndexed { index, unit ->
+        val prev = if (index > 0) units[index - 1] else null
+        DisplaySegment(getValueFor(unit, prev), unit)
+    }
+}
+
+fun CountdownInfo.buildDisplaySegments(units: Set<DisplayUnit>): List<DisplaySegment> =
+    buildDisplaySegments(DisplayFormat.sorted(units))
+
+private fun CountdownInfo.getValueFor(unit: DisplayUnit, prev: DisplayUnit?): Long = when {
+    // ── Keine übergeordnete Einheit → absolute Gesamtwerte ────────────────────
+    prev == null -> when (unit) {
+        DisplayUnit.YEARS   -> years
+        DisplayUnit.MONTHS  -> months
+        DisplayUnit.WEEKS   -> weeks
+        DisplayUnit.DAYS    -> days
+        DisplayUnit.HOURS   -> totalHours
+        DisplayUnit.MINUTES -> totalMinutes
+        DisplayUnit.SECONDS -> totalSeconds
+    }
+
+    // ── Nach YEARS ────────────────────────────────────────────────────────────
+    prev == DisplayUnit.YEARS && unit == DisplayUnit.MONTHS  -> remMonthsAfterYears
+    prev == DisplayUnit.YEARS && unit == DisplayUnit.WEEKS   -> remWeeksAfterYears
+    prev == DisplayUnit.YEARS && unit == DisplayUnit.DAYS    -> remDaysAfterYears
+    prev == DisplayUnit.YEARS && unit == DisplayUnit.HOURS   -> remDaysAfterYears * 24 + remHoursAfterDays
+    prev == DisplayUnit.YEARS && unit == DisplayUnit.MINUTES -> remDaysAfterYears * 1440 + remHoursAfterDays * 60 + remMinutesAfterHours
+    prev == DisplayUnit.YEARS && unit == DisplayUnit.SECONDS -> remDaysAfterYears * 86400 + remHoursAfterDays * 3600 + remMinutesAfterHours * 60 + remSecondsAfterMinutes
+
+    // ── Nach MONTHS ───────────────────────────────────────────────────────────
+    prev == DisplayUnit.MONTHS && unit == DisplayUnit.WEEKS   -> remWeeksAfterMonths
+    prev == DisplayUnit.MONTHS && unit == DisplayUnit.DAYS    -> remDaysAfterMonths
+    prev == DisplayUnit.MONTHS && unit == DisplayUnit.HOURS   -> remDaysAfterMonths * 24 + remHoursAfterDays
+    prev == DisplayUnit.MONTHS && unit == DisplayUnit.MINUTES -> remDaysAfterMonths * 1440 + remHoursAfterDays * 60 + remMinutesAfterHours
+    prev == DisplayUnit.MONTHS && unit == DisplayUnit.SECONDS -> remDaysAfterMonths * 86400 + remHoursAfterDays * 3600 + remMinutesAfterHours * 60 + remSecondsAfterMinutes
+
+    // ── Nach WEEKS ────────────────────────────────────────────────────────────
+    // KORREKTUR: remDaysAfterWeeks ist jetzt immer korrekt (totalDays - totalWeeks*7)
+    prev == DisplayUnit.WEEKS && unit == DisplayUnit.DAYS    -> remDaysAfterWeeks
+    prev == DisplayUnit.WEEKS && unit == DisplayUnit.HOURS   -> remDaysAfterWeeks * 24 + remHoursAfterDays
+    prev == DisplayUnit.WEEKS && unit == DisplayUnit.MINUTES -> remDaysAfterWeeks * 1440 + remHoursAfterDays * 60 + remMinutesAfterHours
+    prev == DisplayUnit.WEEKS && unit == DisplayUnit.SECONDS -> remDaysAfterWeeks * 86400 + remHoursAfterDays * 3600 + remMinutesAfterHours * 60 + remSecondsAfterMinutes
+
+    // ── Nach DAYS ─────────────────────────────────────────────────────────────
+    prev == DisplayUnit.DAYS && unit == DisplayUnit.HOURS   -> remHoursAfterDays
+    prev == DisplayUnit.DAYS && unit == DisplayUnit.MINUTES -> remHoursAfterDays * 60 + remMinutesAfterHours
+    prev == DisplayUnit.DAYS && unit == DisplayUnit.SECONDS -> remHoursAfterDays * 3600 + remMinutesAfterHours * 60 + remSecondsAfterMinutes
+
+    // ── Nach HOURS ────────────────────────────────────────────────────────────
+    prev == DisplayUnit.HOURS && unit == DisplayUnit.MINUTES -> remMinutesAfterHours
+    prev == DisplayUnit.HOURS && unit == DisplayUnit.SECONDS -> remMinutesAfterHours * 60 + remSecondsAfterMinutes
+
+    // ── Nach MINUTES ──────────────────────────────────────────────────────────
+    prev == DisplayUnit.MINUTES && unit == DisplayUnit.SECONDS -> remSecondsAfterMinutes
+
+    // ── Fallback ──────────────────────────────────────────────────────────────
+    else -> when (unit) {
+        DisplayUnit.YEARS   -> years
+        DisplayUnit.MONTHS  -> months
+        DisplayUnit.WEEKS   -> weeks
+        DisplayUnit.DAYS    -> days
+        DisplayUnit.HOURS   -> totalHours
+        DisplayUnit.MINUTES -> totalMinutes
+        DisplayUnit.SECONDS -> totalSeconds
+    }
+}

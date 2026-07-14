@@ -5,14 +5,14 @@ plugins {
 }
 
 android {
-    namespace   = "todo.beigelwick.de.todolist"
+    namespace   = "com.beigel.nextime"
     compileSdk  = 36
 
     defaultConfig {
         minSdk          = 31
         targetSdk       = 36
-        versionCode     = 12
-        versionName     = "1.1.4"
+        versionCode     = 1
+        versionName     = "0.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
