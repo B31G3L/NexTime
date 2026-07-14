@@ -65,19 +65,19 @@ object AppPreferences {
 
     // ── Datumseinheiten (Jahre, Monate, Wochen, Tage) ─────────────────────────
 
-    fun getDefaultDateUnits(context: Context): Flow<Set<com.beigel.nextime.data.model.DisplayUnit>> =
+    fun getDefaultDateUnits(context: Context): Flow<Set<DisplayUnit>> =
         context.dataStore.data.map { prefs ->
-            _root_ide_package_.com.beigel.nextime.data.model.DisplayFormat.decode(prefs[DEFAULT_DATE_UNITS] ?: _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.DAYS.name)
-                .filter { it !in setOf(_root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.HOURS, _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.MINUTES, _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.SECONDS) }
+            DisplayFormat.decode(prefs[DEFAULT_DATE_UNITS] ?: DisplayUnit.DAYS.name)
+                .filter { it !in setOf(DisplayUnit.HOURS, DisplayUnit.MINUTES, DisplayUnit.SECONDS) }
                 .toSet()
-                .ifEmpty { setOf(_root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.DAYS) }
+                .ifEmpty { setOf(DisplayUnit.DAYS) }
         }
 
-    suspend fun setDefaultDateUnits(context: Context, units: Set<com.beigel.nextime.data.model.DisplayUnit>) {
+    suspend fun setDefaultDateUnits(context: Context, units: Set<DisplayUnit>) {
         // Sicherheitshalber Zeiteinheiten rausfiltern
-        val dateOnly = units.filter { it !in setOf(_root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.HOURS, _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.MINUTES, _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.SECONDS) }.toSet()
-        context.dataStore.edit { it[DEFAULT_DATE_UNITS] = _root_ide_package_.com.beigel.nextime.data.model.DisplayFormat.encode(dateOnly.ifEmpty { setOf(
-            _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.DAYS) }) }
+        val dateOnly = units.filter { it !in setOf(DisplayUnit.HOURS, DisplayUnit.MINUTES, DisplayUnit.SECONDS) }.toSet()
+        context.dataStore.edit { it[DEFAULT_DATE_UNITS] = DisplayFormat.encode(dateOnly.ifEmpty { setOf(
+            DisplayUnit.DAYS) }) }
     }
 
     // ── Uhrzeit-Anzeige (HH:mm:ss) ───────────────────────────────────────────

@@ -23,7 +23,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.beigel.nextime.data.model.calculateTimeRemaining
 import com.beigel.nextime.R
 import com.beigel.nextime.data.model.Countdown
-import com.beigel.nextime.data.model.calculateTimeRemaining
 import com.beigel.nextime.ui.viewmodel.CountdownViewModel
 import com.beigel.nextime.utils.HapticFeedback
 
@@ -31,15 +30,15 @@ import com.beigel.nextime.utils.HapticFeedback
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CountdownCardDialog(
-    countdown : com.beigel.nextime.data.model.Countdown,
+    countdown : Countdown,
     onDismiss : () -> Unit,
-    onEdit    : (com.beigel.nextime.data.model.Countdown) -> Unit,
-    onDelete  : (com.beigel.nextime.data.model.Countdown) -> Unit,
-    onShare   : (com.beigel.nextime.data.model.Countdown) -> Unit,
-    viewModel : com.beigel.nextime.ui.viewmodel.CountdownViewModel = viewModel()
+    onEdit    : (Countdown) -> Unit,
+    onDelete  : (Countdown) -> Unit,
+    onShare   : (Countdown) -> Unit,
+    viewModel : CountdownViewModel = viewModel()
 ) {
     val context    = LocalContext.current
-    val haptic     = remember { _root_ide_package_.com.beigel.nextime.utils.HapticFeedback(context) }
+    val haptic     = remember { HapticFeedback(context) }
     val sheetState = rememberModalBottomSheetState()
 
     var showDeleteConfirm by remember { mutableStateOf(false) }

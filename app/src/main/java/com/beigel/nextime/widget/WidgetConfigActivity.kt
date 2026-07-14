@@ -24,16 +24,16 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.first
-import todo.beigelwick.de.todolist.R
-import todo.beigelwick.de.todolist.data.database.CountdownDatabase
-import todo.beigelwick.de.todolist.data.model.Countdown
-import todo.beigelwick.de.todolist.data.model.calculateTimeRemaining
-import todo.beigelwick.de.todolist.ui.components.iconByName
-import todo.beigelwick.de.todolist.ui.theme.AccentColor
-import todo.beigelwick.de.todolist.ui.theme.AccentColorPreferences
-import todo.beigelwick.de.todolist.ui.theme.NexTimeTheme
-import todo.beigelwick.de.todolist.ui.theme.ThemeMode
-import todo.beigelwick.de.todolist.ui.theme.ThemePreferences
+import com.beigel.nextime.R
+import com.beigel.nextime.data.database.CountdownDatabase
+import com.beigel.nextime.data.model.Countdown
+import com.beigel.nextime.data.model.calculateTimeRemaining
+import com.beigel.nextime.ui.components.iconByName
+import com.beigel.nextime.ui.theme.AccentColor
+import com.beigel.nextime.ui.theme.AccentColorPreferences
+import com.beigel.nextime.ui.theme.NexTimeTheme
+import com.beigel.nextime.ui.theme.ThemeMode
+import com.beigel.nextime.ui.theme.ThemePreferences
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
@@ -41,7 +41,7 @@ import androidx.compose.ui.res.pluralStringResource
 import com.beigel.nextime.data.model.calculateTimeRemaining
 
 
-class WidgetConfigActivity : androidx.appcompat.app.AppCompatActivity() {
+class WidgetConfigActivity : AppCompatActivity() {
 
     private var appWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
 
@@ -57,16 +57,16 @@ class WidgetConfigActivity : androidx.appcompat.app.AppCompatActivity() {
         if (appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID) { finish(); return }
 
         setContent {
-            val themeMode   by _root_ide_package_.com.beigel.nextime.ui.theme.ThemePreferences.getThemeMode(this).collectAsState(initial = _root_ide_package_.com.beigel.nextime.ui.theme.ThemeMode.SYSTEM)
-            val accentColor by _root_ide_package_.com.beigel.nextime.ui.theme.AccentColorPreferences.getAccentColor(this).collectAsState(initial = _root_ide_package_.com.beigel.nextime.ui.theme.AccentColor.ORANGE)
+            val themeMode   by ThemePreferences.getThemeMode(this).collectAsState(initial = ThemeMode.SYSTEM)
+            val accentColor by AccentColorPreferences.getAccentColor(this).collectAsState(initial = AccentColor.ORANGE)
 
             val isDark = when (themeMode) {
-                _root_ide_package_.com.beigel.nextime.ui.theme.ThemeMode.DARK   -> true
-                _root_ide_package_.com.beigel.nextime.ui.theme.ThemeMode.LIGHT  -> false
-                _root_ide_package_.com.beigel.nextime.ui.theme.ThemeMode.SYSTEM -> isNightModeActive()
+                ThemeMode.DARK   -> true
+                ThemeMode.LIGHT  -> false
+                ThemeMode.SYSTEM -> isNightModeActive()
             }
 
-            _root_ide_package_.com.beigel.nextime.ui.theme.NexTimeTheme(
+            NexTimeTheme(
                 darkTheme = isDark,
                 accentColor = accentColor
             ) {
@@ -92,7 +92,7 @@ class WidgetConfigActivity : androidx.appcompat.app.AppCompatActivity() {
         return uiMode == android.content.res.Configuration.UI_MODE_NIGHT_YES
     }
 
-    private fun saveSelectedCountdown(countdown: com.beigel.nextime.data.model.Countdown) {
+    private fun saveSelectedCountdown(countdown: Countdown) {
         getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             .edit()
             .putLong(PREF_PREFIX_KEY + appWidgetId, countdown.id)
@@ -132,15 +132,15 @@ class WidgetConfigActivity : androidx.appcompat.app.AppCompatActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun WidgetConfigScreen(
-    onCountdownSelected : (com.beigel.nextime.data.model.Countdown) -> Unit,
+    onCountdownSelected : (Countdown) -> Unit,
     onCancel            : () -> Unit
 ) {
     val context    = LocalContext.current
-    var countdowns by remember { mutableStateOf<List<com.beigel.nextime.data.model.Countdown>>(emptyList()) }
+    var countdowns by remember { mutableStateOf<List<Countdown>>(emptyList()) }
     var isLoading  by remember { mutableStateOf(true) }
 
     LaunchedEffect(Unit) {
-        val database = _root_ide_package_.com.beigel.nextime.data.database.CountdownDatabase.Companion.getDatabase(context)
+        val database = CountdownDatabase.getDatabase(context)
         countdowns   = database.countdownDao().getAllCountdowns().first()
         isLoading    = false
     }
@@ -176,7 +176,7 @@ private fun WidgetConfigScreen(
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         Icon(
-                            imageVector        = _root_ide_package_.com.beigel.nextime.ui.components.iconByName(
+                            imageVector        = com.beigel.nextime.ui.components.iconByName(
                                 "Timer"
                             ),
                             contentDescription = null,
@@ -224,7 +224,7 @@ private fun WidgetConfigScreen(
 // ─── Widget Countdown Card ────────────────────────────────────────────────────
 
 @Composable
-private fun WidgetCountdownCard(countdown: com.beigel.nextime.data.model.Countdown, onClick: () -> Unit) {
+private fun WidgetCountdownCard(countdown: Countdown, onClick: () -> Unit) {
     val cardColor = try { Color(android.graphics.Color.parseColor(countdown.color)) }
     catch (e: Exception) { MaterialTheme.colorScheme.primary }
 
@@ -289,7 +289,7 @@ private fun WidgetCountdownCard(countdown: com.beigel.nextime.data.model.Countdo
                         modifier         = Modifier.fillMaxSize()
                     ) {
                         Icon(
-                            imageVector        = _root_ide_package_.com.beigel.nextime.ui.components.iconByName(
+                            imageVector        = iconByName(
                                 countdown.icon
                             ),
                             contentDescription = countdown.title,

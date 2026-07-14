@@ -27,26 +27,26 @@ import com.beigel.nextime.ui.theme.ThemeMode
 import com.beigel.nextime.ui.theme.ThemePreferences
 import kotlin.collections.forEach
 
-class MainActivity : androidx.appcompat.app.AppCompatActivity() {
+class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
-        _root_ide_package_.com.beigel.nextime.notifications.CountdownNotificationManager.createNotificationChannel(this)
+        CountdownNotificationManager.createNotificationChannel(this)
 
         // Bestehende Benachrichtigungen nach Neustart neu einplanen —
         // kein Permission-Dialog hier, nur stille Wiederherstellung.
         scheduleAllPendingNotifications()
 
         setContent {
-            val themeMode   by _root_ide_package_.com.beigel.nextime.ui.theme.ThemePreferences.getThemeMode(this).collectAsState(initial = _root_ide_package_.com.beigel.nextime.ui.theme.ThemeMode.SYSTEM)
-            val accentColor by _root_ide_package_.com.beigel.nextime.ui.theme.AccentColorPreferences.getAccentColor(this).collectAsState(initial = _root_ide_package_.com.beigel.nextime.ui.theme.AccentColor.ORANGE)
+            val themeMode   by ThemePreferences.getThemeMode(this).collectAsState(initial = ThemeMode.SYSTEM)
+            val accentColor by AccentColorPreferences.getAccentColor(this).collectAsState(initial = AccentColor.ORANGE)
             val systemDark  = isSystemInDarkTheme()
 
             val isDark = when (themeMode) {
-                _root_ide_package_.com.beigel.nextime.ui.theme.ThemeMode.SYSTEM -> systemDark
-                _root_ide_package_.com.beigel.nextime.ui.theme.ThemeMode.LIGHT  -> false
-                _root_ide_package_.com.beigel.nextime.ui.theme.ThemeMode.DARK   -> true
+                ThemeMode.SYSTEM -> systemDark
+                ThemeMode.LIGHT  -> false
+                ThemeMode.DARK   -> true
             }
 
             val view = LocalView.current
@@ -56,7 +56,7 @@ class MainActivity : androidx.appcompat.app.AppCompatActivity() {
                 controller.isAppearanceLightNavigationBars = !isDark
             }
 
-            _root_ide_package_.com.beigel.nextime.ui.theme.NexTimeTheme(
+            NexTimeTheme(
                 darkTheme = isDark,
                 accentColor = accentColor
             ) {
@@ -71,12 +71,12 @@ class MainActivity : androidx.appcompat.app.AppCompatActivity() {
     }
 
     private fun scheduleAllPendingNotifications() {
-        val database = _root_ide_package_.com.beigel.nextime.data.database.CountdownDatabase.Companion.getDatabase(this)
+        val database = CountdownDatabase.getDatabase(this)
         lifecycleScope.launch {
             val countdowns = database.countdownDao().getAllCountdowns().first()
             countdowns.forEach { countdown ->
                 if (countdown.notificationEnabled) {
-                    _root_ide_package_.com.beigel.nextime.notifications.NotificationScheduler.scheduleNotifications(this@MainActivity, countdown)
+                    NotificationScheduler.scheduleNotifications(this@MainActivity, countdown)
                 }
             }
         }

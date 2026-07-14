@@ -22,7 +22,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -55,65 +54,65 @@ import java.time.format.DateTimeFormatter
 fun SettingsScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val scope   = rememberCoroutineScope()
-    val haptic  = remember { _root_ide_package_.com.beigel.nextime.utils.HapticFeedback(context) }
+    val haptic  = remember { HapticFeedback(context) }
 
     // ── Lokalisierter Preview-Titel ───────────────────────────────────────────
     val previewTitle = stringResource(R.string.preview_countdown_title)
     val previewCountdown = remember(previewTitle) {
-        _root_ide_package_.com.beigel.nextime.data.model.Countdown(
+        Countdown(
             id = -1L,
             title = previewTitle,
             icon = "FlightTakeoff",
             targetDateTime = LocalDateTime.now().plusDays(42),
             displayFormat = "",
             color = "#FF7043",
-            recurrence = _root_ide_package_.com.beigel.nextime.data.model.RecurrenceType.NONE.name
+            recurrence = RecurrenceType.NONE.name
         )
     }
 
     // ── Preferences ──────────────────────────────────────────────────────────
-    val themeMode        by _root_ide_package_.com.beigel.nextime.ui.theme.ThemePreferences.getThemeMode(context).collectAsState(initial = _root_ide_package_.com.beigel.nextime.ui.theme.ThemeMode.SYSTEM)
-    val accentColor      by _root_ide_package_.com.beigel.nextime.ui.theme.AccentColorPreferences.getAccentColor(context).collectAsState(initial = _root_ide_package_.com.beigel.nextime.ui.theme.AccentColor.ORANGE)
-    val defaultColor     by _root_ide_package_.com.beigel.nextime.ui.theme.AppPreferences.getDefaultColor(context).collectAsState(initial = "#FF7043")
-    val defaultTime      by _root_ide_package_.com.beigel.nextime.ui.theme.AppPreferences.getDefaultTime(context).collectAsState(initial = LocalTime.of(12, 0))
-    val defaultDateUnits by _root_ide_package_.com.beigel.nextime.ui.theme.AppPreferences.getDefaultDateUnits(context).collectAsState(initial = setOf(
-        _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.DAYS))
-    val showTimeOnCard   by _root_ide_package_.com.beigel.nextime.ui.theme.AppPreferences.getShowTimeOnCard(context).collectAsState(initial = false)
-    val currentLang      by _root_ide_package_.com.beigel.nextime.ui.theme.LanguageManager.getLanguage(context).collectAsState(initial = _root_ide_package_.com.beigel.nextime.ui.theme.AppLanguage.SYSTEM)
-    val displayStyle     by _root_ide_package_.com.beigel.nextime.ui.theme.AppPreferences.getDisplayStyle(context).collectAsState(initial = _root_ide_package_.com.beigel.nextime.ui.theme.DisplayStyle.STANDARD)
+    val themeMode        by ThemePreferences.getThemeMode(context).collectAsState(initial = ThemeMode.SYSTEM)
+    val accentColor      by AccentColorPreferences.getAccentColor(context).collectAsState(initial = AccentColor.ORANGE)
+    val defaultColor     by AppPreferences.getDefaultColor(context).collectAsState(initial = "#FF7043")
+    val defaultTime      by AppPreferences.getDefaultTime(context).collectAsState(initial = LocalTime.of(12, 0))
+    val defaultDateUnits by AppPreferences.getDefaultDateUnits(context).collectAsState(initial = setOf(
+        DisplayUnit.DAYS))
+    val showTimeOnCard   by AppPreferences.getShowTimeOnCard(context).collectAsState(initial = false)
+    val currentLang      by LanguageManager.getLanguage(context).collectAsState(initial = AppLanguage.SYSTEM)
+    val displayStyle     by AppPreferences.getDisplayStyle(context).collectAsState(initial = DisplayStyle.STANDARD)
 
     // ── Sheet-States ──────────────────────────────────────────────────────────
     var activeSheet by remember { mutableStateOf<SettingsSheet?>(null) }
 
     // ── Zusammenfassungstexte ─────────────────────────────────────────────────
     val darstellungSummary = when (displayStyle) {
-        _root_ide_package_.com.beigel.nextime.ui.theme.DisplayStyle.STANDARD   -> stringResource(R.string.card_style_standard)
-        _root_ide_package_.com.beigel.nextime.ui.theme.DisplayStyle.KOMPAKT    -> stringResource(R.string.card_style_kompakt)
-        _root_ide_package_.com.beigel.nextime.ui.theme.DisplayStyle.BANNER     -> stringResource(R.string.card_style_banner)
-        _root_ide_package_.com.beigel.nextime.ui.theme.DisplayStyle.INVERTIERT -> stringResource(R.string.card_style_invertiert)
+        DisplayStyle.STANDARD   -> stringResource(R.string.card_style_standard)
+        DisplayStyle.KOMPAKT    -> stringResource(R.string.card_style_kompakt)
+        DisplayStyle.BANNER     -> stringResource(R.string.card_style_banner)
+        DisplayStyle.INVERTIERT -> stringResource(R.string.card_style_invertiert)
     }
     val accentSummary = when (accentColor) {
-        _root_ide_package_.com.beigel.nextime.ui.theme.AccentColor.ORANGE  -> stringResource(R.string.accent_orange)
-        _root_ide_package_.com.beigel.nextime.ui.theme.AccentColor.SAGE    -> stringResource(R.string.accent_sage)
-        _root_ide_package_.com.beigel.nextime.ui.theme.AccentColor.VIOLET  -> stringResource(R.string.accent_violet)
-        _root_ide_package_.com.beigel.nextime.ui.theme.AccentColor.CRIMSON -> stringResource(R.string.accent_crimson)
-        _root_ide_package_.com.beigel.nextime.ui.theme.AccentColor.TEAL    -> stringResource(R.string.accent_teal)
-        _root_ide_package_.com.beigel.nextime.ui.theme.AccentColor.GOLD    -> stringResource(R.string.accent_gold)
-        _root_ide_package_.com.beigel.nextime.ui.theme.AccentColor.SLATE   -> stringResource(R.string.accent_slate)
+        AccentColor.ORANGE  -> stringResource(R.string.accent_orange)
+        AccentColor.SAGE    -> stringResource(R.string.accent_sage)
+        AccentColor.VIOLET  -> stringResource(R.string.accent_violet)
+        AccentColor.CRIMSON -> stringResource(R.string.accent_crimson)
+        AccentColor.TEAL    -> stringResource(R.string.accent_teal)
+        AccentColor.GOLD    -> stringResource(R.string.accent_gold)
+        AccentColor.SLATE   -> stringResource(R.string.accent_slate)
     }
     val themeSummary = when (themeMode) {
-        _root_ide_package_.com.beigel.nextime.ui.theme.ThemeMode.SYSTEM -> stringResource(R.string.design_system)
-        _root_ide_package_.com.beigel.nextime.ui.theme.ThemeMode.LIGHT  -> stringResource(R.string.design_light)
-        _root_ide_package_.com.beigel.nextime.ui.theme.ThemeMode.DARK   -> stringResource(R.string.design_dark)
+        ThemeMode.SYSTEM -> stringResource(R.string.design_system)
+        ThemeMode.LIGHT  -> stringResource(R.string.design_light)
+        ThemeMode.DARK   -> stringResource(R.string.design_dark)
     }
     val dateUnitLabels = mapOf(
-        _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.YEARS  to stringResource(R.string.format_unit_years),
-        _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.MONTHS to stringResource(R.string.format_unit_months),
-        _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.WEEKS  to stringResource(R.string.format_unit_weeks),
-        _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.DAYS   to stringResource(R.string.format_unit_days),
+        DisplayUnit.YEARS  to stringResource(R.string.format_unit_years),
+        DisplayUnit.MONTHS to stringResource(R.string.format_unit_months),
+        DisplayUnit.WEEKS  to stringResource(R.string.format_unit_weeks),
+        DisplayUnit.DAYS   to stringResource(R.string.format_unit_days),
     )
     val formatSummary = buildString {
-        val sorted = listOf(_root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.YEARS, _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.MONTHS, _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.WEEKS, _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.DAYS)
+        val sorted = listOf(DisplayUnit.YEARS, DisplayUnit.MONTHS, DisplayUnit.WEEKS, DisplayUnit.DAYS)
             .filter { it in defaultDateUnits }
             .mapNotNull { dateUnitLabels[it] }
         append(sorted.joinToString(" + "))
@@ -232,10 +231,10 @@ fun SettingsScreen(onBack: () -> Unit) {
                     SettingsSheet.DARSTELLUNG -> {
                         Text(stringResource(R.string.settings_display_style_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         listOf(
-                            _root_ide_package_.com.beigel.nextime.ui.theme.DisplayStyle.STANDARD   to stringResource(R.string.card_style_standard),
-                            _root_ide_package_.com.beigel.nextime.ui.theme.DisplayStyle.KOMPAKT    to stringResource(R.string.card_style_kompakt),
-                            _root_ide_package_.com.beigel.nextime.ui.theme.DisplayStyle.BANNER     to stringResource(R.string.card_style_banner),
-                            _root_ide_package_.com.beigel.nextime.ui.theme.DisplayStyle.INVERTIERT to stringResource(R.string.card_style_invertiert),
+                            DisplayStyle.STANDARD   to stringResource(R.string.card_style_standard),
+                            DisplayStyle.KOMPAKT    to stringResource(R.string.card_style_kompakt),
+                            DisplayStyle.BANNER     to stringResource(R.string.card_style_banner),
+                            DisplayStyle.INVERTIERT to stringResource(R.string.card_style_invertiert),
                         ).forEach { (style, label) ->
                             val isSelected = displayStyle == style
                             Surface(
@@ -243,7 +242,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                                 shape    = RoundedCornerShape(12.dp),
                                 color    = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.06f) else MaterialTheme.colorScheme.surface,
                                 border   = BorderStroke(if (isSelected) 1.5.dp else 1.dp, if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant),
-                                onClick  = { haptic.success(); scope.launch { _root_ide_package_.com.beigel.nextime.ui.theme.AppPreferences.setDisplayStyle(context, style) } }
+                                onClick  = { haptic.success(); scope.launch { AppPreferences.setDisplayStyle(context, style) } }
                             ) {
                                 Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -255,7 +254,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                                         }
                                     }
                                     Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp))) {
-                                        _root_ide_package_.com.beigel.nextime.ui.components.CountdownCard(
+                                        CountdownCard(
                                             countdown = previewCountdown,
                                             previewStyle = style
                                         )
@@ -268,10 +267,10 @@ fun SettingsScreen(onBack: () -> Unit) {
                     // ── Anzeigeformat ─────────────────────────────────────────
                     SettingsSheet.FORMAT -> {
                         listOf(
-                            _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.YEARS  to stringResource(R.string.format_unit_years),
-                            _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.MONTHS to stringResource(R.string.format_unit_months),
-                            _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.WEEKS  to stringResource(R.string.format_unit_weeks),
-                            _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.DAYS   to stringResource(R.string.format_unit_days),
+                            DisplayUnit.YEARS  to stringResource(R.string.format_unit_years),
+                            DisplayUnit.MONTHS to stringResource(R.string.format_unit_months),
+                            DisplayUnit.WEEKS  to stringResource(R.string.format_unit_weeks),
+                            DisplayUnit.DAYS   to stringResource(R.string.format_unit_days),
                         ).forEach { (unit, label) ->
                             val isChecked = unit in defaultDateUnits
                             Row(
@@ -283,7 +282,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                                             if (defaultDateUnits.size > 1) defaultDateUnits - unit else defaultDateUnits
                                         } else defaultDateUnits + unit
                                         haptic.tick()
-                                        scope.launch { _root_ide_package_.com.beigel.nextime.ui.theme.AppPreferences.setDefaultDateUnits(context, newUnits) }
+                                        scope.launch { AppPreferences.setDefaultDateUnits(context, newUnits) }
                                     }
                                     .padding(horizontal = 4.dp, vertical = 10.dp),
                                 verticalAlignment     = Alignment.CenterVertically,
@@ -303,12 +302,12 @@ fun SettingsScreen(onBack: () -> Unit) {
                                 Text(stringResource(R.string.settings_time_display_label), style = MaterialTheme.typography.bodyMedium, fontWeight = if (showTimeOnCard) FontWeight.SemiBold else FontWeight.Normal, color = if (showTimeOnCard) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
                                 Text(stringResource(R.string.settings_time_display_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
-                            Switch(checked = showTimeOnCard, onCheckedChange = { checked -> haptic.tick(); scope.launch { _root_ide_package_.com.beigel.nextime.ui.theme.AppPreferences.setShowTimeOnCard(context, checked) } })
+                            Switch(checked = showTimeOnCard, onCheckedChange = { checked -> haptic.tick(); scope.launch { AppPreferences.setShowTimeOnCard(context, checked) } })
                         }
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                         Text(stringResource(R.string.preview_label), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         key(defaultDateUnits, showTimeOnCard) {
-                            _root_ide_package_.com.beigel.nextime.ui.components.CountdownCard(
+                            CountdownCard(
                                 countdown = previewCountdown
                             )
                         }
@@ -317,27 +316,27 @@ fun SettingsScreen(onBack: () -> Unit) {
                     // ── Akzentfarbe ───────────────────────────────────────────
                     SettingsSheet.AKZENTFARBE -> {
                         Text(stringResource(R.string.settings_accent_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        val rows = _root_ide_package_.com.beigel.nextime.ui.theme.AccentColor.values().toList().chunked(4)
+                        val rows = AccentColor.values().toList().chunked(4)
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             rows.forEach { row ->
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     row.forEach { accent ->
                                         val isSelected = accentColor == accent
                                         val accentName = when (accent) {
-                                            _root_ide_package_.com.beigel.nextime.ui.theme.AccentColor.ORANGE  -> stringResource(R.string.accent_orange)
-                                            _root_ide_package_.com.beigel.nextime.ui.theme.AccentColor.SAGE    -> stringResource(R.string.accent_sage)
-                                            _root_ide_package_.com.beigel.nextime.ui.theme.AccentColor.VIOLET  -> stringResource(R.string.accent_violet)
-                                            _root_ide_package_.com.beigel.nextime.ui.theme.AccentColor.CRIMSON -> stringResource(R.string.accent_crimson)
-                                            _root_ide_package_.com.beigel.nextime.ui.theme.AccentColor.TEAL    -> stringResource(R.string.accent_teal)
-                                            _root_ide_package_.com.beigel.nextime.ui.theme.AccentColor.GOLD    -> stringResource(R.string.accent_gold)
-                                            _root_ide_package_.com.beigel.nextime.ui.theme.AccentColor.SLATE   -> stringResource(R.string.accent_slate)
+                                            AccentColor.ORANGE  -> stringResource(R.string.accent_orange)
+                                            AccentColor.SAGE    -> stringResource(R.string.accent_sage)
+                                            AccentColor.VIOLET  -> stringResource(R.string.accent_violet)
+                                            AccentColor.CRIMSON -> stringResource(R.string.accent_crimson)
+                                            AccentColor.TEAL    -> stringResource(R.string.accent_teal)
+                                            AccentColor.GOLD    -> stringResource(R.string.accent_gold)
+                                            AccentColor.SLATE   -> stringResource(R.string.accent_slate)
                                         }
                                         Surface(
                                             modifier = Modifier.weight(1f),
                                             shape    = RoundedCornerShape(12.dp),
                                             color    = if (isSelected) accent.light.copy(alpha = 0.08f) else MaterialTheme.colorScheme.surface,
                                             border   = BorderStroke(if (isSelected) 2.dp else 1.dp, if (isSelected) accent.light else Color.Transparent.copy(alpha = 0.15f)),
-                                            onClick  = { haptic.success(); scope.launch { _root_ide_package_.com.beigel.nextime.ui.theme.AccentColorPreferences.setAccentColor(context, accent) } }
+                                            onClick  = { haptic.success(); scope.launch { AccentColorPreferences.setAccentColor(context, accent) } }
                                         ) {
                                             Column(modifier = Modifier.padding(vertical = 10.dp, horizontal = 6.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                                 Box(modifier = Modifier.size(28.dp).clip(CircleShape).background(accent.light), contentAlignment = Alignment.Center) {
@@ -356,9 +355,9 @@ fun SettingsScreen(onBack: () -> Unit) {
                     // ── Hell / Dunkel ─────────────────────────────────────────
                     SettingsSheet.HELL_DUNKEL -> {
                         listOf(
-                            Triple(_root_ide_package_.com.beigel.nextime.ui.theme.ThemeMode.SYSTEM, stringResource(R.string.design_system), Icons.Default.BrightnessAuto),
-                            Triple(_root_ide_package_.com.beigel.nextime.ui.theme.ThemeMode.LIGHT,  stringResource(R.string.design_light),  Icons.Default.Brightness7),
-                            Triple(_root_ide_package_.com.beigel.nextime.ui.theme.ThemeMode.DARK,   stringResource(R.string.design_dark),   Icons.Default.Brightness4),
+                            Triple(ThemeMode.SYSTEM, stringResource(R.string.design_system), Icons.Default.BrightnessAuto),
+                            Triple(ThemeMode.LIGHT,  stringResource(R.string.design_light),  Icons.Default.Brightness7),
+                            Triple(ThemeMode.DARK,   stringResource(R.string.design_dark),   Icons.Default.Brightness4),
                         ).forEach { (mode, label, icon) ->
                             val isSelected = themeMode == mode
                             Surface(
@@ -366,14 +365,14 @@ fun SettingsScreen(onBack: () -> Unit) {
                                 shape    = MaterialTheme.shapes.medium,
                                 color    = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.10f) else MaterialTheme.colorScheme.surface,
                                 border   = BorderStroke(if (isSelected) 1.5.dp else 1.dp, if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.4f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
-                                onClick  = { haptic.tick(); scope.launch { _root_ide_package_.com.beigel.nextime.ui.theme.ThemePreferences.setThemeMode(context, mode) } }
+                                onClick  = { haptic.tick(); scope.launch { ThemePreferences.setThemeMode(context, mode) } }
                             ) {
                                 Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                                         Icon(icon, null, modifier = Modifier.size(20.dp), tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
                                         Text(label, style = MaterialTheme.typography.bodyMedium, fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal, color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
                                     }
-                                    RadioButton(selected = isSelected, onClick = { haptic.tick(); scope.launch { _root_ide_package_.com.beigel.nextime.ui.theme.ThemePreferences.setThemeMode(context, mode) } })
+                                    RadioButton(selected = isSelected, onClick = { haptic.tick(); scope.launch { ThemePreferences.setThemeMode(context, mode) } })
                                 }
                             }
                         }
@@ -381,7 +380,7 @@ fun SettingsScreen(onBack: () -> Unit) {
 
                     // ── Sprache ───────────────────────────────────────────────
                     SettingsSheet.SPRACHE -> {
-                        _root_ide_package_.com.beigel.nextime.ui.theme.AppLanguage.values().forEach { language ->
+                        AppLanguage.values().forEach { language ->
                             val isSelected = currentLang == language
                             Surface(
                                 modifier = Modifier.fillMaxWidth(),
@@ -390,9 +389,9 @@ fun SettingsScreen(onBack: () -> Unit) {
                                 border   = BorderStroke(if (isSelected) 1.5.dp else 1.dp, if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.4f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
                                 onClick  = {
                                     haptic.tick()
-                                    _root_ide_package_.com.beigel.nextime.ui.theme.LanguageManager.persistLanguageSync(context, language)
-                                    scope.launch { _root_ide_package_.com.beigel.nextime.ui.theme.LanguageManager.setLanguage(context, language) }
-                                    val localeList = if (language == _root_ide_package_.com.beigel.nextime.ui.theme.AppLanguage.SYSTEM || language.tag.isEmpty())
+                                    LanguageManager.persistLanguageSync(context, language)
+                                    scope.launch { LanguageManager.setLanguage(context, language) }
+                                    val localeList = if (language == AppLanguage.SYSTEM || language.tag.isEmpty())
                                         LocaleListCompat.getEmptyLocaleList()
                                     else
                                         LocaleListCompat.forLanguageTags(language.tag)
@@ -435,7 +434,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                     listOf("#FF7043","#EF5350","#EC407A","#AB47BC","#5C6BC0","#42A5F5","#26A69A","#66BB6A","#FFA726","#8D6E63").forEach { hex ->
                                         val c = try { Color(android.graphics.Color.parseColor(hex)) } catch (e: Exception) { MaterialTheme.colorScheme.primary }
-                                        Surface(modifier = Modifier.size(28.dp), shape = CircleShape, color = c, onClick = { scope.launch { _root_ide_package_.com.beigel.nextime.ui.theme.AppPreferences.setDefaultColor(context, hex) }; showColorPicker = false }) {
+                                        Surface(modifier = Modifier.size(28.dp), shape = CircleShape, color = c, onClick = { scope.launch { AppPreferences.setDefaultColor(context, hex) }; showColorPicker = false }) {
                                             if (defaultColor == hex) Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) { Text("✓", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 11.sp) }
                                         }
                                     }
@@ -460,7 +459,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 TimePicker(state = timePickerState)
                                 Button(
-                                    onClick  = { scope.launch { _root_ide_package_.com.beigel.nextime.ui.theme.AppPreferences.setDefaultTime(context, LocalTime.of(timePickerState.hour, timePickerState.minute)) }; showTimePicker = false },
+                                    onClick  = { scope.launch { AppPreferences.setDefaultTime(context, LocalTime.of(timePickerState.hour, timePickerState.minute)) }; showTimePicker = false },
                                     modifier = Modifier.fillMaxWidth()
                                 ) { Text(stringResource(R.string.ok)) }
                             }

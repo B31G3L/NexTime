@@ -6,9 +6,9 @@ import android.content.Intent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import todo.beigelwick.de.todolist.data.database.CountdownDatabase
+import com.beigel.nextime.data.database.CountdownDatabase
 
-class NotificationReceiver : android.content.BroadcastReceiver() {
+class NotificationReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         val countdownId = intent.getLongExtra("countdown_id", -1L)
@@ -19,7 +19,7 @@ class NotificationReceiver : android.content.BroadcastReceiver() {
         val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val database  = _root_ide_package_.com.beigel.nextime.data.database.CountdownDatabase.Companion.getDatabase(context)
+                val database  = CountdownDatabase.getDatabase(context)
                 val countdown = database.countdownDao().getCountdownById(countdownId)
                 countdown?.let {
                     CountdownNotificationManager.showCountdownNotification(context, it, isAtTime)

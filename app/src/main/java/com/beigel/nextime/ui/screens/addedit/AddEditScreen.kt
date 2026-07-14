@@ -72,16 +72,17 @@ import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import kotlin.math.abs
+import androidx.core.graphics.toColorInt
 
 private val REMINDER_GROUPS = listOf(
-    R.string.reminder_group_attime to listOf(_root_ide_package_.com.beigel.nextime.data.model.ReminderOption.AT_TIME),
+    R.string.reminder_group_attime to listOf(ReminderOption.AT_TIME),
     R.string.reminder_group_hours  to listOf(
-        _root_ide_package_.com.beigel.nextime.data.model.ReminderOption.MINUTES_30, _root_ide_package_.com.beigel.nextime.data.model.ReminderOption.HOUR_1, _root_ide_package_.com.beigel.nextime.data.model.ReminderOption.HOURS_3,
-        _root_ide_package_.com.beigel.nextime.data.model.ReminderOption.HOURS_6, _root_ide_package_.com.beigel.nextime.data.model.ReminderOption.HOURS_12
+        ReminderOption.MINUTES_30, ReminderOption.HOUR_1, ReminderOption.HOURS_3,
+        ReminderOption.HOURS_6, ReminderOption.HOURS_12
     ),
     R.string.reminder_group_days   to listOf(
-        _root_ide_package_.com.beigel.nextime.data.model.ReminderOption.DAY_1, _root_ide_package_.com.beigel.nextime.data.model.ReminderOption.DAYS_2, _root_ide_package_.com.beigel.nextime.data.model.ReminderOption.DAYS_3,
-        _root_ide_package_.com.beigel.nextime.data.model.ReminderOption.WEEK_1, _root_ide_package_.com.beigel.nextime.data.model.ReminderOption.WEEKS_2, _root_ide_package_.com.beigel.nextime.data.model.ReminderOption.MONTH_1
+        ReminderOption.DAY_1, ReminderOption.DAYS_2, ReminderOption.DAYS_3,
+        ReminderOption.WEEK_1, ReminderOption.WEEKS_2, ReminderOption.MONTH_1
     )
 )
 
@@ -101,7 +102,6 @@ private fun hasExactAlarmPermission(context: Context): Boolean {
 }
 
 private fun showExactAlarmDialog(context: Context) {
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
     AlertDialog.Builder(context)
         .setTitle(context.getString(R.string.alarm_dialog_title))
         .setMessage(context.getString(R.string.alarm_dialog_msg))
@@ -133,36 +133,36 @@ private fun showExactAlarmDialog(context: Context) {
 fun AddEditScreen(
     countdownId : Long,
     onBack      : () -> Unit,
-    viewModel   : com.beigel.nextime.ui.viewmodel.CountdownViewModel = viewModel()
+    viewModel   : CountdownViewModel = viewModel()
 ) {
     val context      = LocalContext.current
-    val haptic       = remember { _root_ide_package_.com.beigel.nextime.utils.HapticFeedback(context) }
+    val haptic       = remember { HapticFeedback(context) }
     val focusManager = LocalFocusManager.current
     val scrollState  = rememberScrollState()
 
-    var existingCountdown by remember { mutableStateOf<com.beigel.nextime.data.model.Countdown?>(null) }
+    var existingCountdown by remember { mutableStateOf<Countdown?>(null) }
     val isEdit = countdownId != -1L
 
     LaunchedEffect(countdownId) {
         if (isEdit) existingCountdown = viewModel.getCountdownById(countdownId)
     }
 
-    val defaultColor    by _root_ide_package_.com.beigel.nextime.ui.theme.AppPreferences.getDefaultColor(context).collectAsState(initial = "#FF7043")
-    val defaultTime     by _root_ide_package_.com.beigel.nextime.ui.theme.AppPreferences.getDefaultTime(context).collectAsState(initial = LocalTime.of(12, 0))
-    val globalDateUnits by _root_ide_package_.com.beigel.nextime.ui.theme.AppPreferences.getDefaultDateUnits(context).collectAsState(initial = setOf(
-        _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.DAYS))
-    val globalShowTime  by _root_ide_package_.com.beigel.nextime.ui.theme.AppPreferences.getShowTimeOnCard(context).collectAsState(initial = false)
+    val defaultColor    by AppPreferences.getDefaultColor(context).collectAsState(initial = "#FF7043")
+    val defaultTime     by AppPreferences.getDefaultTime(context).collectAsState(initial = LocalTime.of(12, 0))
+    val globalDateUnits by AppPreferences.getDefaultDateUnits(context).collectAsState(initial = setOf(
+        DisplayUnit.DAYS))
+    val globalShowTime  by AppPreferences.getShowTimeOnCard(context).collectAsState(initial = false)
 
     // ── Formular-State ────────────────────────────────────────────────────────
     var title               by remember { mutableStateOf("") }
-    var icon                by remember { mutableStateOf(_root_ide_package_.com.beigel.nextime.ui.components.DEFAULT_ICON_NAME) }
+    var icon                by remember { mutableStateOf(DEFAULT_ICON_NAME) }
     var selectedDate        by remember { mutableStateOf(LocalDate.now().plusDays(1)) }
     var selectedTime        by remember { mutableStateOf(LocalTime.of(12, 0)) }
     var showTime            by remember { mutableStateOf(false) }
-    var selectedRecurrence  by remember { mutableStateOf(_root_ide_package_.com.beigel.nextime.data.model.RecurrenceType.NONE) }
+    var selectedRecurrence  by remember { mutableStateOf(RecurrenceType.NONE) }
     var selectedColor       by remember { mutableStateOf("#FF7043") }
     var notificationEnabled by remember { mutableStateOf(false) }
-    val selectedReminders   = remember { mutableStateListOf<com.beigel.nextime.data.model.ReminderOption>() }
+    val selectedReminders   = remember { mutableStateListOf<ReminderOption>() }
     val initialized         = remember { mutableStateOf(false) }
 
     // ── "In X Tagen"-State ────────────────────────────────────────────────────
@@ -172,7 +172,7 @@ fun AddEditScreen(
 
     // ── Custom-Format-State ───────────────────────────────────────────────────
     var useCustomFormat   by remember { mutableStateOf(false) }
-    val customFormatUnits = remember { mutableStateListOf<com.beigel.nextime.data.model.DisplayUnit>() }
+    val customFormatUnits = remember { mutableStateListOf<DisplayUnit>() }
 
     // ── Inline-Picker-States ──────────────────────────────────────────────────
     var showInlineDatePicker by remember { mutableStateOf(false) }
@@ -197,33 +197,33 @@ fun AddEditScreen(
         if (isEdit && existingCountdown == null) return@LaunchedEffect
         val cd = existingCountdown
         title               = cd?.title ?: ""
-        icon                = cd?.icon?.ifEmpty { _root_ide_package_.com.beigel.nextime.ui.components.DEFAULT_ICON_NAME } ?: _root_ide_package_.com.beigel.nextime.ui.components.DEFAULT_ICON_NAME
+        icon                = cd?.icon?.ifEmpty { DEFAULT_ICON_NAME } ?: DEFAULT_ICON_NAME
         selectedDate        = cd?.targetDateTime?.toLocalDate() ?: LocalDate.now().plusDays(1)
         selectedTime        = cd?.targetDateTime?.toLocalTime() ?: defaultTime
         showTime            = cd?.targetDateTime?.toLocalTime()?.let { it != LocalTime.MIDNIGHT } ?: false
-        selectedRecurrence  = cd?.recurrenceType ?: _root_ide_package_.com.beigel.nextime.data.model.RecurrenceType.NONE
+        selectedRecurrence  = cd?.recurrenceType ?: RecurrenceType.NONE
         selectedColor       = cd?.color ?: defaultColor
         notificationEnabled = cd?.notificationEnabled ?: false
         if (cd != null && cd.reminderOptions.isNotEmpty()) {
             selectedReminders.clear()
             cd.reminderOptions.split(",").forEach { name ->
-                try { selectedReminders.add(_root_ide_package_.com.beigel.nextime.data.model.ReminderOption.valueOf(name.trim())) } catch (e: Exception) { }
+                try { selectedReminders.add(ReminderOption.valueOf(name.trim())) } catch (e: Exception) { }
             }
         }
         if (cd != null && cd.displayFormat.isNotBlank()) {
             useCustomFormat = true
             customFormatUnits.clear()
-            customFormatUnits.addAll(_root_ide_package_.com.beigel.nextime.data.model.DisplayFormat.decodeOrdered(cd.displayFormat))
+            customFormatUnits.addAll(DisplayFormat.decodeOrdered(cd.displayFormat))
         }
         initialized.value = true
     }
 
     LaunchedEffect(useCustomFormat) {
         if (useCustomFormat && customFormatUnits.isEmpty()) {
-            val sorted = _root_ide_package_.com.beigel.nextime.data.model.DISPLAY_UNIT_ORDER.filter { it in globalDateUnits }
+            val sorted = DISPLAY_UNIT_ORDER.filter { it in globalDateUnits }
             customFormatUnits.addAll(sorted)
             if (globalShowTime) {
-                listOf(_root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.HOURS, _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.MINUTES, _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.SECONDS).forEach {
+                listOf(DisplayUnit.HOURS, DisplayUnit.MINUTES, DisplayUnit.SECONDS).forEach {
                     if (!customFormatUnits.contains(it)) customFormatUnits.add(it)
                 }
             }
@@ -237,7 +237,7 @@ fun AddEditScreen(
 
     val isCountUp = remember(selectedDate) { selectedDate.isBefore(LocalDate.now()) }
     LaunchedEffect(isCountUp) {
-        if (isCountUp && selectedRecurrence != _root_ide_package_.com.beigel.nextime.data.model.RecurrenceType.NONE) selectedRecurrence = _root_ide_package_.com.beigel.nextime.data.model.RecurrenceType.NONE
+        if (isCountUp && selectedRecurrence != RecurrenceType.NONE) selectedRecurrence = RecurrenceType.NONE
     }
 
     val zoneOffset = java.time.ZoneId.systemDefault().rules
@@ -265,13 +265,13 @@ fun AddEditScreen(
     }
 
     val previewDisplayFormat = if (useCustomFormat && customFormatUnits.isNotEmpty())
-        _root_ide_package_.com.beigel.nextime.data.model.DisplayFormat.encodeOrdered(customFormatUnits.toList())
+        DisplayFormat.encodeOrdered(customFormatUnits.toList())
     else ""
 
-    val previewCountdown = _root_ide_package_.com.beigel.nextime.data.model.Countdown(
+    val previewCountdown = Countdown(
         id = existingCountdown?.id ?: 0L,
         title = title.ifBlank { stringResource(R.string.preview_placeholder) },
-        icon = icon.ifEmpty { _root_ide_package_.com.beigel.nextime.ui.components.DEFAULT_ICON_NAME },
+        icon = icon.ifEmpty { DEFAULT_ICON_NAME },
         targetDateTime = LocalDateTime.of(
             selectedDate,
             if (showTime) selectedTime else LocalTime.MIDNIGHT
@@ -281,15 +281,15 @@ fun AddEditScreen(
         recurrence = selectedRecurrence.name
     )
 
-    fun buildCountdown(): com.beigel.nextime.data.model.Countdown {
+    fun buildCountdown(): Countdown {
         val target = LocalDateTime.of(selectedDate, if (showTime) selectedTime else LocalTime.MIDNIGHT)
-        return _root_ide_package_.com.beigel.nextime.data.model.Countdown(
+        return Countdown(
             id = existingCountdown?.id ?: 0L,
             title = title,
-            icon = icon.ifEmpty { _root_ide_package_.com.beigel.nextime.ui.components.DEFAULT_ICON_NAME },
+            icon = icon.ifEmpty { DEFAULT_ICON_NAME },
             targetDateTime = target,
             displayFormat = if (useCustomFormat && customFormatUnits.isNotEmpty())
-                _root_ide_package_.com.beigel.nextime.data.model.DisplayFormat.encodeOrdered(
+                DisplayFormat.encodeOrdered(
                     customFormatUnits.toList()
                 )
             else "",
@@ -355,7 +355,7 @@ fun AddEditScreen(
                     previewCountdown.targetDateTime, previewCountdown.color,
                     previewCountdown.title, previewCountdown.icon, previewDisplayFormat
                 ) {
-                    _root_ide_package_.com.beigel.nextime.ui.components.CountdownCard(countdown = previewCountdown)
+                    CountdownCard(countdown = previewCountdown)
                 }
                 HorizontalDivider(modifier = Modifier.padding(top = 12.dp), color = MaterialTheme.colorScheme.outlineVariant)
             }
@@ -386,7 +386,7 @@ fun AddEditScreen(
                                 .clickable { haptic.tick(); showIconSheet = true },
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(_root_ide_package_.com.beigel.nextime.ui.components.iconByName(icon), stringResource(R.string.section_icon), tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(26.dp))
+                            Icon(iconByName(icon), stringResource(R.string.section_icon), tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(26.dp))
                         }
                         OutlinedTextField(
                             value         = title,
@@ -612,7 +612,7 @@ fun AddEditScreen(
                             verticalArrangement   = Arrangement.spacedBy(8.dp),
                             modifier              = Modifier.fillMaxWidth().padding(top = 4.dp)
                         ) {
-                            _root_ide_package_.com.beigel.nextime.data.model.DISPLAY_UNIT_ORDER.forEach { unit ->
+                            DISPLAY_UNIT_ORDER.forEach { unit ->
                                 val isSelected = customFormatUnits.contains(unit)
                                 FilterChip(
                                     selected = isSelected,
@@ -622,7 +622,7 @@ fun AddEditScreen(
                                             if (customFormatUnits.size > 1) customFormatUnits.remove(unit)
                                         } else {
                                             customFormatUnits.add(unit)
-                                            val sorted = _root_ide_package_.com.beigel.nextime.data.model.DISPLAY_UNIT_ORDER.filter { customFormatUnits.contains(it) }
+                                            val sorted = DISPLAY_UNIT_ORDER.filter { customFormatUnits.contains(it) }
                                             customFormatUnits.clear()
                                             customFormatUnits.addAll(sorted)
                                         }
@@ -728,13 +728,13 @@ fun AddEditScreen(
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(stringResource(R.string.recurrence_hint), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            if (selectedRecurrence != _root_ide_package_.com.beigel.nextime.data.model.RecurrenceType.NONE) {
+                            if (selectedRecurrence != RecurrenceType.NONE) {
                                 Text(recurrenceLabel(selectedRecurrence), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
                             }
                         }
                         Switch(
-                            checked         = selectedRecurrence != _root_ide_package_.com.beigel.nextime.data.model.RecurrenceType.NONE,
-                            onCheckedChange = { enabled -> haptic.tick(); selectedRecurrence = if (enabled) _root_ide_package_.com.beigel.nextime.data.model.RecurrenceType.YEARLY else _root_ide_package_.com.beigel.nextime.data.model.RecurrenceType.NONE },
+                            checked         = selectedRecurrence != RecurrenceType.NONE,
+                            onCheckedChange = { enabled -> haptic.tick(); selectedRecurrence = if (enabled) RecurrenceType.YEARLY else RecurrenceType.NONE },
                             enabled         = !isCountUp
                         )
                     }
@@ -744,14 +744,14 @@ fun AddEditScreen(
                             Text(stringResource(R.string.recurrence_countup_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onErrorContainer)
                         }
                     }
-                    AnimatedVisibility(visible = selectedRecurrence != _root_ide_package_.com.beigel.nextime.data.model.RecurrenceType.NONE && !isCountUp, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) {
+                    AnimatedVisibility(visible = selectedRecurrence != RecurrenceType.NONE && !isCountUp, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) {
                         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp), color = MaterialTheme.colorScheme.outlineVariant)
                             listOf(
-                                _root_ide_package_.com.beigel.nextime.data.model.RecurrenceType.DAILY   to stringResource(R.string.recurrence_daily),
-                                _root_ide_package_.com.beigel.nextime.data.model.RecurrenceType.WEEKLY  to stringResource(R.string.recurrence_weekly),
-                                _root_ide_package_.com.beigel.nextime.data.model.RecurrenceType.MONTHLY to stringResource(R.string.recurrence_monthly),
-                                _root_ide_package_.com.beigel.nextime.data.model.RecurrenceType.YEARLY  to stringResource(R.string.recurrence_yearly),
+                                RecurrenceType.DAILY   to stringResource(R.string.recurrence_daily),
+                                RecurrenceType.WEEKLY  to stringResource(R.string.recurrence_weekly),
+                                RecurrenceType.MONTHLY to stringResource(R.string.recurrence_monthly),
+                                RecurrenceType.YEARLY  to stringResource(R.string.recurrence_yearly),
                             ).forEach { (type, label) ->
                                 Row(
                                     modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).clickable { haptic.tick(); selectedRecurrence = type }.padding(horizontal = 4.dp, vertical = 10.dp),
@@ -788,24 +788,24 @@ fun AddEditScreen(
     // ── Icon-BottomSheet ──────────────────────────────────────────────────────
     if (showIconSheet) {
         val sheetState       = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-        var selectedCategory by remember { mutableStateOf<com.beigel.nextime.ui.components.IconCategory?>(null) }
-        val visibleIcons     = remember(selectedCategory) { if (selectedCategory == null) _root_ide_package_.com.beigel.nextime.ui.components.ALL_NEXTIME_ICONS else _root_ide_package_.com.beigel.nextime.ui.components.ALL_NEXTIME_ICONS.filter { it.category == selectedCategory } }
+        var selectedCategory by remember { mutableStateOf<IconCategory?>(null) }
+        val visibleIcons     = remember(selectedCategory) { if (selectedCategory == null) ALL_NEXTIME_ICONS else ALL_NEXTIME_ICONS.filter { it.category == selectedCategory } }
         ModalBottomSheet(onDismissRequest = { haptic.tick(); showIconSheet = false }, sheetState = sheetState, containerColor = MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)) {
             Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(stringResource(R.string.section_icon), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
                     item { FilterChip(selected = selectedCategory == null, onClick = { haptic.tick(); selectedCategory = null }, label = { Text(stringResource(R.string.template_cat_all)) }) }
-                    items(_root_ide_package_.com.beigel.nextime.ui.components.IconCategory.values().toList()) { category ->
+                    items(IconCategory.values().toList()) { category ->
                         FilterChip(selected = selectedCategory == category, onClick = { haptic.tick(); selectedCategory = category }, label = {
                             Text(when (category) {
-                                _root_ide_package_.com.beigel.nextime.ui.components.IconCategory.TIME      -> stringResource(R.string.icon_cat_time)
-                                _root_ide_package_.com.beigel.nextime.ui.components.IconCategory.TRAVEL    -> stringResource(R.string.icon_cat_travel)
-                                _root_ide_package_.com.beigel.nextime.ui.components.IconCategory.CELEBRATE -> stringResource(R.string.icon_cat_celebrate)
-                                _root_ide_package_.com.beigel.nextime.ui.components.IconCategory.WORK      -> stringResource(R.string.icon_cat_work)
-                                _root_ide_package_.com.beigel.nextime.ui.components.IconCategory.SPORT     -> stringResource(R.string.icon_cat_sport)
-                                _root_ide_package_.com.beigel.nextime.ui.components.IconCategory.NATURE    -> stringResource(R.string.icon_cat_nature)
-                                _root_ide_package_.com.beigel.nextime.ui.components.IconCategory.HOME      -> stringResource(R.string.icon_cat_home)
-                                _root_ide_package_.com.beigel.nextime.ui.components.IconCategory.OTHER     -> stringResource(R.string.icon_cat_other)
+                                IconCategory.TIME      -> stringResource(R.string.icon_cat_time)
+                                IconCategory.TRAVEL    -> stringResource(R.string.icon_cat_travel)
+                                IconCategory.CELEBRATE -> stringResource(R.string.icon_cat_celebrate)
+                                IconCategory.WORK      -> stringResource(R.string.icon_cat_work)
+                                IconCategory.SPORT     -> stringResource(R.string.icon_cat_sport)
+                                IconCategory.NATURE    -> stringResource(R.string.icon_cat_nature)
+                                IconCategory.HOME      -> stringResource(R.string.icon_cat_home)
+                                IconCategory.OTHER     -> stringResource(R.string.icon_cat_other)
                             })
                         })
                     }
@@ -828,7 +828,9 @@ fun AddEditScreen(
 
     // ── Custom Color Picker ───────────────────────────────────────────────────
     if (showCustomColorPicker) {
-        val init = try { android.graphics.Color.parseColor(selectedColor) } catch (e: Exception) { android.graphics.Color.parseColor("#FF7043") }
+        val init = try {
+            selectedColor.toColorInt() } catch (e: Exception) {
+            "#FF7043".toColorInt() }
         var r by remember { mutableStateOf(android.graphics.Color.red(init)) }
         var g by remember { mutableStateOf(android.graphics.Color.green(init)) }
         var b by remember { mutableStateOf(android.graphics.Color.blue(init)) }
@@ -852,40 +854,40 @@ fun AddEditScreen(
 // ─── Hilfsfunktionen ──────────────────────────────────────────────────────────
 
 @Composable
-private fun unitLabel(unit: com.beigel.nextime.data.model.DisplayUnit): String = when (unit) {
-    _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.YEARS   -> stringResource(R.string.format_unit_years)
-    _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.MONTHS  -> stringResource(R.string.format_unit_months)
-    _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.WEEKS   -> stringResource(R.string.format_unit_weeks)
-    _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.DAYS    -> stringResource(R.string.format_unit_days)
-    _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.HOURS   -> stringResource(R.string.format_unit_hours)
-    _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.MINUTES -> stringResource(R.string.format_unit_minutes)
-    _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.SECONDS -> stringResource(R.string.format_unit_seconds)
+private fun unitLabel(unit: DisplayUnit): String = when (unit) {
+    DisplayUnit.YEARS   -> stringResource(R.string.format_unit_years)
+    DisplayUnit.MONTHS  -> stringResource(R.string.format_unit_months)
+    DisplayUnit.WEEKS   -> stringResource(R.string.format_unit_weeks)
+    DisplayUnit.DAYS    -> stringResource(R.string.format_unit_days)
+    DisplayUnit.HOURS   -> stringResource(R.string.format_unit_hours)
+    DisplayUnit.MINUTES -> stringResource(R.string.format_unit_minutes)
+    DisplayUnit.SECONDS -> stringResource(R.string.format_unit_seconds)
 }
 
 @Composable
-private fun reminderLabel(option: com.beigel.nextime.data.model.ReminderOption): String = when (option) {
-    _root_ide_package_.com.beigel.nextime.data.model.ReminderOption.AT_TIME    -> stringResource(R.string.reminder_at_time)
-    _root_ide_package_.com.beigel.nextime.data.model.ReminderOption.MINUTES_30 -> stringResource(R.string.reminder_30_minutes)
-    _root_ide_package_.com.beigel.nextime.data.model.ReminderOption.HOUR_1     -> stringResource(R.string.reminder_1_hour)
-    _root_ide_package_.com.beigel.nextime.data.model.ReminderOption.HOURS_3    -> stringResource(R.string.reminder_3_hours)
-    _root_ide_package_.com.beigel.nextime.data.model.ReminderOption.HOURS_6    -> stringResource(R.string.reminder_6_hours)
-    _root_ide_package_.com.beigel.nextime.data.model.ReminderOption.HOURS_12   -> stringResource(R.string.reminder_12_hours)
-    _root_ide_package_.com.beigel.nextime.data.model.ReminderOption.DAY_1      -> stringResource(R.string.reminder_1_day)
-    _root_ide_package_.com.beigel.nextime.data.model.ReminderOption.DAYS_2     -> stringResource(R.string.reminder_2_days)
-    _root_ide_package_.com.beigel.nextime.data.model.ReminderOption.DAYS_3     -> stringResource(R.string.reminder_3_days)
-    _root_ide_package_.com.beigel.nextime.data.model.ReminderOption.WEEK_1     -> stringResource(R.string.reminder_1_week)
-    _root_ide_package_.com.beigel.nextime.data.model.ReminderOption.WEEKS_2    -> stringResource(R.string.reminder_2_weeks)
-    _root_ide_package_.com.beigel.nextime.data.model.ReminderOption.MONTH_1    -> stringResource(R.string.reminder_1_month)
+private fun reminderLabel(option: ReminderOption): String = when (option) {
+    ReminderOption.AT_TIME    -> stringResource(R.string.reminder_at_time)
+    ReminderOption.MINUTES_30 -> stringResource(R.string.reminder_30_minutes)
+    ReminderOption.HOUR_1     -> stringResource(R.string.reminder_1_hour)
+    ReminderOption.HOURS_3    -> stringResource(R.string.reminder_3_hours)
+    ReminderOption.HOURS_6    -> stringResource(R.string.reminder_6_hours)
+    ReminderOption.HOURS_12   -> stringResource(R.string.reminder_12_hours)
+    ReminderOption.DAY_1      -> stringResource(R.string.reminder_1_day)
+    ReminderOption.DAYS_2     -> stringResource(R.string.reminder_2_days)
+    ReminderOption.DAYS_3     -> stringResource(R.string.reminder_3_days)
+    ReminderOption.WEEK_1     -> stringResource(R.string.reminder_1_week)
+    ReminderOption.WEEKS_2    -> stringResource(R.string.reminder_2_weeks)
+    ReminderOption.MONTH_1    -> stringResource(R.string.reminder_1_month)
     else                      -> stringResource(R.string.reminder_none)
 }
 
 @Composable
-private fun recurrenceLabel(type: com.beigel.nextime.data.model.RecurrenceType): String = when (type) {
-    _root_ide_package_.com.beigel.nextime.data.model.RecurrenceType.DAILY   -> stringResource(R.string.recurrence_daily)
-    _root_ide_package_.com.beigel.nextime.data.model.RecurrenceType.WEEKLY  -> stringResource(R.string.recurrence_weekly)
-    _root_ide_package_.com.beigel.nextime.data.model.RecurrenceType.MONTHLY -> stringResource(R.string.recurrence_monthly)
-    _root_ide_package_.com.beigel.nextime.data.model.RecurrenceType.YEARLY  -> stringResource(R.string.recurrence_yearly)
-    _root_ide_package_.com.beigel.nextime.data.model.RecurrenceType.NONE    -> ""
+private fun recurrenceLabel(type: RecurrenceType): String = when (type) {
+    RecurrenceType.DAILY   -> stringResource(R.string.recurrence_daily)
+    RecurrenceType.WEEKLY  -> stringResource(R.string.recurrence_weekly)
+    RecurrenceType.MONTHLY -> stringResource(R.string.recurrence_monthly)
+    RecurrenceType.YEARLY  -> stringResource(R.string.recurrence_yearly)
+    RecurrenceType.NONE    -> ""
 }
 
 @Composable

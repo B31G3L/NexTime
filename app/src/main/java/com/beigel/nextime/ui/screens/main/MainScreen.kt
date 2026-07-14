@@ -46,7 +46,6 @@ import com.google.android.play.core.review.ReviewManagerFactory
 import com.beigel.nextime.R
 import com.beigel.nextime.data.model.Countdown
 import com.beigel.nextime.data.model.FilterMode
-import com.beigel.nextime.data.model.calculateTimeRemaining
 import com.beigel.nextime.ui.components.CountdownCard
 import com.beigel.nextime.ui.components.CountdownCardDialog
 import com.beigel.nextime.ui.components.EmptyStateView
@@ -65,10 +64,10 @@ fun MainScreen(
     onNavigateToEdit     : (Long) -> Unit,
     onNavigateToSettings : () -> Unit,
     onNavigateToInfo     : () -> Unit,
-    viewModel            : com.beigel.nextime.ui.viewmodel.CountdownViewModel = viewModel()
+    viewModel            : CountdownViewModel = viewModel()
 ) {
     val context     = LocalContext.current
-    val haptic      = remember { _root_ide_package_.com.beigel.nextime.utils.HapticFeedback(context) }
+    val haptic      = remember { HapticFeedback(context) }
 
     val countdowns  by viewModel.countdowns.collectAsState()
     val filterMode  by viewModel.filterMode.collectAsState()
@@ -77,7 +76,7 @@ fun MainScreen(
 
     var showSearch      by remember { mutableStateOf(false) }
     var showSortMenu    by remember { mutableStateOf(false) }
-    var dialogCountdown by remember { mutableStateOf<com.beigel.nextime.data.model.Countdown?>(null) }
+    var dialogCountdown by remember { mutableStateOf<Countdown?>(null) }
 
     LaunchedEffect(Unit) {
         viewModel.triggerReview.collect {
@@ -147,7 +146,7 @@ fun MainScreen(
                 )) + fadeIn(),
                 exit    = scaleOut(animationSpec = tween(200)) + fadeOut()
             ) {
-                _root_ide_package_.com.beigel.nextime.ui.components.ExpandableFab(
+                ExpandableFab(
                     onCreateCustom = { onNavigateToAddEdit() },
                     onTemplateSelected = { countdown ->
                         viewModel.addCountdown(countdown)
@@ -168,7 +167,7 @@ fun MainScreen(
     }
 
     dialogCountdown?.let { countdown ->
-        _root_ide_package_.com.beigel.nextime.ui.components.CountdownCardDialog(
+        CountdownCardDialog(
             countdown = countdown,
             onDismiss = { dialogCountdown = null },
             onEdit = { c -> dialogCountdown = null; onNavigateToEdit(c.id) },
@@ -196,15 +195,15 @@ private fun launchReviewFlow(context: Context) {
 
 @Composable
 private fun MainListContent(
-    countdowns       : List<com.beigel.nextime.data.model.Countdown>,
-    filterMode       : com.beigel.nextime.data.model.FilterMode,
+    countdowns       : List<Countdown>,
+    filterMode       : FilterMode,
     searchQuery      : String,
     paddingValues    : PaddingValues,
-    onCountdownClick : (com.beigel.nextime.data.model.Countdown) -> Unit,
+    onCountdownClick : (Countdown) -> Unit,
     onAddCountdown   : () -> Unit
 ) {
     if (countdowns.isEmpty()) {
-        _root_ide_package_.com.beigel.nextime.ui.components.EmptyStateView(
+        EmptyStateView(
             modifier = Modifier.padding(paddingValues),
             onAddCountdown = onAddCountdown
         )
@@ -221,7 +220,7 @@ private fun MainListContent(
         ),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        if (searchQuery.isNotBlank() || filterMode != _root_ide_package_.com.beigel.nextime.data.model.FilterMode.ALL) {
+        if (searchQuery.isNotBlank() || filterMode != FilterMode.ALL) {
             items(items = countdowns, key = { it.id }) { countdown ->
                 CountdownCardItem(countdown, onCountdownClick)
             }
@@ -284,28 +283,28 @@ private fun SectionHeader(label: String, count: Int) {
 
 @Composable
 private fun CountdownCardItem(
-    countdown        : com.beigel.nextime.data.model.Countdown,
-    onCountdownClick : (com.beigel.nextime.data.model.Countdown) -> Unit
+    countdown        : Countdown,
+    onCountdownClick : (Countdown) -> Unit
 ) {
     Box(modifier = Modifier.fillMaxWidth().clickable { onCountdownClick(countdown) }) {
-        _root_ide_package_.com.beigel.nextime.ui.components.CountdownCard(countdown = countdown)
+        CountdownCard(countdown = countdown)
     }
 }
 
 // ─── Filter Chips ─────────────────────────────────────────────────────────────
 
 @Composable
-private fun FilterChipRow(currentMode: com.beigel.nextime.data.model.FilterMode, onModeSelected: (com.beigel.nextime.data.model.FilterMode) -> Unit) {
+private fun FilterChipRow(currentMode: FilterMode, onModeSelected: (FilterMode) -> Unit) {
     Row(
         modifier              = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        FilterChip(selected = currentMode == _root_ide_package_.com.beigel.nextime.data.model.FilterMode.ALL,       onClick = { onModeSelected(
-            _root_ide_package_.com.beigel.nextime.data.model.FilterMode.ALL) },       label = { Text(stringResource(R.string.filter_all)) })
-        FilterChip(selected = currentMode == _root_ide_package_.com.beigel.nextime.data.model.FilterMode.COUNTDOWN, onClick = { onModeSelected(
-            _root_ide_package_.com.beigel.nextime.data.model.FilterMode.COUNTDOWN) }, label = { Text(stringResource(R.string.filter_countdown)) })
-        FilterChip(selected = currentMode == _root_ide_package_.com.beigel.nextime.data.model.FilterMode.COUNTUP,   onClick = { onModeSelected(
-            _root_ide_package_.com.beigel.nextime.data.model.FilterMode.COUNTUP) },   label = { Text(stringResource(R.string.filter_countup)) })
+        FilterChip(selected = currentMode == FilterMode.ALL,       onClick = { onModeSelected(
+            FilterMode.ALL) },       label = { Text(stringResource(R.string.filter_all)) })
+        FilterChip(selected = currentMode == FilterMode.COUNTDOWN, onClick = { onModeSelected(
+            FilterMode.COUNTDOWN) }, label = { Text(stringResource(R.string.filter_countdown)) })
+        FilterChip(selected = currentMode == FilterMode.COUNTUP,   onClick = { onModeSelected(
+            FilterMode.COUNTUP) },   label = { Text(stringResource(R.string.filter_countup)) })
     }
 }
 
@@ -313,16 +312,16 @@ private fun FilterChipRow(currentMode: com.beigel.nextime.data.model.FilterMode,
 
 @Composable
 private fun SortDropdownMenu(
-    expanded: Boolean, currentSort: com.beigel.nextime.ui.viewmodel.SortMode,
-    onSortSelected: (com.beigel.nextime.ui.viewmodel.SortMode) -> Unit, onDismiss: () -> Unit
+    expanded: Boolean, currentSort: SortMode,
+    onSortSelected: (SortMode) -> Unit, onDismiss: () -> Unit
 ) {
     DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
         listOf(
-            _root_ide_package_.com.beigel.nextime.ui.viewmodel.SortMode.DATE_ASC   to Pair(Icons.Outlined.CalendarToday, stringResource(R.string.sort_date_asc)),
-            _root_ide_package_.com.beigel.nextime.ui.viewmodel.SortMode.DATE_DESC  to Pair(Icons.Outlined.CalendarToday, stringResource(R.string.sort_date_desc)),
-            _root_ide_package_.com.beigel.nextime.ui.viewmodel.SortMode.TITLE_ASC  to Pair(Icons.Outlined.SortByAlpha,   stringResource(R.string.sort_title_asc)),
-            _root_ide_package_.com.beigel.nextime.ui.viewmodel.SortMode.TITLE_DESC to Pair(Icons.Outlined.SortByAlpha,   stringResource(R.string.sort_title_desc)),
-            _root_ide_package_.com.beigel.nextime.ui.viewmodel.SortMode.CREATED    to Pair(Icons.Outlined.AccessTime,     stringResource(R.string.sort_created))
+            SortMode.DATE_ASC   to Pair(Icons.Outlined.CalendarToday, stringResource(R.string.sort_date_asc)),
+            SortMode.DATE_DESC  to Pair(Icons.Outlined.CalendarToday, stringResource(R.string.sort_date_desc)),
+            SortMode.TITLE_ASC  to Pair(Icons.Outlined.SortByAlpha,   stringResource(R.string.sort_title_asc)),
+            SortMode.TITLE_DESC to Pair(Icons.Outlined.SortByAlpha,   stringResource(R.string.sort_title_desc)),
+            SortMode.CREATED    to Pair(Icons.Outlined.AccessTime,     stringResource(R.string.sort_created))
         ).forEach { (mode, iconAndLabel) ->
             val (icon, label) = iconAndLabel
             DropdownMenuItem(
@@ -377,7 +376,7 @@ private fun SearchField(query: String, onQueryChange: (String) -> Unit, onClose:
 
 // ─── Share ────────────────────────────────────────────────────────────────────
 
-private fun shareCountdown(context: Context, countdown: com.beigel.nextime.data.model.Countdown) {
+private fun shareCountdown(context: Context, countdown: Countdown) {
     val locale    = Locale.getDefault()
     val timeInfo  = countdown.calculateTimeRemaining()
     val dateStr   = countdown.effectiveTarget.format(

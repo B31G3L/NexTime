@@ -10,10 +10,9 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.beigel.nextime.data.model.calculateTimeRemaining
-import todo.beigelwick.de.todolist.MainActivity
-import todo.beigelwick.de.todolist.R
-import todo.beigelwick.de.todolist.data.model.Countdown
-import todo.beigelwick.de.todolist.data.model.calculateTimeRemaining
+import com.beigel.nextime.MainActivity
+import com.beigel.nextime.R
+import com.beigel.nextime.data.model.Countdown
 
 object CountdownNotificationManager {
 
@@ -41,10 +40,10 @@ object CountdownNotificationManager {
 
     fun showCountdownNotification(
         context    : Context,
-        countdown  : com.beigel.nextime.data.model.Countdown,
+        countdown  : Countdown,
         isAtTime   : Boolean = false
     ) {
-        val intent = Intent(context, _root_ide_package_.com.beigel.nextime.MainActivity::class.java).apply {
+        val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
         val pendingIntent = PendingIntent.getActivity(

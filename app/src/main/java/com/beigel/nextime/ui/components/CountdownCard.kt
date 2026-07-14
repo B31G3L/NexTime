@@ -35,9 +35,6 @@ import com.beigel.nextime.data.model.DisplayFormat
 import com.beigel.nextime.data.model.DisplayUnit
 import com.beigel.nextime.data.model.RecurrenceType
 import com.beigel.nextime.data.model.TIME_UNITS
-import com.beigel.nextime.data.model.buildDisplaySegments
-import com.beigel.nextime.data.model.calculateTimeRemaining
-import com.beigel.nextime.ui.components.iconByName
 import com.beigel.nextime.ui.theme.AppPreferences
 import com.beigel.nextime.ui.theme.DisplayStyle
 import com.beigel.nextime.ui.viewmodel.CountdownViewModel
@@ -48,7 +45,7 @@ import java.util.Locale
 
 // ─── Hilfsfunktion: lokalisiertes Datum ──────────────────────────────────────
 
-private fun formatDate(countdown: com.beigel.nextime.data.model.Countdown, locale: Locale): String {
+private fun formatDate(countdown: Countdown, locale: Locale): String {
     val datePart = countdown.effectiveTarget.format(
         DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
     )
@@ -66,9 +63,9 @@ private fun formatDate(countdown: com.beigel.nextime.data.model.Countdown, local
 
 @Composable
 fun CountdownCard(
-    countdown    : com.beigel.nextime.data.model.Countdown,
-    viewModel    : com.beigel.nextime.ui.viewmodel.CountdownViewModel = viewModel(),
-    previewStyle : com.beigel.nextime.ui.theme.DisplayStyle? = null
+    countdown    : Countdown,
+    viewModel    : CountdownViewModel = viewModel(),
+    previewStyle : DisplayStyle? = null
 ) {
     val context = LocalContext.current
     val locale  = Locale.getDefault()
@@ -76,21 +73,21 @@ fun CountdownCard(
     val displayStyle by if (previewStyle != null) {
         produceState(initialValue = previewStyle) { value = previewStyle }
     } else {
-        _root_ide_package_.com.beigel.nextime.ui.theme.AppPreferences.getDisplayStyle(context).collectAsState(initial = _root_ide_package_.com.beigel.nextime.ui.theme.DisplayStyle.STANDARD)
+        AppPreferences.getDisplayStyle(context).collectAsState(initial = DisplayStyle.STANDARD)
     }
 
-    val globalDateUnits by _root_ide_package_.com.beigel.nextime.ui.theme.AppPreferences.getDefaultDateUnits(context)
-        .collectAsState(initial = setOf(_root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.DAYS))
-    val showTimeOnCard by _root_ide_package_.com.beigel.nextime.ui.theme.AppPreferences.getShowTimeOnCard(context)
+    val globalDateUnits by AppPreferences.getDefaultDateUnits(context)
+        .collectAsState(initial = setOf(DisplayUnit.DAYS))
+    val showTimeOnCard by AppPreferences.getShowTimeOnCard(context)
         .collectAsState(initial = false)
 
     val hasCustomFormat = countdown.displayFormat.isNotBlank()
     val activeUnits = remember(countdown.displayFormat, globalDateUnits) {
         if (hasCustomFormat) countdown.activeDisplayUnitsOrdered
-        else _root_ide_package_.com.beigel.nextime.data.model.DisplayFormat.sorted(globalDateUnits)
+        else DisplayFormat.sorted(globalDateUnits)
     }
     val needsSecondTick = showTimeOnCard ||
-            (hasCustomFormat && activeUnits.any { it in _root_ide_package_.com.beigel.nextime.data.model.TIME_UNITS })
+            (hasCustomFormat && activeUnits.any { it in TIME_UNITS })
 
     val tick by if (needsSecondTick)
         viewModel.tickSeconds.collectAsState()
@@ -128,10 +125,10 @@ fun CountdownCard(
         border          = androidx.compose.foundation.BorderStroke(0.5.dp, accentColor.copy(alpha = 0.28f)),
     ) {
         when (displayStyle) {
-            _root_ide_package_.com.beigel.nextime.ui.theme.DisplayStyle.STANDARD   -> StandardLayout(countdown, timeInfo, activeUnits, accentColor, contentColor, subtleColor, isToday, dateText)
-            _root_ide_package_.com.beigel.nextime.ui.theme.DisplayStyle.KOMPAKT    -> KompaktLayout(countdown, timeInfo, activeUnits, accentColor, contentColor, subtleColor, isToday, dateText)
-            _root_ide_package_.com.beigel.nextime.ui.theme.DisplayStyle.BANNER     -> BannerLayout(countdown, timeInfo, activeUnits, accentColor, contentColor, subtleColor, isToday, dateText)
-            _root_ide_package_.com.beigel.nextime.ui.theme.DisplayStyle.INVERTIERT -> InvertiertLayout(countdown, timeInfo, activeUnits, accentColor, contentColor, subtleColor, isToday, dateText)
+            DisplayStyle.STANDARD   -> StandardLayout(countdown, timeInfo, activeUnits, accentColor, contentColor, subtleColor, isToday, dateText)
+            DisplayStyle.KOMPAKT    -> KompaktLayout(countdown, timeInfo, activeUnits, accentColor, contentColor, subtleColor, isToday, dateText)
+            DisplayStyle.BANNER     -> BannerLayout(countdown, timeInfo, activeUnits, accentColor, contentColor, subtleColor, isToday, dateText)
+            DisplayStyle.INVERTIERT -> InvertiertLayout(countdown, timeInfo, activeUnits, accentColor, contentColor, subtleColor, isToday, dateText)
         }
     }
 }
@@ -140,7 +137,7 @@ fun CountdownCard(
 
 @Composable
 private fun StandardLayout(
-    countdown: com.beigel.nextime.data.model.Countdown, timeInfo: com.beigel.nextime.data.model.CountdownInfo, units: List<com.beigel.nextime.data.model.DisplayUnit>,
+    countdown: Countdown, timeInfo: CountdownInfo, units: List<DisplayUnit>,
     accentColor: Color, contentColor: Color, subtleColor: Color,
     isToday: Boolean, dateText: String
 ) {
@@ -157,7 +154,7 @@ private fun StandardLayout(
 
 @Composable
 private fun InvertiertLayout(
-    countdown: com.beigel.nextime.data.model.Countdown, timeInfo: com.beigel.nextime.data.model.CountdownInfo, units: List<com.beigel.nextime.data.model.DisplayUnit>,
+    countdown: Countdown, timeInfo: CountdownInfo, units: List<DisplayUnit>,
     accentColor: Color, contentColor: Color, subtleColor: Color,
     isToday: Boolean, dateText: String
 ) {
@@ -172,7 +169,7 @@ private fun InvertiertLayout(
 
 @Composable
 private fun InfoRow(
-    countdown: com.beigel.nextime.data.model.Countdown, accentColor: Color, contentColor: Color, subtleColor: Color,
+    countdown: Countdown, accentColor: Color, contentColor: Color, subtleColor: Color,
     isToday: Boolean, dateText: String
 ) {
     Row(
@@ -203,7 +200,7 @@ private fun InfoRow(
 
 @Composable
 private fun KompaktLayout(
-    countdown: com.beigel.nextime.data.model.Countdown, timeInfo: com.beigel.nextime.data.model.CountdownInfo, units: List<com.beigel.nextime.data.model.DisplayUnit>,
+    countdown: Countdown, timeInfo: CountdownInfo, units: List<DisplayUnit>,
     accentColor: Color, contentColor: Color, subtleColor: Color,
     isToday: Boolean, dateText: String
 ) {
@@ -236,7 +233,7 @@ private fun KompaktLayout(
 
 @Composable
 private fun BannerLayout(
-    countdown: com.beigel.nextime.data.model.Countdown, timeInfo: com.beigel.nextime.data.model.CountdownInfo, units: List<com.beigel.nextime.data.model.DisplayUnit>,
+    countdown: Countdown, timeInfo: CountdownInfo, units: List<DisplayUnit>,
     accentColor: Color, contentColor: Color, subtleColor: Color,
     isToday: Boolean, dateText: String
 ) {
@@ -283,7 +280,7 @@ private fun BannerLayout(
 // ─── Gemeinsame Bausteine ─────────────────────────────────────────────────────
 
 @Composable
-private fun IconBox(countdown: com.beigel.nextime.data.model.Countdown, accentColor: Color, boxSize: Dp, glyphSize: Dp) {
+private fun IconBox(countdown: Countdown, accentColor: Color, boxSize: Dp, glyphSize: Dp) {
     Box(
         modifier = Modifier
             .size(boxSize)
@@ -301,7 +298,7 @@ private fun IconBox(countdown: com.beigel.nextime.data.model.Countdown, accentCo
 }
 
 @Composable
-private fun Badges(countdown: com.beigel.nextime.data.model.Countdown, accentColor: Color, isToday: Boolean) {
+private fun Badges(countdown: Countdown, accentColor: Color, isToday: Boolean) {
     if (countdown.isPinned)    PinBadge(accentColor)
     if (countdown.isRecurring) RecurringBadge(countdown.recurrenceType, accentColor)
     if (isToday)               TodayBadge(accentColor)
@@ -348,7 +345,7 @@ private fun TodayBadge(accentColor: Color) {
 }
 
 @Composable
-private fun RecurringBadge(recurrenceType: com.beigel.nextime.data.model.RecurrenceType, accentColor: Color) {
+private fun RecurringBadge(recurrenceType: RecurrenceType, accentColor: Color) {
     Box(
         modifier         = Modifier
             .clip(RoundedCornerShape(20.dp))
@@ -368,11 +365,11 @@ private fun RecurringBadge(recurrenceType: com.beigel.nextime.data.model.Recurre
             )
             Text(
                 text = when (recurrenceType) {
-                    _root_ide_package_.com.beigel.nextime.data.model.RecurrenceType.DAILY   -> stringResource(R.string.badge_daily)
-                    _root_ide_package_.com.beigel.nextime.data.model.RecurrenceType.WEEKLY  -> stringResource(R.string.badge_weekly)
-                    _root_ide_package_.com.beigel.nextime.data.model.RecurrenceType.MONTHLY -> stringResource(R.string.badge_monthly)
-                    _root_ide_package_.com.beigel.nextime.data.model.RecurrenceType.YEARLY  -> stringResource(R.string.badge_yearly)
-                    _root_ide_package_.com.beigel.nextime.data.model.RecurrenceType.NONE    -> ""
+                    RecurrenceType.DAILY   -> stringResource(R.string.badge_daily)
+                    RecurrenceType.WEEKLY  -> stringResource(R.string.badge_weekly)
+                    RecurrenceType.MONTHLY -> stringResource(R.string.badge_monthly)
+                    RecurrenceType.YEARLY  -> stringResource(R.string.badge_yearly)
+                    RecurrenceType.NONE    -> ""
                 },
                 fontSize   = 9.sp,
                 fontWeight = FontWeight.Bold,
@@ -386,8 +383,8 @@ private fun RecurringBadge(recurrenceType: com.beigel.nextime.data.model.Recurre
 
 @Composable
 fun CountdownMainDisplay(
-    timeInfo    : com.beigel.nextime.data.model.CountdownInfo,
-    units       : List<com.beigel.nextime.data.model.DisplayUnit>,
+    timeInfo    : CountdownInfo,
+    units       : List<DisplayUnit>,
     numberSize  : TextUnit = 26.sp,
     unitSize    : TextUnit = 14.sp,
     accentColor : Color    = Color.Unspecified,
@@ -408,18 +405,18 @@ fun CountdownMainDisplay(
     val strMinute = stringResource(R.string.minute); val strMinutes = stringResource(R.string.minutes)
     val strSecond = stringResource(R.string.second); val strSeconds = stringResource(R.string.seconds)
 
-    fun unitLabel(unit: com.beigel.nextime.data.model.DisplayUnit, value: Long): String = when (unit) {
-        _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.YEARS   -> if (value == 1L) strYear   else strYears
-        _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.MONTHS  -> if (value == 1L) strMonth  else strMonths
-        _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.WEEKS   -> if (value == 1L) strWeek   else strWeeks
-        _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.DAYS    -> if (value == 1L) strDay    else strDays
-        _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.HOURS   -> if (value == 1L) strHour   else strHours
-        _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.MINUTES -> if (value == 1L) strMinute else strMinutes
-        _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.SECONDS -> if (value == 1L) strSecond else strSeconds
+    fun unitLabel(unit: DisplayUnit, value: Long): String = when (unit) {
+        DisplayUnit.YEARS   -> if (value == 1L) strYear   else strYears
+        DisplayUnit.MONTHS  -> if (value == 1L) strMonth  else strMonths
+        DisplayUnit.WEEKS   -> if (value == 1L) strWeek   else strWeeks
+        DisplayUnit.DAYS    -> if (value == 1L) strDay    else strDays
+        DisplayUnit.HOURS   -> if (value == 1L) strHour   else strHours
+        DisplayUnit.MINUTES -> if (value == 1L) strMinute else strMinutes
+        DisplayUnit.SECONDS -> if (value == 1L) strSecond else strSeconds
     }
 
     val visibleSegments = segments.filter { seg ->
-        if (seg.unit in _root_ide_package_.com.beigel.nextime.data.model.TIME_UNITS) true else seg.value != 0L
+        if (seg.unit in TIME_UNITS) true else seg.value != 0L
     }
     val displaySegments = visibleSegments.ifEmpty { segments.takeLast(1) }
 
@@ -436,7 +433,7 @@ fun CountdownMainDisplay(
                 color      = resolvedNumber
             )) {
                 append(
-                    if (index > 0 && seg.unit in _root_ide_package_.com.beigel.nextime.data.model.TIME_UNITS)
+                    if (index > 0 && seg.unit in TIME_UNITS)
                         "%02d".format(seg.value)
                     else
                         "${seg.value}"

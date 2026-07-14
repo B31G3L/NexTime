@@ -26,7 +26,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.beigel.nextime.R
@@ -43,14 +42,14 @@ import java.time.temporal.ChronoUnit
 @Composable
 fun ExpandableFab(
     onCreateCustom     : () -> Unit,
-    onTemplateSelected : (com.beigel.nextime.data.model.Countdown) -> Unit
+    onTemplateSelected : (Countdown) -> Unit
 ) {
     val context  = LocalContext.current
-    val haptic   = remember { _root_ide_package_.com.beigel.nextime.utils.HapticFeedback(context) }
+    val haptic   = remember { HapticFeedback(context) }
     var expanded by remember { mutableStateOf(false) }
     var showTemplateDialog by remember { mutableStateOf(false) }
 
-    val defaultTime by _root_ide_package_.com.beigel.nextime.ui.theme.AppPreferences.getDefaultTime(context).collectAsState(initial = LocalTime.of(12, 0))
+    val defaultTime by AppPreferences.getDefaultTime(context).collectAsState(initial = LocalTime.of(12, 0))
 
     val rotation by animateFloatAsState(
         targetValue   = if (expanded) 45f else 0f,
@@ -147,7 +146,7 @@ private fun TemplatePickerDialog(
     onTemplateSelected : (CountdownTemplate) -> Unit
 ) {
     val context  = LocalContext.current
-    val haptic   = remember { _root_ide_package_.com.beigel.nextime.utils.HapticFeedback(context) }
+    val haptic   = remember { HapticFeedback(context) }
     var selectedCategory by remember { mutableStateOf<TemplateCategory?>(null) }
 
     val visibleTemplates = remember(selectedCategory) {

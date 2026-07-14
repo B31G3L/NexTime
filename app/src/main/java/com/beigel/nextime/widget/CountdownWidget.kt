@@ -34,8 +34,6 @@ import com.beigel.nextime.data.model.Countdown
 import com.beigel.nextime.data.model.CountdownInfo
 import com.beigel.nextime.data.model.DisplayFormat
 import com.beigel.nextime.data.model.DisplayUnit
-import com.beigel.nextime.data.model.buildDisplaySegments
-import com.beigel.nextime.data.model.calculateTimeRemaining
 import com.beigel.nextime.ui.theme.AppPreferences
 import com.beigel.nextime.ui.theme.ThemeMode
 import com.beigel.nextime.ui.theme.ThemePreferences
@@ -90,14 +88,14 @@ class CountdownWidget : GlanceAppWidget() {
             WidgetConfigActivity.loadCountdownId(context, appWidgetId)
         } else null
 
-        val database  = _root_ide_package_.com.beigel.nextime.data.database.CountdownDatabase.Companion.getDatabase(context)
+        val database  = CountdownDatabase.getDatabase(context)
         val countdown = if (selectedCountdownId != null) {
             database.countdownDao().getCountdownById(selectedCountdownId)
         } else {
             database.countdownDao().getAllCountdowns().first().firstOrNull()
         }
 
-        val globalDateUnits  = _root_ide_package_.com.beigel.nextime.ui.theme.AppPreferences.getDefaultDateUnits(context).first()
+        val globalDateUnits  = AppPreferences.getDefaultDateUnits(context).first()
         val resolvedFormat   = buildWidgetFormat(globalDateUnits)
 
         // App-Hell/Dunkel ermitteln (folgt App-Theme, bei SYSTEM der Geräteeinstellung)
@@ -106,7 +104,7 @@ class CountdownWidget : GlanceAppWidget() {
 
         provideContent {
             val size        = LocalSize.current
-            val clickAction = actionStartActivity<com.beigel.nextime.MainActivity>()
+            val clickAction = actionStartActivity<MainActivity>()
 
             if (countdown == null) {
                 EmptyWidget(context, size, colors, clickAction)
@@ -150,7 +148,7 @@ class CountdownWidget : GlanceAppWidget() {
     // ─── 1×1 — nur Zahl + Einheit ──────────────────────────────────────────────
 
     @Composable
-    private fun SmallLayout(context: Context, @Suppress("UNUSED_PARAMETER") countdown: com.beigel.nextime.data.model.Countdown, timeInfo: com.beigel.nextime.data.model.CountdownInfo, accentColor: Color, colors: WidgetColors, clickAction: Action, displayFormat: String) {
+    private fun SmallLayout(context: Context, @Suppress("UNUSED_PARAMETER") countdown: Countdown, timeInfo: CountdownInfo, accentColor: Color, colors: WidgetColors, clickAction: Action, displayFormat: String) {
         val mainVal  = formatMainValue(timeInfo, displayFormat)
         val mainUnit = formatMainUnitShort(context, timeInfo, displayFormat)
 
@@ -165,7 +163,7 @@ class CountdownWidget : GlanceAppWidget() {
     // ─── 1×2 — Zahl oben, Titel darunter ───────────────────────────────────────
 
     @Composable
-    private fun TallLayout(context: Context, countdown: com.beigel.nextime.data.model.Countdown, timeInfo: com.beigel.nextime.data.model.CountdownInfo, accentColor: Color, colors: WidgetColors, clickAction: Action, displayFormat: String) {
+    private fun TallLayout(context: Context, countdown: Countdown, timeInfo: CountdownInfo, accentColor: Color, colors: WidgetColors, clickAction: Action, displayFormat: String) {
         val mainVal  = formatMainValue(timeInfo, displayFormat)
         val mainUnit = formatMainUnitShort(context, timeInfo, displayFormat)
 
@@ -186,7 +184,7 @@ class CountdownWidget : GlanceAppWidget() {
     // ─── 2×1 — niedrig: Icon links, Titel + Zahl rechts ────────────────────────
 
     @Composable
-    private fun WideLayout(context: Context, countdown: com.beigel.nextime.data.model.Countdown, timeInfo: com.beigel.nextime.data.model.CountdownInfo, accentColor: Color, colors: WidgetColors, clickAction: Action, displayFormat: String) {
+    private fun WideLayout(context: Context, countdown: Countdown, timeInfo: CountdownInfo, accentColor: Color, colors: WidgetColors, clickAction: Action, displayFormat: String) {
         val mainVal  = formatMainValue(timeInfo, displayFormat)
         val mainUnit = formatMainUnitShort(context, timeInfo, displayFormat)
 
@@ -205,7 +203,7 @@ class CountdownWidget : GlanceAppWidget() {
     // ─── 2×2 — Card A: Zahl oben, Icon + Titel darunter ────────────────────────
 
     @Composable
-    private fun MediumLayout(context: Context, countdown: com.beigel.nextime.data.model.Countdown, timeInfo: com.beigel.nextime.data.model.CountdownInfo, accentColor: Color, colors: WidgetColors, clickAction: Action, displayFormat: String) {
+    private fun MediumLayout(context: Context, countdown: Countdown, timeInfo: CountdownInfo, accentColor: Color, colors: WidgetColors, clickAction: Action, displayFormat: String) {
         val mainVal  = formatMainValue(timeInfo, displayFormat)
         val mainUnit = formatMainUnitFull(context, timeInfo, displayFormat)
 
@@ -226,7 +224,7 @@ class CountdownWidget : GlanceAppWidget() {
     // ─── 3×2 — Card A größer ───────────────────────────────────────────────────
 
     @Composable
-    private fun LargeLayout(context: Context, countdown: com.beigel.nextime.data.model.Countdown, timeInfo: com.beigel.nextime.data.model.CountdownInfo, accentColor: Color, colors: WidgetColors, clickAction: Action, displayFormat: String) {
+    private fun LargeLayout(context: Context, countdown: Countdown, timeInfo: CountdownInfo, accentColor: Color, colors: WidgetColors, clickAction: Action, displayFormat: String) {
         val mainVal  = formatMainValue(timeInfo, displayFormat)
         val mainUnit = formatMainUnitFull(context, timeInfo, displayFormat)
 
@@ -251,7 +249,7 @@ class CountdownWidget : GlanceAppWidget() {
     // ─── 4×2 — Card A am breitesten ────────────────────────────────────────────
 
     @Composable
-    private fun XLargeLayout(context: Context, countdown: com.beigel.nextime.data.model.Countdown, timeInfo: com.beigel.nextime.data.model.CountdownInfo, accentColor: Color, colors: WidgetColors, clickAction: Action, displayFormat: String) {
+    private fun XLargeLayout(context: Context, countdown: Countdown, timeInfo: CountdownInfo, accentColor: Color, colors: WidgetColors, clickAction: Action, displayFormat: String) {
         val mainVal  = formatMainValue(timeInfo, displayFormat)
         val mainUnit = formatMainUnitFull(context, timeInfo, displayFormat)
 
@@ -336,27 +334,27 @@ class CountdownWidget : GlanceAppWidget() {
     private fun dateFormatter(hasTime: Boolean): DateTimeFormatter =
         DateTimeFormatter.ofPattern(if (hasTime) "dd.MM.yyyy · HH:mm" else "dd.MM.yyyy")
 
-    private fun formatMainValue(timeInfo: com.beigel.nextime.data.model.CountdownInfo, displayFormat: String): String {
-        val units = _root_ide_package_.com.beigel.nextime.data.model.DisplayFormat.decodeOrdered(displayFormat)
-        return when (units.firstOrNull() ?: _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.DAYS) {
-            _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.YEARS   -> "${timeInfo.years}"
-            _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.MONTHS  -> "${timeInfo.months}"
-            _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.WEEKS   -> "${timeInfo.weeks}"
-            _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.DAYS    -> "${timeInfo.days}"
-            _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.HOURS   -> "${timeInfo.totalHours}"
-            _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.MINUTES -> "${timeInfo.totalMinutes}"
-            _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.SECONDS -> "${timeInfo.totalSeconds}"
+    private fun formatMainValue(timeInfo: CountdownInfo, displayFormat: String): String {
+        val units = DisplayFormat.decodeOrdered(displayFormat)
+        return when (units.firstOrNull() ?: DisplayUnit.DAYS) {
+            DisplayUnit.YEARS   -> "${timeInfo.years}"
+            DisplayUnit.MONTHS  -> "${timeInfo.months}"
+            DisplayUnit.WEEKS   -> "${timeInfo.weeks}"
+            DisplayUnit.DAYS    -> "${timeInfo.days}"
+            DisplayUnit.HOURS   -> "${timeInfo.totalHours}"
+            DisplayUnit.MINUTES -> "${timeInfo.totalMinutes}"
+            DisplayUnit.SECONDS -> "${timeInfo.totalSeconds}"
         }
     }
 
-    private fun formatMainUnitShort(context: Context, timeInfo: com.beigel.nextime.data.model.CountdownInfo, displayFormat: String): String {
-        val units = _root_ide_package_.com.beigel.nextime.data.model.DisplayFormat.decodeOrdered(displayFormat)
-        val first = units.firstOrNull() ?: _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.DAYS
+    private fun formatMainUnitShort(context: Context, timeInfo: CountdownInfo, displayFormat: String): String {
+        val units = DisplayFormat.decodeOrdered(displayFormat)
+        val first = units.firstOrNull() ?: DisplayUnit.DAYS
         return getUnitLabel(context, first, getFirstValue(timeInfo, first))
     }
 
-    private fun formatMainUnitFull(context: Context, timeInfo: com.beigel.nextime.data.model.CountdownInfo, displayFormat: String): String {
-        val units    = _root_ide_package_.com.beigel.nextime.data.model.DisplayFormat.decodeOrdered(displayFormat)
+    private fun formatMainUnitFull(context: Context, timeInfo: CountdownInfo, displayFormat: String): String {
+        val units    = DisplayFormat.decodeOrdered(displayFormat)
         val segments = timeInfo.buildDisplaySegments(units)
         if (segments.size == 1) {
             return getUnitLabel(context, segments[0].unit, segments[0].value)
@@ -368,24 +366,24 @@ class CountdownWidget : GlanceAppWidget() {
         return "$firstLabel, $rest"
     }
 
-    private fun getFirstValue(timeInfo: com.beigel.nextime.data.model.CountdownInfo, unit: com.beigel.nextime.data.model.DisplayUnit): Long = when (unit) {
-        _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.YEARS   -> timeInfo.years
-        _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.MONTHS  -> timeInfo.months
-        _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.WEEKS   -> timeInfo.weeks
-        _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.DAYS    -> timeInfo.days
-        _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.HOURS   -> timeInfo.totalHours
-        _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.MINUTES -> timeInfo.totalMinutes
-        _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.SECONDS -> timeInfo.totalSeconds
+    private fun getFirstValue(timeInfo: CountdownInfo, unit: DisplayUnit): Long = when (unit) {
+        DisplayUnit.YEARS   -> timeInfo.years
+        DisplayUnit.MONTHS  -> timeInfo.months
+        DisplayUnit.WEEKS   -> timeInfo.weeks
+        DisplayUnit.DAYS    -> timeInfo.days
+        DisplayUnit.HOURS   -> timeInfo.totalHours
+        DisplayUnit.MINUTES -> timeInfo.totalMinutes
+        DisplayUnit.SECONDS -> timeInfo.totalSeconds
     }
 
-    private fun getUnitLabel(context: Context, unit: com.beigel.nextime.data.model.DisplayUnit, value: Long): String = when (unit) {
-        _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.YEARS   -> if (value == 1L) context.getString(R.string.year)   else context.getString(R.string.years)
-        _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.MONTHS  -> if (value == 1L) context.getString(R.string.month)  else context.getString(R.string.months)
-        _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.WEEKS   -> if (value == 1L) context.getString(R.string.week)   else context.getString(R.string.weeks)
-        _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.DAYS    -> if (value == 1L) context.getString(R.string.day)    else context.getString(R.string.days)
-        _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.HOURS   -> if (value == 1L) context.getString(R.string.hour)   else context.getString(R.string.hours)
-        _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.MINUTES -> if (value == 1L) context.getString(R.string.minute) else context.getString(R.string.minutes)
-        _root_ide_package_.com.beigel.nextime.data.model.DisplayUnit.SECONDS -> if (value == 1L) context.getString(R.string.second) else context.getString(R.string.seconds)
+    private fun getUnitLabel(context: Context, unit: DisplayUnit, value: Long): String = when (unit) {
+        DisplayUnit.YEARS   -> if (value == 1L) context.getString(R.string.year)   else context.getString(R.string.years)
+        DisplayUnit.MONTHS  -> if (value == 1L) context.getString(R.string.month)  else context.getString(R.string.months)
+        DisplayUnit.WEEKS   -> if (value == 1L) context.getString(R.string.week)   else context.getString(R.string.weeks)
+        DisplayUnit.DAYS    -> if (value == 1L) context.getString(R.string.day)    else context.getString(R.string.days)
+        DisplayUnit.HOURS   -> if (value == 1L) context.getString(R.string.hour)   else context.getString(R.string.hours)
+        DisplayUnit.MINUTES -> if (value == 1L) context.getString(R.string.minute) else context.getString(R.string.minutes)
+        DisplayUnit.SECONDS -> if (value == 1L) context.getString(R.string.second) else context.getString(R.string.seconds)
     }
 
     private fun parseColor(colorHex: String): Color =
@@ -396,11 +394,11 @@ class CountdownWidget : GlanceAppWidget() {
 // ─── Theme-Erkennung fürs Widget ───────────────────────────────────────────────
 
 private suspend fun isWidgetDark(context: Context): Boolean {
-    val mode = _root_ide_package_.com.beigel.nextime.ui.theme.ThemePreferences.getThemeMode(context).first()
+    val mode = ThemePreferences.getThemeMode(context).first()
     return when (mode) {
-        _root_ide_package_.com.beigel.nextime.ui.theme.ThemeMode.DARK   -> true
-        _root_ide_package_.com.beigel.nextime.ui.theme.ThemeMode.LIGHT  -> false
-        _root_ide_package_.com.beigel.nextime.ui.theme.ThemeMode.SYSTEM -> {
+        ThemeMode.DARK   -> true
+        ThemeMode.LIGHT  -> false
+        ThemeMode.SYSTEM -> {
             val ui = context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
             ui == Configuration.UI_MODE_NIGHT_YES
         }
@@ -409,8 +407,8 @@ private suspend fun isWidgetDark(context: Context): Boolean {
 
 // ─── Widget Format Builder ─────────────────────────────────────────────────────
 
-private fun buildWidgetFormat(dateUnits: Set<com.beigel.nextime.data.model.DisplayUnit>): String {
-    return _root_ide_package_.com.beigel.nextime.data.model.DisplayFormat.encode(dateUnits)
+private fun buildWidgetFormat(dateUnits: Set<DisplayUnit>): String {
+    return DisplayFormat.encode(dateUnits)
 }
 
 // ─── Widget Receiver ───────────────────────────────────────────────────────────

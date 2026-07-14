@@ -56,10 +56,10 @@ fun AppNavigation(
     // welcome_seen / community_seen einmalig auslesen, um das Startziel zu bestimmen.
     // null = noch nicht geladen → nichts rendern (MainActivity zeigt den Surface-Hintergrund).
     val welcomeSeen by produceState<Boolean?>(initialValue = null) {
-        value = _root_ide_package_.com.beigel.nextime.ui.screens.welcome.isWelcomeSeen(context).first()
+        value = isWelcomeSeen(context).first()
     }
     val communitySeen by produceState<Boolean?>(initialValue = null) {
-        value = _root_ide_package_.com.beigel.nextime.ui.screens.welcome.isCommunitySeen(context).first()
+        value = isCommunitySeen(context).first()
     }
     val seen = welcomeSeen ?: return
     val communityDone = communitySeen ?: return
@@ -83,7 +83,7 @@ fun AppNavigation(
                 ) + fadeOut(tween(ANIM_DURATION))
             }
         ) {
-            _root_ide_package_.com.beigel.nextime.ui.screens.welcome.WelcomeScreen(
+            WelcomeScreen(
                 onDone = {
                     navController.navigate(Routes.COMMUNITY) {
                         popUpTo(Routes.WELCOME) { inclusive = true }
@@ -102,7 +102,7 @@ fun AppNavigation(
                 ) + fadeOut(tween(ANIM_DURATION))
             }
         ) {
-            _root_ide_package_.com.beigel.nextime.ui.screens.welcome.CommunityWelcomeScreen(
+            CommunityWelcomeScreen(
                 onDone = {
                     navController.navigate(Routes.MAIN) {
                         popUpTo(Routes.COMMUNITY) { inclusive = true }
@@ -128,9 +128,9 @@ fun AppNavigation(
             }
         ) {
             LaunchedEffect(Unit) {
-                (context as? android.app.Activity)?.let { _root_ide_package_.com.beigel.nextime.utils.ReviewManager.maybeRequestReview(it) }
+                (context as? android.app.Activity)?.let { ReviewManager.maybeRequestReview(it) }
             }
-            _root_ide_package_.com.beigel.nextime.ui.screens.main.MainScreen(
+            MainScreen(
                 onNavigateToAddEdit = { navController.navigate(Routes.ADD_EDIT_NEW) },
                 onNavigateToEdit = { id -> navController.navigate(Routes.addEdit(id)) },
                 onNavigateToSettings = { navController.navigate(Routes.SETTINGS) },
@@ -161,7 +161,7 @@ fun AppNavigation(
             }
         ) { backStackEntry ->
             val id = backStackEntry.arguments?.getLong("id") ?: -1L
-            _root_ide_package_.com.beigel.nextime.ui.screens.addedit.AddEditScreen(
+            AddEditScreen(
                 countdownId = id,
                 onBack = { navController.popBackStack() }
             )
@@ -183,7 +183,7 @@ fun AppNavigation(
                 ) + fadeOut(tween(ANIM_DURATION))
             }
         ) {
-            _root_ide_package_.com.beigel.nextime.ui.screens.settings.SettingsScreen(
+            SettingsScreen(
                 onBack = { navController.popBackStack() }
             )
         }
@@ -204,7 +204,7 @@ fun AppNavigation(
                 ) + fadeOut(tween(ANIM_DURATION))
             }
         ) {
-            _root_ide_package_.com.beigel.nextime.ui.screens.info.InfoScreen(
+            InfoScreen(
                 onBack = { navController.popBackStack() }
             )
         }

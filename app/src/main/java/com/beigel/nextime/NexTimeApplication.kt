@@ -6,12 +6,12 @@ import com.beigel.nextime.ui.theme.LanguageManager
 import com.beigel.nextime.widget.WidgetUpdateWorker
 import com.beigel.nextime.widget.scheduleMinutelyWidgetUpdate
 
-class NexTimeApplication : android.app.Application() {
+class NexTimeApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        _root_ide_package_.com.beigel.nextime.ui.theme.LanguageManager.applyLanguageFromPrefs(this)
-        _root_ide_package_.com.beigel.nextime.widget.scheduleMinutelyWidgetUpdate(this)
+        LanguageManager.applyLanguageFromPrefs(this)
+        scheduleMinutelyWidgetUpdate(this)
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
@@ -19,7 +19,7 @@ class NexTimeApplication : android.app.Application() {
         val nightModeFlags = newConfig.uiMode and Configuration.UI_MODE_NIGHT_MASK
         when (nightModeFlags) {
             Configuration.UI_MODE_NIGHT_YES,
-            Configuration.UI_MODE_NIGHT_NO -> _root_ide_package_.com.beigel.nextime.widget.WidgetUpdateWorker.Companion.updateNow(this)
+            Configuration.UI_MODE_NIGHT_NO -> WidgetUpdateWorker.updateNow(this)
         }
     }
 }

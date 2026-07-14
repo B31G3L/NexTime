@@ -5,15 +5,14 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import com.beigel.nextime.data.model.getReminderOptionsList
-import todo.beigelwick.de.todolist.data.model.Countdown
-import todo.beigelwick.de.todolist.data.model.ReminderOption
-import todo.beigelwick.de.todolist.data.model.getReminderOptionsList
+import com.beigel.nextime.data.model.Countdown
+import com.beigel.nextime.data.model.ReminderOption
 import java.time.LocalDateTime
 import java.time.ZoneId
 
 object NotificationScheduler {
 
-    fun scheduleNotifications(context: Context, countdown: com.beigel.nextime.data.model.Countdown) {
+    fun scheduleNotifications(context: Context, countdown: Countdown) {
         if (!countdown.notificationEnabled) {
             cancelAllNotifications(context, countdown)
             return
@@ -34,12 +33,12 @@ object NotificationScheduler {
 
     private fun scheduleNotification(
         context        : Context,
-        countdown      : com.beigel.nextime.data.model.Countdown,
+        countdown      : Countdown,
         target         : LocalDateTime,
-        reminderOption : com.beigel.nextime.data.model.ReminderOption,
+        reminderOption : ReminderOption,
         alarmManager   : AlarmManager
     ) {
-        val notificationTime = if (reminderOption == _root_ide_package_.com.beigel.nextime.data.model.ReminderOption.AT_TIME) {
+        val notificationTime = if (reminderOption == ReminderOption.AT_TIME) {
             target
         } else {
             target.minusMinutes(reminderOption.minutes)
@@ -56,7 +55,7 @@ object NotificationScheduler {
             putExtra("countdown_id",    countdown.id)
             putExtra("countdown_title", countdown.title)
             putExtra("countdown_color", countdown.color)
-            putExtra("is_at_time",      reminderOption == _root_ide_package_.com.beigel.nextime.data.model.ReminderOption.AT_TIME)
+            putExtra("is_at_time",      reminderOption == ReminderOption.AT_TIME)
         }
 
         val requestCode   = getRequestCode(countdown.id, reminderOption)
@@ -78,9 +77,9 @@ object NotificationScheduler {
         }
     }
 
-    fun cancelAllNotifications(context: Context, countdown: com.beigel.nextime.data.model.Countdown) {
+    fun cancelAllNotifications(context: Context, countdown: Countdown) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        _root_ide_package_.com.beigel.nextime.data.model.ReminderOption.values().forEach { option ->
+        ReminderOption.values().forEach { option ->
             val requestCode   = getRequestCode(countdown.id, option)
             val intent        = Intent(context, NotificationReceiver::class.java)
             val pendingIntent = PendingIntent.getBroadcast(
@@ -96,6 +95,6 @@ object NotificationScheduler {
         }
     }
 
-    private fun getRequestCode(countdownId: Long, reminderOption: com.beigel.nextime.data.model.ReminderOption): Int =
+    private fun getRequestCode(countdownId: Long, reminderOption: ReminderOption): Int =
         (countdownId * 1000 + reminderOption.ordinal).toInt()
 }

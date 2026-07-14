@@ -22,7 +22,6 @@ import com.beigel.nextime.data.model.Countdown
 import com.beigel.nextime.data.model.FilterMode
 import com.beigel.nextime.data.repository.CountdownRepository
 import com.beigel.nextime.notifications.NotificationScheduler
-import com.beigel.nextime.ui.theme.dataStore
 import com.beigel.nextime.widget.WidgetUpdateWorker
 
 // ─── Sortiermodi ──────────────────────────────────────────────────────────────
@@ -45,15 +44,15 @@ private val REVIEW_THRESHOLDS = setOf(3, 10)
 class CountdownViewModel(application: Application) : AndroidViewModel(application) {
 
     private val context    = application.applicationContext
-    private val repository : com.beigel.nextime.data.repository.CountdownRepository
+    private val repository : CountdownRepository
 
     // DataStore-Key für den Zähler gesamt erstellter Countdowns
     private val COUNTDOWN_CREATE_COUNT = intPreferencesKey("countdown_create_count")
 
-    private val _allCountdowns = MutableStateFlow<List<com.beigel.nextime.data.model.Countdown>>(emptyList())
+    private val _allCountdowns = MutableStateFlow<List<Countdown>>(emptyList())
 
-    private val _filterMode  = MutableStateFlow(_root_ide_package_.com.beigel.nextime.data.model.FilterMode.ALL)
-    val filterMode: StateFlow<com.beigel.nextime.data.model.FilterMode> = _filterMode.asStateFlow()
+    private val _filterMode  = MutableStateFlow(FilterMode.ALL)
+    val filterMode: StateFlow<FilterMode> = _filterMode.asStateFlow()
 
     private val _sortMode    = MutableStateFlow(SortMode.DATE_ASC)
     val sortMode: StateFlow<SortMode> = _sortMode.asStateFlow()
@@ -61,11 +60,11 @@ class CountdownViewModel(application: Application) : AndroidViewModel(applicatio
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
-    private val _countdowns  = MutableStateFlow<List<com.beigel.nextime.data.model.Countdown>>(emptyList())
-    val countdowns: StateFlow<List<com.beigel.nextime.data.model.Countdown>> = _countdowns.asStateFlow()
+    private val _countdowns  = MutableStateFlow<List<Countdown>>(emptyList())
+    val countdowns: StateFlow<List<Countdown>> = _countdowns.asStateFlow()
 
-    private val _selectedCountdown = MutableStateFlow<com.beigel.nextime.data.model.Countdown?>(null)
-    val selectedCountdown: StateFlow<com.beigel.nextime.data.model.Countdown?> = _selectedCountdown.asStateFlow()
+    private val _selectedCountdown = MutableStateFlow<Countdown?>(null)
+    val selectedCountdown: StateFlow<Countdown?> = _selectedCountdown.asStateFlow()
 
     private val _tickSeconds = MutableStateFlow(0L)
     val tickSeconds: StateFlow<Long> = _tickSeconds.asStateFlow()
@@ -79,9 +78,9 @@ class CountdownViewModel(application: Application) : AndroidViewModel(applicatio
     val triggerReview: SharedFlow<Unit> = _triggerReview.asSharedFlow()
 
     init {
-        val database = _root_ide_package_.com.beigel.nextime.data.database.CountdownDatabase.Companion.getDatabase(application)
+        val database = CountdownDatabase.getDatabase(application)
         repository   =
-            _root_ide_package_.com.beigel.nextime.data.repository.CountdownRepository(database.countdownDao())
+            CountdownRepository(database.countdownDao())
 
         viewModelScope.launch {
             repository.allCountdowns.collect { list ->
@@ -99,7 +98,7 @@ class CountdownViewModel(application: Application) : AndroidViewModel(applicatio
                 applyFilterSortSearch(all, filter, sort, query)
             }.collect { result ->
                 _countdowns.value = result
-                _root_ide_package_.com.beigel.nextime.widget.WidgetUpdateWorker.Companion.updateNow(context)
+                WidgetUpdateWorker.updateNow(context)
             }
         }
 
@@ -118,24 +117,24 @@ class CountdownViewModel(application: Application) : AndroidViewModel(applicatio
 
     // ─── Filter / Sort / Suche ────────────────────────────────────────────────
 
-    fun setFilterMode(mode: com.beigel.nextime.data.model.FilterMode)  { _filterMode.value  = mode }
+    fun setFilterMode(mode: FilterMode)  { _filterMode.value  = mode }
     fun setSortMode(mode: SortMode)      { _sortMode.value    = mode }
     fun setSearchQuery(query: String)    { _searchQuery.value = query }
     fun clearSearch()                    { _searchQuery.value = "" }
 
     private fun applyFilterSortSearch(
-        list   : List<com.beigel.nextime.data.model.Countdown>,
-        filter : com.beigel.nextime.data.model.FilterMode,
+        list   : List<Countdown>,
+        filter : FilterMode,
         sort   : SortMode,
         query  : String
-    ): List<com.beigel.nextime.data.model.Countdown> {
+    ): List<Countdown> {
         val searched = if (query.isBlank()) list
         else list.filter { it.title.contains(query.trim(), ignoreCase = true) }
 
         val filtered = when (filter) {
-            _root_ide_package_.com.beigel.nextime.data.model.FilterMode.COUNTDOWN -> searched.filter { !it.isCountUp }
-            _root_ide_package_.com.beigel.nextime.data.model.FilterMode.COUNTUP   -> searched.filter {  it.isCountUp }
-            _root_ide_package_.com.beigel.nextime.data.model.FilterMode.ALL       -> searched
+            FilterMode.COUNTDOWN -> searched.filter { !it.isCountUp }
+            FilterMode.COUNTUP   -> searched.filter {  it.isCountUp }
+            FilterMode.ALL       -> searched
         }
 
         val sorted = when (sort) {
@@ -149,7 +148,7 @@ class CountdownViewModel(application: Application) : AndroidViewModel(applicatio
         val pinned   = sorted.filter {  it.isPinned }
         val unpinned = sorted.filter { !it.isPinned }
 
-        return if (filter == _root_ide_package_.com.beigel.nextime.data.model.FilterMode.ALL && query.isBlank()) {
+        return if (filter == FilterMode.ALL && query.isBlank()) {
             val pinnedFuture   = pinned.filter   { !it.isCountUp }
             val pinnedPast     = pinned.filter   {  it.isCountUp }
             val unpinnedFuture = unpinned.filter { !it.isCountUp }
@@ -162,12 +161,12 @@ class CountdownViewModel(application: Application) : AndroidViewModel(applicatio
 
     // ─── CRUD ─────────────────────────────────────────────────────────────────
 
-    fun addCountdown(countdown: com.beigel.nextime.data.model.Countdown) {
+    fun addCountdown(countdown: Countdown) {
         viewModelScope.launch {
             val id    = repository.insertCountdown(countdown)
             val saved = repository.getCountdownById(id)
-            saved?.let { _root_ide_package_.com.beigel.nextime.notifications.NotificationScheduler.scheduleNotifications(context, it) }
-            _root_ide_package_.com.beigel.nextime.widget.WidgetUpdateWorker.Companion.updateNow(context)
+            saved?.let { NotificationScheduler.scheduleNotifications(context, it) }
+            WidgetUpdateWorker.updateNow(context)
 
             // ── Review-Zähler erhöhen und ggf. Dialog anfragen ────────────────
             checkAndTriggerReview()
@@ -192,24 +191,24 @@ class CountdownViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    fun updateCountdown(countdown: com.beigel.nextime.data.model.Countdown) {
+    fun updateCountdown(countdown: Countdown) {
         viewModelScope.launch {
             repository.updateCountdown(countdown)
-            _root_ide_package_.com.beigel.nextime.notifications.NotificationScheduler.cancelAllNotifications(context, countdown)
-            _root_ide_package_.com.beigel.nextime.notifications.NotificationScheduler.scheduleNotifications(context, countdown)
-            _root_ide_package_.com.beigel.nextime.widget.WidgetUpdateWorker.Companion.updateNow(context)
+            NotificationScheduler.cancelAllNotifications(context, countdown)
+            NotificationScheduler.scheduleNotifications(context, countdown)
+            WidgetUpdateWorker.updateNow(context)
         }
     }
 
-    fun deleteCountdown(countdown: com.beigel.nextime.data.model.Countdown) {
+    fun deleteCountdown(countdown: Countdown) {
         viewModelScope.launch {
-            _root_ide_package_.com.beigel.nextime.notifications.NotificationScheduler.cancelAllNotifications(context, countdown)
+            NotificationScheduler.cancelAllNotifications(context, countdown)
             repository.deleteCountdown(countdown)
-            _root_ide_package_.com.beigel.nextime.widget.WidgetUpdateWorker.Companion.updateNow(context)
+            WidgetUpdateWorker.updateNow(context)
         }
     }
 
-    fun togglePin(countdown: com.beigel.nextime.data.model.Countdown) {
+    fun togglePin(countdown: Countdown) {
         viewModelScope.launch {
             repository.updateCountdown(countdown.copy(isPinned = !countdown.isPinned))
         }
@@ -217,10 +216,10 @@ class CountdownViewModel(application: Application) : AndroidViewModel(applicatio
 
     // ─── Einzelner Countdown ──────────────────────────────────────────────────
 
-    fun selectCountdown(countdown: com.beigel.nextime.data.model.Countdown?) {
+    fun selectCountdown(countdown: Countdown?) {
         _selectedCountdown.value = countdown
     }
 
-    suspend fun getCountdownById(id: Long): com.beigel.nextime.data.model.Countdown? =
+    suspend fun getCountdownById(id: Long): Countdown? =
         repository.getCountdownById(id)
 }

@@ -154,7 +154,7 @@ class Converters {
 // ─── Database ─────────────────────────────────────────────────────────────────
 
 @Database(
-    entities     = [_root_ide_package_.com.beigel.nextime.data.model.Countdown::class],
+    entities     = [Countdown::class],
     version      = 5,
     exportSchema = false
 )
