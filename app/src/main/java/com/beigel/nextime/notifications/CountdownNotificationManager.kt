@@ -72,7 +72,7 @@ object CountdownNotificationManager {
         catch (e: Exception) { Color.parseColor("#FF7043") }
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.drawable.ic_stat_notification_foreground)
             .setContentTitle(title)
             .setContentText(message)
             .setColor(color)
