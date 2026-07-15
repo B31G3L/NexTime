@@ -241,7 +241,11 @@ private fun openPlayStore(context: Context) {
 }
 
 private fun openKofi(context: Context) {
-    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("ko-fi.com/beigelapps")))
+    try {
+        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://ko-fi.com/beigelapps")))
+    } catch (e: ActivityNotFoundException) {
+        Toast.makeText(context, context.getString(R.string.no_browser_found), Toast.LENGTH_SHORT).show()
+    }
 }
 
 private fun openDiscord(context: Context) {

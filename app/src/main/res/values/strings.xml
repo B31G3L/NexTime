@@ -136,6 +136,7 @@
 
     <!-- ── Countdown Dialog ─────────────────────────────────────────────────── -->
     <string name="dialog_expired_banner">This countdown has expired!</string>
+    <string name="countdown_completed_label">Completed</string>
     <string name="action_share">Share</string>
     <string name="action_edit">Edit</string>
     <string name="action_delete">Delete</string>
@@ -210,6 +211,7 @@
     <string name="support_bug">Report bug</string>
     <string name="support_feature">Suggest feature</string>
     <string name="no_email_app">No email app found</string>
+    <string name="no_browser_found">No browser app found</string>
 
     <!-- ── Widget ────────────────────────────────────────────────────────────── -->
     <string name="widget_dynamic_label">NexTime Countdown</string>

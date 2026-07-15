@@ -110,6 +110,7 @@
     <string name="today">Hoy</string>
     <string name="ago">hace</string>
     <string name="dialog_expired_banner">¡Esta cuenta atrás ha expirado!</string>
+    <string name="countdown_completed_label">Completado</string>
     <string name="action_share">Compartir</string>
     <string name="action_edit">Editar</string>
     <string name="action_delete">Eliminar</string>
@@ -174,6 +175,7 @@
     <string name="support_bug">Reportar un error</string>
     <string name="support_feature">Sugerir una función</string>
     <string name="no_email_app">No se encontró app de correo</string>
+    <string name="no_browser_found">No se encontró app de navegador</string>
     <string name="widget_dynamic_label">NexTime Countdown</string>
     <string name="widget_dynamic_description">Muestra tu cuenta atrás — se adapta automáticamente al tamaño</string>
     <string name="widget_config_title">Configurar widget</string>

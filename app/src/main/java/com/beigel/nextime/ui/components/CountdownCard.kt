@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material3.Icon
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.material3.*
@@ -108,6 +109,15 @@ fun CountdownCard(
         countdown.effectiveTarget.toLocalDate() == LocalDate.now()
     }
 
+    // Abgeschlossen = Zieltermin liegt in der Vergangenheit, der Countdown
+    // wiederholt sich nicht UND das Zieldatum lag bei Erstellung noch in der
+    // Zukunft (echter Ablauf). Bewusst angelegte Count-ups (Zieldatum war schon
+    // bei Erstellung in der Vergangenheit) zählen weiterhin normal hoch.
+    val isCompleted = remember(countdown.id, countdown.isRecurring, timeInfo.isPast, countdown.targetDateTime, countdown.createdAt) {
+        timeInfo.isPast && !countdown.isRecurring &&
+                countdown.targetDateTime.isAfter(countdown.createdAt)
+    }
+
     val contentColor = MaterialTheme.colorScheme.onSurface
     val subtleColor  = MaterialTheme.colorScheme.onSurfaceVariant
 
@@ -125,10 +135,10 @@ fun CountdownCard(
         border          = androidx.compose.foundation.BorderStroke(0.5.dp, accentColor.copy(alpha = 0.28f)),
     ) {
         when (displayStyle) {
-            DisplayStyle.STANDARD   -> StandardLayout(countdown, timeInfo, activeUnits, accentColor, contentColor, subtleColor, isToday, dateText)
-            DisplayStyle.KOMPAKT    -> KompaktLayout(countdown, timeInfo, activeUnits, accentColor, contentColor, subtleColor, isToday, dateText)
-            DisplayStyle.BANNER     -> BannerLayout(countdown, timeInfo, activeUnits, accentColor, contentColor, subtleColor, isToday, dateText)
-            DisplayStyle.INVERTIERT -> InvertiertLayout(countdown, timeInfo, activeUnits, accentColor, contentColor, subtleColor, isToday, dateText)
+            DisplayStyle.STANDARD   -> StandardLayout(countdown, timeInfo, activeUnits, accentColor, contentColor, subtleColor, isToday, dateText, isCompleted)
+            DisplayStyle.KOMPAKT    -> KompaktLayout(countdown, timeInfo, activeUnits, accentColor, contentColor, subtleColor, isToday, dateText, isCompleted)
+            DisplayStyle.BANNER     -> BannerLayout(countdown, timeInfo, activeUnits, accentColor, contentColor, subtleColor, isToday, dateText, isCompleted)
+            DisplayStyle.INVERTIERT -> InvertiertLayout(countdown, timeInfo, activeUnits, accentColor, contentColor, subtleColor, isToday, dateText, isCompleted)
         }
     }
 }
@@ -139,13 +149,17 @@ fun CountdownCard(
 private fun StandardLayout(
     countdown: Countdown, timeInfo: CountdownInfo, units: List<DisplayUnit>,
     accentColor: Color, contentColor: Color, subtleColor: Color,
-    isToday: Boolean, dateText: String
+    isToday: Boolean, dateText: String, isCompleted: Boolean
 ) {
     Column(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        CountdownMainDisplay(timeInfo, units, 42.sp, 15.sp, contentColor, contentColor)
+        if (isCompleted) {
+            CompletedDisplay(42.sp, 15.sp, accentColor, contentColor)
+        } else {
+            CountdownMainDisplay(timeInfo, units, 42.sp, 15.sp, contentColor, contentColor)
+        }
         InfoRow(countdown, accentColor, contentColor, subtleColor, isToday, dateText)
     }
 }
@@ -156,14 +170,18 @@ private fun StandardLayout(
 private fun InvertiertLayout(
     countdown: Countdown, timeInfo: CountdownInfo, units: List<DisplayUnit>,
     accentColor: Color, contentColor: Color, subtleColor: Color,
-    isToday: Boolean, dateText: String
+    isToday: Boolean, dateText: String, isCompleted: Boolean
 ) {
     Column(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         InfoRow(countdown, accentColor, contentColor, subtleColor, isToday, dateText)
-        CountdownMainDisplay(timeInfo, units, 42.sp, 15.sp, contentColor, contentColor)
+        if (isCompleted) {
+            CompletedDisplay(42.sp, 15.sp, accentColor, contentColor)
+        } else {
+            CountdownMainDisplay(timeInfo, units, 42.sp, 15.sp, contentColor, contentColor)
+        }
     }
 }
 
@@ -202,7 +220,7 @@ private fun InfoRow(
 private fun KompaktLayout(
     countdown: Countdown, timeInfo: CountdownInfo, units: List<DisplayUnit>,
     accentColor: Color, contentColor: Color, subtleColor: Color,
-    isToday: Boolean, dateText: String
+    isToday: Boolean, dateText: String, isCompleted: Boolean
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
@@ -225,7 +243,11 @@ private fun KompaktLayout(
             }
             Text(text = dateText, fontSize = 11.sp, color = subtleColor.copy(alpha = 0.7f), maxLines = 1)
         }
-        CountdownMainDisplay(timeInfo, units, 26.sp, 11.sp, contentColor, contentColor)
+        if (isCompleted) {
+            CompletedDisplay(26.sp, 11.sp, accentColor, contentColor)
+        } else {
+            CountdownMainDisplay(timeInfo, units, 26.sp, 11.sp, contentColor, contentColor)
+        }
     }
 }
 
@@ -235,7 +257,7 @@ private fun KompaktLayout(
 private fun BannerLayout(
     countdown: Countdown, timeInfo: CountdownInfo, units: List<DisplayUnit>,
     accentColor: Color, contentColor: Color, subtleColor: Color,
-    isToday: Boolean, dateText: String
+    isToday: Boolean, dateText: String, isCompleted: Boolean
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
@@ -271,7 +293,11 @@ private fun BannerLayout(
                 )
                 Badges(countdown, accentColor, isToday)
             }
-            CountdownMainDisplay(timeInfo, units, 32.sp, 13.sp, contentColor, contentColor)
+            if (isCompleted) {
+                CompletedDisplay(32.sp, 13.sp, accentColor, contentColor)
+            } else {
+                CountdownMainDisplay(timeInfo, units, 32.sp, 13.sp, contentColor, contentColor)
+            }
             Text(text = dateText, fontSize = 11.sp, color = subtleColor.copy(alpha = 0.7f), maxLines = 1)
         }
     }
@@ -376,6 +402,34 @@ private fun RecurringBadge(recurrenceType: RecurrenceType, accentColor: Color) {
                 color      = accentColor
             )
         }
+    }
+}
+
+// ─── Abschluss-Anzeige (statt Count-up) ───────────────────────────────────────
+
+@Composable
+private fun CompletedDisplay(
+    numberSize  : TextUnit,
+    unitSize    : TextUnit,
+    accentColor : Color,
+    textColor   : Color,
+) {
+    Row(
+        verticalAlignment     = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Icon(
+            imageVector        = Icons.Filled.CheckCircle,
+            contentDescription = null,
+            tint               = accentColor,
+            modifier           = Modifier.size((numberSize.value * 0.75f).dp)
+        )
+        Text(
+            text       = stringResource(R.string.countdown_completed_label),
+            fontSize   = unitSize,
+            fontWeight = FontWeight.Medium,
+            color      = textColor.copy(alpha = 0.7f)
+        )
     }
 }
 

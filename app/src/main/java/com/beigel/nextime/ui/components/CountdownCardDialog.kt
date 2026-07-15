@@ -3,6 +3,7 @@ package com.beigel.nextime.ui.components
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.PushPin
@@ -43,7 +44,7 @@ fun CountdownCardDialog(
 
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
-    val showConfetti = remember(countdown.id) {
+    val isCompleted = remember(countdown.id) {
         countdown.calculateTimeRemaining().let { info ->
             info.isPast && !countdown.isRecurring &&
                     countdown.targetDateTime.isAfter(countdown.createdAt)
@@ -62,78 +63,75 @@ fun CountdownCardDialog(
             }
         }
     ) {
-        Box(modifier = Modifier.fillMaxWidth()) {
-            Column(
-                modifier            = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .padding(bottom = 32.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // Abgelaufen-Banner
-                if (showConfetti) {
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape    = RoundedCornerShape(12.dp),
-                        color    = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+        Column(
+            modifier            = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Abgeschlossen-Banner
+            if (isCompleted) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape    = RoundedCornerShape(12.dp),
+                    color    = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.12f)
+                ) {
+                    Row(
+                        modifier              = Modifier.padding(12.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment     = Alignment.CenterVertically
                     ) {
-                        Row(
-                            modifier              = Modifier.padding(12.dp),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment     = Alignment.CenterVertically
-                        ) {
-                            Text(text = "🎉", fontSize = 20.sp)
-                            Spacer(Modifier.width(8.dp))
-                            Text(
-                                text       = stringResource(R.string.dialog_expired_banner),
-                                style      = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color      = MaterialTheme.colorScheme.primary
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            Text(text = "🎊", fontSize = 20.sp)
-                        }
+                        Icon(
+                            imageVector        = Icons.Filled.CheckCircle,
+                            contentDescription = null,
+                            tint               = MaterialTheme.colorScheme.tertiary,
+                            modifier           = Modifier.size(18.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text       = stringResource(R.string.dialog_expired_banner),
+                            style      = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color      = MaterialTheme.colorScheme.tertiary
+                        )
                     }
-                }
-
-                // Card-Vorschau
-                CountdownCard(countdown = countdown)
-
-                // Aktionsbuttons
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    CardActionButton(
-                        icon     = if (countdown.isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin,
-                        label    = stringResource(if (countdown.isPinned) R.string.action_unpin else R.string.action_pin),
-                        color    = if (countdown.isPinned) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.weight(1f),
-                        onClick  = { haptic.click(); viewModel.togglePin(countdown); onDismiss() }
-                    )
-                    CardActionButton(
-                        icon     = Icons.Default.Share,
-                        label    = stringResource(R.string.action_share),
-                        color    = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.weight(1f),
-                        onClick  = { haptic.click(); onShare(countdown) }
-                    )
-                    CardActionButton(
-                        icon     = Icons.Default.Edit,
-                        label    = stringResource(R.string.action_edit),
-                        color    = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.weight(1f),
-                        onClick  = { haptic.click(); onEdit(countdown) }
-                    )
-                    CardActionButton(
-                        icon     = Icons.Default.Delete,
-                        label    = stringResource(R.string.action_delete),
-                        color    = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.weight(1f),
-                        onClick  = { haptic.tick(); showDeleteConfirm = true }
-                    )
                 }
             }
 
-            if (showConfetti) {
-                ConfettiOverlay(active = true, modifier = Modifier.matchParentSize())
+            // Card-Vorschau
+            CountdownCard(countdown = countdown)
+
+            // Aktionsbuttons
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                CardActionButton(
+                    icon     = if (countdown.isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin,
+                    label    = stringResource(if (countdown.isPinned) R.string.action_unpin else R.string.action_pin),
+                    color    = if (countdown.isPinned) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.weight(1f),
+                    onClick  = { haptic.click(); viewModel.togglePin(countdown); onDismiss() }
+                )
+                CardActionButton(
+                    icon     = Icons.Default.Share,
+                    label    = stringResource(R.string.action_share),
+                    color    = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.weight(1f),
+                    onClick  = { haptic.click(); onShare(countdown) }
+                )
+                CardActionButton(
+                    icon     = Icons.Default.Edit,
+                    label    = stringResource(R.string.action_edit),
+                    color    = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.weight(1f),
+                    onClick  = { haptic.click(); onEdit(countdown) }
+                )
+                CardActionButton(
+                    icon     = Icons.Default.Delete,
+                    label    = stringResource(R.string.action_delete),
+                    color    = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.weight(1f),
+                    onClick  = { haptic.tick(); showDeleteConfirm = true }
+                )
             }
         }
     }

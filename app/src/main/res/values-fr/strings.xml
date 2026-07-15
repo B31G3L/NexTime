@@ -110,6 +110,7 @@
     <string name="today">Aujourd\'hui</string>
     <string name="ago">il y a</string>
     <string name="dialog_expired_banner">Ce compte à rebours est expiré !</string>
+    <string name="countdown_completed_label">Terminé</string>
     <string name="action_share">Partager</string>
     <string name="action_edit">Modifier</string>
     <string name="action_delete">Supprimer</string>
@@ -174,6 +175,7 @@
     <string name="support_bug">Signaler un bug</string>
     <string name="support_feature">Suggérer une fonctionnalité</string>
     <string name="no_email_app">Aucune application e-mail trouvée</string>
+    <string name="no_browser_found">Aucune application de navigateur trouvée</string>
     <string name="widget_dynamic_label">NexTime Countdown</string>
     <string name="widget_dynamic_description">Affiche votre compte à rebours — s\'adapte automatiquement à la taille</string>
     <string name="widget_config_title">Configurer le widget</string>

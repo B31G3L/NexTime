@@ -110,6 +110,7 @@
     <string name="today">Oggi</string>
     <string name="ago">fa</string>
     <string name="dialog_expired_banner">Questo conto alla rovescia è scaduto!</string>
+    <string name="countdown_completed_label">Completato</string>
     <string name="action_share">Condividi</string>
     <string name="action_edit">Modifica</string>
     <string name="action_delete">Elimina</string>
@@ -174,6 +175,7 @@
     <string name="support_bug">Segnala un bug</string>
     <string name="support_feature">Suggerisci una funzione</string>
     <string name="no_email_app">Nessuna app email trovata</string>
+    <string name="no_browser_found">Nessuna app browser trovata</string>
     <string name="widget_dynamic_label">NexTime Countdown</string>
     <string name="widget_dynamic_description">Mostra il conto alla rovescia — si adatta automaticamente alle dimensioni</string>
     <string name="widget_config_title">Configura widget</string>
