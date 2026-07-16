@@ -161,8 +161,7 @@ fun MainScreen(
             filterMode       = filterMode,
             searchQuery      = searchQuery,
             paddingValues    = paddingValues,
-            onCountdownClick = { countdown -> haptic.tick(); dialogCountdown = countdown },
-            onAddCountdown   = { onNavigateToAddEdit() }
+            onCountdownClick = { countdown -> haptic.tick(); dialogCountdown = countdown }
         )
     }
 
@@ -199,13 +198,11 @@ private fun MainListContent(
     filterMode       : FilterMode,
     searchQuery      : String,
     paddingValues    : PaddingValues,
-    onCountdownClick : (Countdown) -> Unit,
-    onAddCountdown   : () -> Unit
+    onCountdownClick : (Countdown) -> Unit
 ) {
     if (countdowns.isEmpty()) {
         EmptyStateView(
-            modifier = Modifier.padding(paddingValues),
-            onAddCountdown = onAddCountdown
+            modifier = Modifier.padding(paddingValues)
         )
         return
     }

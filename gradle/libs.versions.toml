@@ -1,6 +1,6 @@
 [versions]
 # Android / Kotlin
-agp                     = "8.7.3"
+agp                     = "9.0.1"
 kotlin                  = "1.9.20"
 ksp                     = "1.9.20-1.0.14"
 

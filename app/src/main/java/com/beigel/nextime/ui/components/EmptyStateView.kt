@@ -14,8 +14,7 @@ import com.beigel.nextime.R
 
 @Composable
 fun EmptyStateView(
-    modifier       : Modifier = Modifier,
-    onAddCountdown : (() -> Unit)? = null
+    modifier : Modifier = Modifier
 ) {
     Box(
         modifier        = modifier.fillMaxSize(),
@@ -44,11 +43,6 @@ fun EmptyStateView(
                     color    = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Medium
                 )
-            }
-            if (onAddCountdown != null) {
-                Button(onClick = onAddCountdown) {
-                    Text(stringResource(R.string.fab_add))
-                }
             }
         }
     }

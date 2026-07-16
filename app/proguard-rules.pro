@@ -1,34 +1,13 @@
-# ── Room ──────────────────────────────────────────────────────────────────────
--keep class todo.beigelwick.de.todolist.data.model.** { *; }
+# Room, Compose, Kotlin, Coroutines, WorkManager, Glance und Navigation liefern
+# ihre R8/Proguard-Regeln bereits selbst über die Consumer-Rules ihrer AARs mit.
+# Pauschale "-keep class x.** { *; }"-Regeln für diese Pakete verhindern
+# Shrinking, Obfuscation UND Optimierung für den kompletten Abhängigkeitsbaum
+# und wurden daher entfernt (Ursache der Play-Console-Warnung).
 
-# ── Kotlin ────────────────────────────────────────────────────────────────────
--keep class kotlin.** { *; }
--keep class kotlinx.** { *; }
--dontwarn kotlin.**
--dontwarn kotlinx.**
+# ── Stacktraces bei Crashreports lesbar halten ──────────────────────────────
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
 
-# ── Compose ───────────────────────────────────────────────────────────────────
--keep class androidx.compose.** { *; }
--dontwarn androidx.compose.**
-
-# ── DataStore ─────────────────────────────────────────────────────────────────
--keep class androidx.datastore.** { *; }
-
-# ── Material3 ─────────────────────────────────────────────────────────────────
--keep class androidx.compose.material3.** { *; }
-
-# ── Coroutines ────────────────────────────────────────────────────────────────
--keepnames class kotlinx.coroutines.internal.MainDispatcherFactory {}
--keepnames class kotlinx.coroutines.CoroutineExceptionHandler {}
-
-# ── Navigation ────────────────────────────────────────────────────────────────
--keep class androidx.navigation.** { *; }
-
-# ── BuildConfig ───────────────────────────────────────────────────────────────
--keep class todo.beigelwick.de.todolist.BuildConfig { *; }
-
-# ── Optimierung ───────────────────────────────────────────────────────────────
--optimizationpasses 5
--dontusemixedcaseclassnames
--dontskipnonpubliclibraryclasses
--verbose
+# ── Sicherheitsnetz für die Room-Datenbankklasse ────────────────────────────
+# (normalerweise bereits durch Rooms eigene Consumer-Rules abgedeckt)
+-keep class * extends androidx.room.RoomDatabase
