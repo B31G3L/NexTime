@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import com.beigel.nextime.backup.BackupManager
 import com.beigel.nextime.data.database.CountdownDatabase
 import com.beigel.nextime.data.model.Countdown
 import com.beigel.nextime.data.model.FilterMode
@@ -222,4 +223,47 @@ class CountdownViewModel(application: Application) : AndroidViewModel(applicatio
 
     suspend fun getCountdownById(id: Long): Countdown? =
         repository.getCountdownById(id)
+
+    // ─── Backup (Export / Import) ─────────────────────────────────────────────
+
+    /** Erstellt den JSON-Text für den Export. Wird von der UI in eine Datei geschrieben. */
+    suspend fun exportBackupJson(): String {
+        val all = repository.getAllCountdownsOnce()
+        return BackupManager.exportToJson(all)
+    }
+
+    /**
+     * Importiert Countdowns aus einem zuvor exportierten JSON-Text.
+     * Bestehende Einträge bleiben erhalten – die importierten Einträge werden
+     * zusätzlich angelegt (kein Überschreiben).
+     *
+     * [onComplete] wird mit der Anzahl importierter Einträge aufgerufen,
+     * bzw. mit einem Fehler, falls die Datei kein gültiges Backup enthält.
+     */
+    fun importBackupJson(json: String, onComplete: (Result<Int>) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val imported = BackupManager.importFromJson(json)
+                if (imported.isEmpty()) {
+                    onComplete(Result.success(0))
+                    return@launch
+                }
+
+                val ids = repository.insertCountdowns(imported)
+
+                // Benachrichtigungen für importierte Einträge einplanen, sofern aktiviert
+                ids.forEach { id ->
+                    val saved = repository.getCountdownById(id)
+                    if (saved != null && saved.notificationEnabled) {
+                        NotificationScheduler.scheduleNotifications(context, saved)
+                    }
+                }
+
+                WidgetUpdateWorker.updateNow(context)
+                onComplete(Result.success(imported.size))
+            } catch (e: Exception) {
+                onComplete(Result.failure(e))
+            }
+        }
+    }
 }

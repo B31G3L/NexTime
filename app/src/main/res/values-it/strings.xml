@@ -303,4 +303,18 @@
     <string name="community_subtitle">Chatta con altri utenti, condividi idee e ottieni assistenza sul nostro server Discord.</string>
     <string name="community_cta">Unisciti a Discord</string>
     <string name="community_skip">Più tardi</string>
+
+    <!-- ── Backup / Export & Import ─────────────────────────────────────────── -->
+    <string name="settings_backup">Backup</string>
+    <string name="settings_backup_hint">Esporta le tue voci come file o ripristinale da un backup.</string>
+    <string name="backup_export">Esporta</string>
+    <string name="backup_export_hint">Salva tutte le voci come file JSON</string>
+    <string name="backup_import">Importa</string>
+    <string name="backup_import_hint">Carica le voci da un file di backup</string>
+    <string name="backup_export_success">Backup salvato</string>
+    <string name="backup_export_error">Impossibile salvare il backup</string>
+    <string name="backup_import_success">%1$d voci importate</string>
+    <string name="backup_import_empty">Nessuna voce trovata in questo file</string>
+    <string name="backup_import_error">Impossibile leggere questo file</string>
+    <string name="dialog_created_at">Creato il %1$s</string>
 </resources>

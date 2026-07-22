@@ -8,6 +8,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -26,6 +27,8 @@ import com.beigel.nextime.R
 import com.beigel.nextime.data.model.Countdown
 import com.beigel.nextime.ui.viewmodel.CountdownViewModel
 import com.beigel.nextime.utils.HapticFeedback
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -48,6 +51,16 @@ fun CountdownCardDialog(
         countdown.calculateTimeRemaining().let { info ->
             info.isPast && !countdown.isRecurring &&
                     countdown.targetDateTime.isAfter(countdown.createdAt)
+        }
+    }
+
+    // Lokalisiert formatiertes Erstelldatum, z. B. "22.07.2026" bzw. "Jul 22, 2026"
+    val createdAtFormatted = remember(countdown.id, countdown.createdAt) {
+        try {
+            countdown.createdAt.toLocalDate()
+                .format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM))
+        } catch (e: Exception) {
+            countdown.createdAt.toLocalDate().toString()
         }
     }
 
@@ -101,6 +114,26 @@ fun CountdownCardDialog(
 
             // Card-Vorschau
             CountdownCard(countdown = countdown)
+
+            // Erstelldatum
+            Row(
+                modifier              = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment     = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector        = Icons.Outlined.Event,
+                    contentDescription = null,
+                    tint               = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier           = Modifier.size(14.dp)
+                )
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    text  = stringResource(R.string.dialog_created_at, createdAtFormatted),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
 
             // Aktionsbuttons
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {

@@ -303,4 +303,18 @@
     <string name="community_cta">Unirse a Discord</string>
     <string name="community_skip">Quizás más tarde</string>
 
+
+    <!-- ── Backup / Export & Import ─────────────────────────────────────────── -->
+    <string name="settings_backup">Copia de seguridad</string>
+    <string name="settings_backup_hint">Exporta tus entradas como archivo o restáuralas desde una copia de seguridad.</string>
+    <string name="backup_export">Exportar</string>
+    <string name="backup_export_hint">Guarda todas las entradas como archivo JSON</string>
+    <string name="backup_import">Importar</string>
+    <string name="backup_import_hint">Carga entradas desde un archivo de copia de seguridad</string>
+    <string name="backup_export_success">Copia de seguridad guardada</string>
+    <string name="backup_export_error">No se pudo guardar la copia de seguridad</string>
+    <string name="backup_import_success">%1$d entradas importadas</string>
+    <string name="backup_import_empty">No se encontraron entradas en este archivo</string>
+    <string name="backup_import_error">No se pudo leer este archivo</string>
+    <string name="dialog_created_at">Creado el %1$s</string>
 </resources>

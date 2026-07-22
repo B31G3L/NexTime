@@ -1,5 +1,8 @@
 package com.beigel.nextime.ui.screens.settings
 
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
@@ -16,19 +19,25 @@ import androidx.compose.material.icons.filled.Brightness4
 import androidx.compose.material.icons.filled.Brightness7
 import androidx.compose.material.icons.filled.BrightnessAuto
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.FileDownload
+import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.os.LocaleListCompat
+import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import com.beigel.nextime.R
 import com.beigel.nextime.data.model.Countdown
 import com.beigel.nextime.data.model.DisplayUnit
@@ -42,7 +51,9 @@ import com.beigel.nextime.ui.theme.DisplayStyle
 import com.beigel.nextime.ui.theme.LanguageManager
 import com.beigel.nextime.ui.theme.ThemeMode
 import com.beigel.nextime.ui.theme.ThemePreferences
+import com.beigel.nextime.ui.viewmodel.CountdownViewModel
 import com.beigel.nextime.utils.HapticFeedback
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -51,7 +62,10 @@ import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(onBack: () -> Unit) {
+fun SettingsScreen(
+    onBack    : () -> Unit,
+    viewModel : CountdownViewModel = viewModel()
+) {
     val context = LocalContext.current
     val scope   = rememberCoroutineScope()
     val haptic  = remember { HapticFeedback(context) }
@@ -120,6 +134,70 @@ fun SettingsScreen(onBack: () -> Unit) {
     }
     val standardsSummary = stringResource(R.string.time_oclock, defaultTime.format(DateTimeFormatter.ofPattern("HH:mm")))
 
+    // ── Backup: Export/Import Launcher (auf Screen-Ebene, damit sie über
+    //    Recompositions der Sheet-Inhalte hinweg stabil bleiben) ───────────────
+    val exportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            try {
+                val json = viewModel.exportBackupJson()
+                withContext(Dispatchers.IO) {
+                    context.contentResolver.openOutputStream(uri)?.use { out ->
+                        out.write(json.toByteArray(Charsets.UTF_8))
+                    }
+                }
+                haptic.success()
+                Toast.makeText(context, context.getString(R.string.backup_export_success), Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                haptic.tick()
+                Toast.makeText(context, context.getString(R.string.backup_export_error), Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    val importLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            try {
+                val json = withContext(Dispatchers.IO) {
+                    context.contentResolver.openInputStream(uri)?.use { input ->
+                        input.bufferedReader(Charsets.UTF_8).readText()
+                    }
+                }
+                if (json.isNullOrBlank()) {
+                    haptic.tick()
+                    Toast.makeText(context, context.getString(R.string.backup_import_error), Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+                viewModel.importBackupJson(json) { result ->
+                    result.onSuccess { count ->
+                        if (count == 0) {
+                            haptic.tick()
+                            Toast.makeText(context, context.getString(R.string.backup_import_empty), Toast.LENGTH_SHORT).show()
+                        } else {
+                            haptic.success()
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.backup_import_success, count),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }.onFailure {
+                        haptic.tick()
+                        Toast.makeText(context, context.getString(R.string.backup_import_error), Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } catch (e: Exception) {
+                haptic.tick()
+                Toast.makeText(context, context.getString(R.string.backup_import_error), Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -186,6 +264,14 @@ fun SettingsScreen(onBack: () -> Unit) {
                 value   = standardsSummary,
                 onClick = { haptic.tick(); activeSheet = SettingsSheet.STANDARDS }
             )
+            SettingsDivider()
+
+            // ── Backup (Export / Import) ────────────────────────────────────────
+            SettingsListItem(
+                title   = stringResource(R.string.settings_backup),
+                value   = "",
+                onClick = { haptic.tick(); activeSheet = SettingsSheet.BACKUP }
+            )
 
             Spacer(Modifier.height(32.dp))
         }
@@ -219,6 +305,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                         SettingsSheet.HELL_DUNKEL  -> stringResource(R.string.settings_light_dark)
                         SettingsSheet.SPRACHE      -> stringResource(R.string.settings_language)
                         SettingsSheet.STANDARDS    -> stringResource(R.string.settings_defaults)
+                        SettingsSheet.BACKUP       -> stringResource(R.string.settings_backup)
                     },
                     style      = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
@@ -465,6 +552,34 @@ fun SettingsScreen(onBack: () -> Unit) {
                             }
                         }
                     }
+
+                    // ── Backup (Export / Import) ──────────────────────────────
+                    SettingsSheet.BACKUP -> {
+                        Text(stringResource(R.string.settings_backup_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+                        BackupActionRow(
+                            icon    = Icons.Default.FileDownload,
+                            title   = stringResource(R.string.backup_export),
+                            hint    = stringResource(R.string.backup_export_hint),
+                            onClick = {
+                                haptic.tick()
+                                val filename = "nextime_backup_${LocalDate.now()}.json"
+                                exportLauncher.launch(filename)
+                            }
+                        )
+
+                        SettingsDivider()
+
+                        BackupActionRow(
+                            icon    = Icons.Default.FileUpload,
+                            title   = stringResource(R.string.backup_import),
+                            hint    = stringResource(R.string.backup_import_hint),
+                            onClick = {
+                                haptic.tick()
+                                importLauncher.launch(arrayOf("application/json"))
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -474,7 +589,7 @@ fun SettingsScreen(onBack: () -> Unit) {
 // ─── Sheet-Typen ──────────────────────────────────────────────────────────────
 
 private enum class SettingsSheet {
-    DARSTELLUNG, FORMAT, AKZENTFARBE, HELL_DUNKEL, SPRACHE, STANDARDS
+    DARSTELLUNG, FORMAT, AKZENTFARBE, HELL_DUNKEL, SPRACHE, STANDARDS, BACKUP
 }
 
 // ─── ListItem-Komponente ──────────────────────────────────────────────────────
@@ -498,11 +613,13 @@ private fun SettingsListItem(
                 verticalAlignment     = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text(
-                    text  = value,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                if (value.isNotEmpty()) {
+                    Text(
+                        text  = value,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 if (trailingColor != null) {
                     Box(
                         modifier = Modifier
@@ -535,4 +652,44 @@ private fun SettingsDivider() {
         color     = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
         thickness = 0.5.dp
     )
+}
+
+// ─── Backup-Aktionszeile ───────────────────────────────────────────────────────
+
+@Composable
+private fun BackupActionRow(
+    icon    : ImageVector,
+    title   : String,
+    hint    : String,
+    onClick : () -> Unit
+) {
+    Row(
+        modifier              = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 4.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+        verticalAlignment     = Alignment.CenterVertically
+    ) {
+        Surface(
+            shape    = CircleShape,
+            color    = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
+            modifier = Modifier.size(38.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+            }
+        }
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+            Text(hint, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Icon(
+            imageVector        = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint               = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier           = Modifier.size(18.dp)
+        )
+    }
 }

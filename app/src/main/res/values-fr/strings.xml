@@ -304,4 +304,18 @@
     <string name="community_cta">Rejoindre Discord</string>
     <string name="community_skip">Plus tard</string>
 
+
+    <!-- ── Backup / Export & Import ─────────────────────────────────────────── -->
+    <string name="settings_backup">Sauvegarde</string>
+    <string name="settings_backup_hint">Exportez vos entrées dans un fichier ou restaurez-les depuis une sauvegarde.</string>
+    <string name="backup_export">Exporter</string>
+    <string name="backup_export_hint">Enregistre toutes les entrées dans un fichier JSON</string>
+    <string name="backup_import">Importer</string>
+    <string name="backup_import_hint">Charge les entrées depuis un fichier de sauvegarde</string>
+    <string name="backup_export_success">Sauvegarde enregistrée</string>
+    <string name="backup_export_error">La sauvegarde n\'a pas pu être enregistrée</string>
+    <string name="backup_import_success">%1$d entrées importées</string>
+    <string name="backup_import_empty">Aucune entrée trouvée dans ce fichier</string>
+    <string name="backup_import_error">Ce fichier n\'a pas pu être lu</string>
+    <string name="dialog_created_at">Créé le %1$s</string>
 </resources>

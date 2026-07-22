@@ -22,4 +22,14 @@ class CountdownRepository(private val dao: CountdownDao) {
 
     suspend fun deleteCountdownById(id: Long) =
         dao.deleteCountdownById(id)
+
+    // ─── Backup (Export / Import) ─────────────────────────────────────────────
+
+    /** Einmalige Liste aller Countdowns – für den JSON-Export. */
+    suspend fun getAllCountdownsOnce(): List<Countdown> =
+        dao.getAllCountdownsOnce()
+
+    /** Fügt mehrere Countdowns auf einmal ein (z. B. beim Import) und liefert die neuen IDs. */
+    suspend fun insertCountdowns(countdowns: List<Countdown>): List<Long> =
+        dao.insertCountdowns(countdowns)
 }

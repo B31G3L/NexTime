@@ -16,11 +16,20 @@ interface CountdownDao {
     @Query("SELECT * FROM countdowns ORDER BY targetDateTime ASC")
     fun getAllCountdowns(): Flow<List<com.beigel.nextime.data.model.Countdown>>
 
+    // Einmalige (nicht-reaktive) Abfrage aller Countdowns – wird für den
+    // JSON-Export benötigt, damit nicht auf einen Flow gewartet werden muss.
+    @Query("SELECT * FROM countdowns ORDER BY targetDateTime ASC")
+    suspend fun getAllCountdownsOnce(): List<com.beigel.nextime.data.model.Countdown>
+
     @Query("SELECT * FROM countdowns WHERE id = :id")
     suspend fun getCountdownById(id: Long): com.beigel.nextime.data.model.Countdown?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCountdown(countdown: com.beigel.nextime.data.model.Countdown): Long
+
+    // Bulk-Insert für den Import – gibt die neu vergebenen IDs zurück.
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertCountdowns(countdowns: List<com.beigel.nextime.data.model.Countdown>): List<Long>
 
     @Update
     suspend fun updateCountdown(countdown: com.beigel.nextime.data.model.Countdown)
