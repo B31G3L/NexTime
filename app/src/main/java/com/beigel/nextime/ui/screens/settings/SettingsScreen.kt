@@ -216,64 +216,62 @@ fun SettingsScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
+                .padding(bottom = 24.dp)
         ) {
-            // ── Darstellung ───────────────────────────────────────────────────
-            SettingsListItem(
-                title    = stringResource(R.string.settings_display_style),
-                value    = darstellungSummary,
-                onClick  = { haptic.tick(); activeSheet = SettingsSheet.DARSTELLUNG }
-            )
-            SettingsDivider()
+            // ── Gruppe: Darstellung ──────────────────────────────────────────────
+            SettingsGroupHeader(stringResource(R.string.settings_group_display))
+            SettingsGroup {
+                SettingsListItem(
+                    title    = stringResource(R.string.settings_display_style),
+                    value    = darstellungSummary,
+                    onClick  = { haptic.tick(); activeSheet = SettingsSheet.DARSTELLUNG }
+                )
+                SettingsDivider()
+                SettingsListItem(
+                    title   = stringResource(R.string.settings_format_label),
+                    value   = formatSummary,
+                    onClick = { haptic.tick(); activeSheet = SettingsSheet.FORMAT }
+                )
+                SettingsDivider()
+                SettingsListItem(
+                    title        = stringResource(R.string.settings_color_scheme),
+                    value        = accentSummary,
+                    trailingColor = accentColor.light,
+                    onClick      = { haptic.tick(); activeSheet = SettingsSheet.AKZENTFARBE }
+                )
+                SettingsDivider()
+                SettingsListItem(
+                    title   = stringResource(R.string.settings_light_dark),
+                    value   = themeSummary,
+                    onClick = { haptic.tick(); activeSheet = SettingsSheet.HELL_DUNKEL }
+                )
+            }
 
-            // ── Anzeigeformat ─────────────────────────────────────────────────
-            SettingsListItem(
-                title   = stringResource(R.string.settings_format_label),
-                value   = formatSummary,
-                onClick = { haptic.tick(); activeSheet = SettingsSheet.FORMAT }
-            )
-            SettingsDivider()
+            // ── Gruppe: Allgemein ────────────────────────────────────────────────
+            SettingsGroupHeader(stringResource(R.string.settings_group_general))
+            SettingsGroup {
+                SettingsListItem(
+                    title   = stringResource(R.string.settings_language),
+                    value   = currentLang.displayName,
+                    onClick = { haptic.tick(); activeSheet = SettingsSheet.SPRACHE }
+                )
+                SettingsDivider()
+                SettingsListItem(
+                    title   = stringResource(R.string.settings_defaults),
+                    value   = standardsSummary,
+                    onClick = { haptic.tick(); activeSheet = SettingsSheet.STANDARDS }
+                )
+            }
 
-            // ── Akzentfarbe ───────────────────────────────────────────────────
-            SettingsListItem(
-                title        = stringResource(R.string.settings_color_scheme),
-                value        = accentSummary,
-                trailingColor = accentColor.light,
-                onClick      = { haptic.tick(); activeSheet = SettingsSheet.AKZENTFARBE }
-            )
-            SettingsDivider()
-
-            // ── Hell / Dunkel ─────────────────────────────────────────────────
-            SettingsListItem(
-                title   = stringResource(R.string.settings_light_dark),
-                value   = themeSummary,
-                onClick = { haptic.tick(); activeSheet = SettingsSheet.HELL_DUNKEL }
-            )
-            SettingsDivider()
-
-            // ── Sprache ───────────────────────────────────────────────────────
-            SettingsListItem(
-                title   = stringResource(R.string.settings_language),
-                value   = currentLang.displayName,
-                onClick = { haptic.tick(); activeSheet = SettingsSheet.SPRACHE }
-            )
-            SettingsDivider()
-
-            // ── Standards ─────────────────────────────────────────────────────
-            SettingsListItem(
-                title   = stringResource(R.string.settings_defaults),
-                value   = standardsSummary,
-                onClick = { haptic.tick(); activeSheet = SettingsSheet.STANDARDS }
-            )
-            SettingsDivider()
-
-            // ── Backup (Export / Import) ────────────────────────────────────────
-            SettingsListItem(
-                title   = stringResource(R.string.settings_backup),
-                value   = "",
-                onClick = { haptic.tick(); activeSheet = SettingsSheet.BACKUP }
-            )
-
-            Spacer(Modifier.height(32.dp))
+            // ── Gruppe: Daten ────────────────────────────────────────────────────
+            SettingsGroupHeader(stringResource(R.string.settings_group_data))
+            SettingsGroup {
+                SettingsListItem(
+                    title   = stringResource(R.string.settings_backup),
+                    value   = "",
+                    onClick = { haptic.tick(); activeSheet = SettingsSheet.BACKUP }
+                )
+            }
         }
     }
 
@@ -590,6 +588,32 @@ fun SettingsScreen(
 
 private enum class SettingsSheet {
     DARSTELLUNG, FORMAT, AKZENTFARBE, HELL_DUNKEL, SPRACHE, STANDARDS, BACKUP
+}
+
+// ─── Gruppen-Überschrift + Gruppen-Container ───────────────────────────────────
+
+@Composable
+private fun SettingsGroupHeader(title: String) {
+    Text(
+        text       = title.uppercase(),
+        style      = MaterialTheme.typography.labelMedium,
+        fontWeight = FontWeight.SemiBold,
+        color      = MaterialTheme.colorScheme.primary,
+        modifier   = Modifier.padding(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 8.dp)
+    )
+}
+
+@Composable
+private fun SettingsGroup(content: @Composable ColumnScope.() -> Unit) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+    ) {
+        Column(content = content)
+    }
 }
 
 // ─── ListItem-Komponente ──────────────────────────────────────────────────────

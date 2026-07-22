@@ -45,8 +45,6 @@
 
     <!-- ── FAB ──────────────────────────────────────────────────────────────── -->
     <string name="fab_add">Add countdown</string>
-    <string name="fab_custom">Custom entry</string>
-    <string name="fab_template">Use template</string>
 
     <!-- ── AddEdit Screen ───────────────────────────────────────────────────── -->
     <string name="preview_label">Preview</string>
@@ -144,15 +142,6 @@
     <string name="confirm_delete_msg">Do you really want to delete \"%s\"? This cannot be undone.</string>
 
     <!-- ── Template Picker ──────────────────────────────────────────────────── -->
-    <string name="template_picker_title">Choose template</string>
-    <string name="template_days_label">Days</string>
-    <string name="template_past_label">passed</string>
-    <string name="template_cat_all">All</string>
-    <string name="template_cat_holidays">Holidays</string>
-    <string name="template_cat_seasons">Seasons</string>
-    <string name="template_cat_sports">Sports &amp; Events</string>
-    <string name="template_cat_personal">Personal</string>
-    <string name="template_cat_school">School &amp; Work</string>
 
     <!-- ── Einstellungen ────────────────────────────────────────────────────── -->
     <string name="settings_color_scheme">Color scheme</string>
@@ -356,4 +345,14 @@
     <string name="backup_import_empty">No entries found in this file</string>
     <string name="backup_import_error">This file could not be read</string>
     <string name="dialog_created_at">Created on %1$s</string>
+    <string name="template_cat_all">All</string>
+
+    <!-- ── Übersichtsmenü (Sortierung / Mehr) ───────────────────────────────── -->
+    <string name="menu_search_label">Search</string>
+    <!-- ── Einstellungen: Gruppen-Überschriften ─────────────────────────────── -->
+    <string name="settings_group_display">Appearance</string>
+    <string name="settings_group_general">General</string>
+    <string name="settings_group_data">Data</string>
+    <string name="nav_more">More options</string>
+    <string name="menu_sort_label">Sort by</string>
 </resources>

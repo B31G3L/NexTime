@@ -18,10 +18,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.outlined.AccessTime
 import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material.icons.outlined.Info
@@ -49,7 +50,6 @@ import com.beigel.nextime.data.model.FilterMode
 import com.beigel.nextime.ui.components.CountdownCard
 import com.beigel.nextime.ui.components.CountdownCardDialog
 import com.beigel.nextime.ui.components.EmptyStateView
-import com.beigel.nextime.ui.components.ExpandableFab
 import com.beigel.nextime.ui.viewmodel.CountdownViewModel
 import com.beigel.nextime.ui.viewmodel.SortMode
 import com.beigel.nextime.utils.HapticFeedback
@@ -74,9 +74,9 @@ fun MainScreen(
     val sortMode    by viewModel.sortMode.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
 
-    var showSearch      by remember { mutableStateOf(false) }
-    var showSortMenu    by remember { mutableStateOf(false) }
-    var dialogCountdown by remember { mutableStateOf<Countdown?>(null) }
+    var showSearch       by remember { mutableStateOf(false) }
+    var showOverflowMenu by remember { mutableStateOf(false) }
+    var dialogCountdown  by remember { mutableStateOf<Countdown?>(null) }
 
     LaunchedEffect(Unit) {
         viewModel.triggerReview.collect {
@@ -101,29 +101,19 @@ fun MainScreen(
                     },
                     actions = {
                         if (!showSearch) {
-                            IconButton(onClick = { haptic.tick(); showSearch = true }) {
-                                Icon(Icons.Default.Search, contentDescription = stringResource(R.string.search_placeholder))
-                            }
                             Box {
-                                IconButton(onClick = { haptic.tick(); showSortMenu = true }) {
-                                    Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = stringResource(R.string.sort_date_asc))
+                                IconButton(onClick = { haptic.tick(); showOverflowMenu = true }) {
+                                    Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.nav_more))
                                 }
-                                SortDropdownMenu(
-                                    expanded       = showSortMenu,
-                                    currentSort    = sortMode,
-                                    onSortSelected = { mode ->
-                                        haptic.tick()
-                                        viewModel.setSortMode(mode)
-                                        showSortMenu = false
-                                    },
-                                    onDismiss = { showSortMenu = false }
+                                OverflowMenu(
+                                    expanded        = showOverflowMenu,
+                                    currentSort     = sortMode,
+                                    onSearchClick   = { haptic.tick(); showOverflowMenu = false; showSearch = true },
+                                    onSortSelected  = { mode -> haptic.tick(); viewModel.setSortMode(mode); showOverflowMenu = false },
+                                    onSettingsClick = { haptic.tick(); showOverflowMenu = false; onNavigateToSettings() },
+                                    onInfoClick     = { haptic.tick(); showOverflowMenu = false; onNavigateToInfo() },
+                                    onDismiss       = { showOverflowMenu = false }
                                 )
-                            }
-                            IconButton(onClick = { haptic.tick(); onNavigateToSettings() }) {
-                                Icon(Icons.Outlined.Settings, contentDescription = stringResource(R.string.nav_settings))
-                            }
-                            IconButton(onClick = { haptic.tick(); onNavigateToInfo() }) {
-                                Icon(Icons.Outlined.Info, contentDescription = stringResource(R.string.nav_info))
                             }
                         }
                     },
@@ -146,12 +136,18 @@ fun MainScreen(
                 )) + fadeIn(),
                 exit    = scaleOut(animationSpec = tween(200)) + fadeOut()
             ) {
-                ExpandableFab(
-                    onCreateCustom = { onNavigateToAddEdit() },
-                    onTemplateSelected = { countdown ->
-                        viewModel.addCountdown(countdown)
-                    }
-                )
+                FloatingActionButton(
+                    onClick        = { haptic.click(); onNavigateToAddEdit() },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    modifier       = Modifier.size(64.dp)
+                ) {
+                    Icon(
+                        imageVector        = Icons.Default.Add,
+                        contentDescription = stringResource(R.string.fab_add),
+                        modifier           = Modifier.size(28.dp),
+                        tint               = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
             }
         },
         floatingActionButtonPosition = FabPosition.End
@@ -305,14 +301,37 @@ private fun FilterChipRow(currentMode: FilterMode, onModeSelected: (FilterMode) 
     }
 }
 
-// ─── Sort Dropdown ────────────────────────────────────────────────────────────
+// ─── Übersichtsmenü (Suche + Sortierung + Einstellungen + Info) ────────────────
+//
+// Ein einziges Overflow-Menü für die gesamte Top-Bar-Navigation, damit oben
+// nur noch ein Icon sichtbar ist.
 
 @Composable
-private fun SortDropdownMenu(
-    expanded: Boolean, currentSort: SortMode,
-    onSortSelected: (SortMode) -> Unit, onDismiss: () -> Unit
+private fun OverflowMenu(
+    expanded        : Boolean,
+    currentSort     : SortMode,
+    onSearchClick   : () -> Unit,
+    onSortSelected  : (SortMode) -> Unit,
+    onSettingsClick : () -> Unit,
+    onInfoClick     : () -> Unit,
+    onDismiss       : () -> Unit
 ) {
     DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
+        DropdownMenuItem(
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(18.dp)) },
+            text        = { Text(stringResource(R.string.menu_search_label)) },
+            onClick     = onSearchClick
+        )
+
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+        Text(
+            text     = stringResource(R.string.menu_sort_label),
+            style    = MaterialTheme.typography.labelSmall,
+            color    = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+        )
+
         listOf(
             SortMode.DATE_ASC   to Pair(Icons.Outlined.CalendarToday, stringResource(R.string.sort_date_asc)),
             SortMode.DATE_DESC  to Pair(Icons.Outlined.CalendarToday, stringResource(R.string.sort_date_desc)),
@@ -339,6 +358,19 @@ private fun SortDropdownMenu(
                 onClick = { onSortSelected(mode) }
             )
         }
+
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+        DropdownMenuItem(
+            leadingIcon = { Icon(Icons.Outlined.Settings, contentDescription = null, modifier = Modifier.size(18.dp)) },
+            text        = { Text(stringResource(R.string.nav_settings)) },
+            onClick     = onSettingsClick
+        )
+        DropdownMenuItem(
+            leadingIcon = { Icon(Icons.Outlined.Info, contentDescription = null, modifier = Modifier.size(18.dp)) },
+            text        = { Text(stringResource(R.string.nav_info)) },
+            onClick     = onInfoClick
+        )
     }
 }
 

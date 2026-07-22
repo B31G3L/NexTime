@@ -45,8 +45,6 @@
 
     <!-- ── FAB ──────────────────────────────────────────────────────────────── -->
     <string name="fab_add">Countdown hinzufügen</string>
-    <string name="fab_custom">Eigener Eintrag</string>
-    <string name="fab_template">Vorlage verwenden</string>
 
     <!-- ── AddEdit Screen ───────────────────────────────────────────────────── -->
     <string name="preview_label">Vorschau</string>
@@ -144,15 +142,6 @@
     <string name="confirm_delete_msg">Möchtest du \"%s\" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.</string>
 
     <!-- ── Template Picker ──────────────────────────────────────────────────── -->
-    <string name="template_picker_title">Vorlage wählen</string>
-    <string name="template_days_label">Tage</string>
-    <string name="template_past_label">vergangen</string>
-    <string name="template_cat_all">Alle</string>
-    <string name="template_cat_holidays">Feiertage</string>
-    <string name="template_cat_seasons">Jahreszeiten</string>
-    <string name="template_cat_sports">Sport &amp; Events</string>
-    <string name="template_cat_personal">Persönlich</string>
-    <string name="template_cat_school">Schule &amp; Arbeit</string>
 
     <!-- ── Einstellungen ────────────────────────────────────────────────────── -->
     <string name="settings_color_scheme">Farbschema</string>
@@ -361,4 +350,14 @@
     <string name="backup_import_empty">In dieser Datei wurden keine Einträge gefunden</string>
     <string name="backup_import_error">Diese Datei konnte nicht gelesen werden</string>
     <string name="dialog_created_at">Erstellt am %1$s</string>
+    <string name="template_cat_all">Alle</string>
+
+    <!-- ── Übersichtsmenü (Sortierung / Mehr) ───────────────────────────────── -->
+    <string name="menu_search_label">Suchen</string>
+    <!-- ── Einstellungen: Gruppen-Überschriften ─────────────────────────────── -->
+    <string name="settings_group_display">Darstellung</string>
+    <string name="settings_group_general">Allgemein</string>
+    <string name="settings_group_data">Daten</string>
+    <string name="nav_more">Weitere Optionen</string>
+    <string name="menu_sort_label">Sortieren nach</string>
 </resources>

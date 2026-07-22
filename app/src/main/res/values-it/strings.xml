@@ -33,8 +33,6 @@
     <string name="empty_title">Nessuna voce ancora</string>
     <string name="empty_hint">Tocca + in basso a destra per iniziare</string>
     <string name="fab_add">Aggiungi conto alla rovescia</string>
-    <string name="fab_custom">Voce personalizzata</string>
-    <string name="fab_template">Usa modello</string>
     <string name="preview_label">Anteprima</string>
     <string name="save_button">SALVA</string>
     <string name="section_title_label">Titolo</string>
@@ -116,15 +114,6 @@
     <string name="action_delete">Elimina</string>
     <string name="confirm_delete_title">Eliminare il conto alla rovescia?</string>
     <string name="confirm_delete_msg">Vuoi davvero eliminare \"%s\"? Questa azione non può essere annullata.</string>
-    <string name="template_picker_title">Scegli modello</string>
-    <string name="template_days_label">Giorni</string>
-    <string name="template_past_label">passato</string>
-    <string name="template_cat_all">Tutti</string>
-    <string name="template_cat_holidays">Festività</string>
-    <string name="template_cat_seasons">Stagioni</string>
-    <string name="template_cat_sports">Sport &amp; Eventi</string>
-    <string name="template_cat_personal">Personale</string>
-    <string name="template_cat_school">Scuola &amp; Lavoro</string>
     <string name="settings_color_scheme">Schema colori</string>
     <string name="settings_color_hint">Tocca un tema per applicarlo.</string>
     <string name="settings_light_dark">Modalità chiara / scura</string>
@@ -317,4 +306,14 @@
     <string name="backup_import_empty">Nessuna voce trovata in questo file</string>
     <string name="backup_import_error">Impossibile leggere questo file</string>
     <string name="dialog_created_at">Creato il %1$s</string>
+    <string name="template_cat_all">Tutti</string>
+
+    <!-- ── Übersichtsmenü (Sortierung / Mehr) ───────────────────────────────── -->
+    <string name="menu_search_label">Cerca</string>
+    <!-- ── Einstellungen: Gruppen-Überschriften ─────────────────────────────── -->
+    <string name="settings_group_display">Aspetto</string>
+    <string name="settings_group_general">Generale</string>
+    <string name="settings_group_data">Dati</string>
+    <string name="nav_more">Altre opzioni</string>
+    <string name="menu_sort_label">Ordina per</string>
 </resources>

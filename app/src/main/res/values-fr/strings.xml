@@ -33,8 +33,6 @@
     <string name="empty_title">Pas encore d\'entrées</string>
     <string name="empty_hint">Appuyez sur + en bas à droite pour commencer</string>
     <string name="fab_add">Ajouter un compte à rebours</string>
-    <string name="fab_custom">Entrée personnalisée</string>
-    <string name="fab_template">Utiliser un modèle</string>
     <string name="preview_label">Aperçu</string>
     <string name="save_button">ENREGISTRER</string>
     <string name="section_title_label">Titre</string>
@@ -116,15 +114,6 @@
     <string name="action_delete">Supprimer</string>
     <string name="confirm_delete_title">Supprimer le compte à rebours ?</string>
     <string name="confirm_delete_msg">Voulez-vous vraiment supprimer \"%s\" ? Cette action est irréversible.</string>
-    <string name="template_picker_title">Choisir un modèle</string>
-    <string name="template_days_label">Jours</string>
-    <string name="template_past_label">passé</string>
-    <string name="template_cat_all">Tous</string>
-    <string name="template_cat_holidays">Jours fériés</string>
-    <string name="template_cat_seasons">Saisons</string>
-    <string name="template_cat_sports">Sport &amp; Événements</string>
-    <string name="template_cat_personal">Personnel</string>
-    <string name="template_cat_school">École &amp; Travail</string>
     <string name="settings_color_scheme">Schéma de couleurs</string>
     <string name="settings_color_hint">Appuyez sur un thème pour l\'appliquer.</string>
     <string name="settings_light_dark">Mode clair / sombre</string>
@@ -318,4 +307,14 @@
     <string name="backup_import_empty">Aucune entrée trouvée dans ce fichier</string>
     <string name="backup_import_error">Ce fichier n\'a pas pu être lu</string>
     <string name="dialog_created_at">Créé le %1$s</string>
+    <string name="template_cat_all">Tous</string>
+
+    <!-- ── Übersichtsmenü (Sortierung / Mehr) ───────────────────────────────── -->
+    <string name="menu_search_label">Rechercher</string>
+    <!-- ── Einstellungen: Gruppen-Überschriften ─────────────────────────────── -->
+    <string name="settings_group_display">Apparence</string>
+    <string name="settings_group_general">Général</string>
+    <string name="settings_group_data">Données</string>
+    <string name="nav_more">Plus d\'options</string>
+    <string name="menu_sort_label">Trier par</string>
 </resources>
